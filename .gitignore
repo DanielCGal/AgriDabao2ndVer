@@ -1,0 +1,53 @@
+# Unity generated folders - all regenerable, never commit these.
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Editor / IDE
+.vs/
+.utmp/
+.idea/
+.consulo/
+ExportedObj/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity3D generated meta files for folders that are ignored
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# Builds
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Crashlytics / misc
+crashlytics-build.properties
+sysinfo.txt
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Output of Handoff/compile_unity.py - regenerable.
+Handoff/out_*/

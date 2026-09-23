@@ -1,0 +1,19 @@
+Copyright (c) 2026 Daniel C. Galam and Jessica Mae G. Suello.
+All rights reserved.
+
+AgriDabaw-3D: A Simulation Game with AI-Advisor for Localized Farming Techniques.
+Undergraduate capstone project, Assumption College of Davao.
+Adviser: Mr. Dennis B. Gajo, MIT.
+
+This folder holds the Unity project for the Android game. No permission is granted
+to copy, modify, distribute or publish the game, its source or its assets without
+the written permission of the copyright holders. Citing the project in academic
+work is welcome.
+
+Third-party software, artwork, fonts and data keep their own licences and terms.
+They are listed in the game's Credits screen (Main Menu, Credits), and the full
+text of the typeface licence is bundled at Assets/Resources/Fonts/PlaypenSans-OFL.txt.
+Nothing in this notice limits the rights those licences grant in their own material.
+
+This file is a notice for the project folder. It is outside the Assets folder, so
+Unity does not import it and it is not part of a build.

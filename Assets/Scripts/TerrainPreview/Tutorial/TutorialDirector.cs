@@ -1,0 +1,763 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+namespace AgriDabao3D
+{
+    /// <summary>
+    /// Runs Antonio's beginner guide: the fifteen steps that hand a new player the
+    /// game one piece at a time instead of all at once.
+    ///
+    /// The whole tour is a flat list of beats. A beat is either something Antonio
+    /// says, something the game does silently (reveal a button, hand over an item),
+    /// or something the player has to do before the tour will continue. Walking one
+    /// list keeps the ordering readable next to the written script and means a step
+    /// can be moved by moving its lines, with no state machine to rewire.
+    ///
+    /// It creates itself in TerrainPreview like the other farm systems, so there is
+    /// no scene wiring, and it does nothing at all on a farm that has already been
+    /// through it.
+    /// </summary>
+    public class TutorialDirector : MonoBehaviour
+    {
+        public static TutorialDirector Instance { get; private set; }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void Bootstrap()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            // Hand the HUD back to the game and forget the old farm's objects.
+            // Must not empty the registry outright - builders that register during
+            // Awake have already run by the time this fires.
+            HudRegistry.ReleaseControl();
+
+            if (scene.name == "TerrainPreview" &&
+                UnityEngine.Object.FindFirstObjectByType<TutorialDirector>() == null)
+            {
+                new GameObject("TutorialDirector").AddComponent<TutorialDirector>();
+            }
+        }
+
+        // ------------------------------------------------------------- the beats
+
+        private abstract class Beat { }
+
+        private sealed class LineBeat : Beat
+        {
+            public string Speaker;
+            public string Text;
+            public AntonioExpression? Expression;
+        }
+
+        /// <summary>Silent: reveals a button, hands over an item, flips a lock.</summary>
+        private sealed class DoBeat : Beat
+        {
+            public Action Run;
+        }
+
+        private sealed class GateBeat : Beat
+        {
+            public Func<string> Hint;
+            public Func<bool> IsSatisfied;
+            public Action Cleanup;
+        }
+
+        private readonly List<Beat> beats = new List<Beat>();
+        private int index = -1;
+
+        private TutorialDialogueUI dialogue;
+        private Image blackout;
+        private GateBeat activeGate;
+        private readonly List<IDisposable> disposables = new List<IDisposable>();
+
+        private const string Antonio = "Antonio";
+
+        // -------------------------------------------------------------- lifecycle
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            foreach (IDisposable disposable in disposables)
+                disposable?.Dispose();
+
+            disposables.Clear();
+
+            if (Instance == this)
+                Instance = null;
+        }
+
+        private IEnumerator Start()
+        {
+            // A farm being loaded carries its tutorial flag inside the save, and
+            // that save is not applied until the terrain has finished generating -
+            // which is far later than this. Deciding now would read a default
+            // "not completed" and run the whole tour again on a farm that finished
+            // it long ago, on top of the player's real crops.
+            float waitedUntil = Time.unscaledTime + 60f;
+            while (FarmLoadContext.IsRestoring && Time.unscaledTime < waitedUntil)
+                yield return null;
+
+            if (FarmLoadContext.IsRestoring)
+            {
+                // The farm never finished loading. Whatever went wrong, replaying
+                // the tour over a half-restored farm would only make it worse.
+                Debug.LogWarning("[Tutorial] Farm still loading after 60s; skipping the beginner guide.");
+                yield break;
+            }
+
+            if (TutorialState.Completed)
+                yield break;
+
+            // Wait for the farm to finish building itself: the HUD registers its
+            // pieces during those builders' own Start, and hiding a button before
+            // it exists would do nothing.
+            yield return null;
+            yield return null;
+
+            dialogue = gameObject.AddComponent<TutorialDialogueUI>();
+
+            // Hide the HUD before asking. If the player says yes the tour starts on
+            // a clean screen; if no, it all comes straight back. Asking first and
+            // hiding afterwards would flash the whole interface away in front of
+            // someone who just said they did not want a tutorial.
+            TutorialState.Offered = true;
+            HideEverything();
+
+            // A new farmer should not be looking at their land before the story
+            // says they have arrived. Black goes up first and only lifts once the
+            // player has answered.
+            CreateBlackout();
+
+            AskWhetherToRun();
+        }
+
+        /// <summary>
+        /// Full-screen black over the freshly generated farm, so the world is not
+        /// on show before Antonio has arrived to introduce it.
+        /// </summary>
+        private void CreateBlackout()
+        {
+            Canvas canvas = UnityEngine.Object.FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+                return;
+
+            GameObject go = new GameObject("TutorialBlackout", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(canvas.transform, false);
+
+            RectTransform rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            blackout = go.GetComponent<Image>();
+            blackout.color = Color.black;
+
+            // Swallows taps on anything underneath while it is up.
+            blackout.raycastTarget = true;
+
+            go.transform.SetAsLastSibling();
+        }
+
+        /// <summary>Lifts the black over <paramref name="seconds"/>, then removes it.</summary>
+        private IEnumerator FadeOutBlackout(float seconds)
+        {
+            if (blackout == null)
+                yield break;
+
+            float elapsed = 0f;
+            while (elapsed < seconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float alpha = 1f - Mathf.Clamp01(elapsed / seconds);
+                blackout.color = new Color(0f, 0f, 0f, alpha);
+                yield return null;
+            }
+
+            Destroy(blackout.gameObject);
+            blackout = null;
+        }
+
+        /// <summary>
+        /// Offers the tour before it starts, using the same Yes/No plank as the
+        /// Save Farm confirmation so it looks like every other prompt in the game.
+        /// </summary>
+        private void AskWhetherToRun()
+        {
+            FarmConfirmPopup popup = FarmConfirmPopup.Instance;
+
+            // No popup in the scene: run the guide rather than silently skipping
+            // it, since a new farm with no tour is the worse of the two failures.
+            if (popup == null)
+            {
+                Debug.LogWarning("[Tutorial] No FarmConfirmPopup found; starting the guide without asking.");
+                BeginTour();
+                return;
+            }
+
+            popup.Show(
+                "Play the Tutorial? (Recommended for new Players)",
+                BeginTour,
+                UIThemeSprites.Instance?.tutorialPromptLabel,
+                DeclineTour);
+
+            // Asked on top of the blackout, which was created after the popup was
+            // built and therefore sits above it by default.
+            if (HudRegistry.TryGetPiece(HudPiece.ConfirmPopup, out GameObject popupGo))
+                popupGo.transform.SetAsLastSibling();
+        }
+
+        private void BeginTour()
+        {
+            StartCoroutine(RevealThenBeginTour());
+        }
+
+        private IEnumerator RevealThenBeginTour()
+        {
+            // The farm fades up on an empty screen, and only then does Antonio
+            // call out - the arrival reads as an arrival rather than as a dialogue
+            // box appearing over a world that was already there.
+            yield return FadeOutBlackout(2.5f);
+            yield return new WaitForSecondsRealtime(0.4f);
+
+            BuildBeats();
+            Advance();
+        }
+
+        /// <summary>
+        /// Player declined. Give them everything the tour would have handed over and
+        /// get out of the way - a farm with no shovel and no HUD is not a game.
+        /// </summary>
+        private void DeclineTour()
+        {
+            Debug.Log("[Tutorial] Declined; granting the starting kit and restoring the HUD.");
+
+            Grant(InventoryItemType.Shovel, 1);
+            Grant(InventoryItemType.WateringCan, 1);
+            Grant(InventoryItemType.MulchBag, 3);
+
+            foreach (InventoryItemType seed in TutorialState.StartingSeeds)
+                Grant(seed, DistrictCropPools.SeedsPerKind);
+
+            if (PlayerInventory.Instance != null)
+                PlayerInventory.Instance.AddMoney(500);
+
+            // Finish restores the whole HUD first, so the black lifts on a farm
+            // that is already fully dressed and ready to play.
+            Finish();
+            StartCoroutine(FadeOutBlackout(1.6f));
+        }
+
+        private void Update()
+        {
+            if (activeGate == null)
+                return;
+
+            if (!activeGate.IsSatisfied())
+                return;
+
+            activeGate.Cleanup?.Invoke();
+            activeGate = null;
+            Advance();
+        }
+
+        // ------------------------------------------------------------- the walk
+
+        private void Advance()
+        {
+            index++;
+
+            while (index < beats.Count)
+            {
+                Beat beat = beats[index];
+
+                if (beat is DoBeat doBeat)
+                {
+                    doBeat.Run?.Invoke();
+                    index++;
+                    continue;
+                }
+
+                if (beat is GateBeat gate)
+                {
+                    activeGate = gate;
+                    dialogue.ShowObjective(gate.Hint?.Invoke());
+                    return;
+                }
+
+                LineBeat line = (LineBeat)beat;
+                TutorialState.CurrentStep = index;
+                dialogue.ShowLine(line.Speaker, line.Text, line.Expression, Advance);
+                return;
+            }
+
+            Finish();
+        }
+
+        private void Finish()
+        {
+            dialogue.Hide();
+
+            // Everything that was held back while Antonio was talking.
+            HudRegistry.EndTutorialControl();
+            TutorialState.CropInspectionLocked = false;
+
+            GrantCompletionKit();
+
+            TutorialState.Completed = true;
+            TutorialState.CurrentStep = -1;
+
+            Debug.Log("[Tutorial] Beginner guide finished; saving.");
+
+            // SaveFarm is a coroutine, so it has to be started rather than called.
+            if (FarmPersistenceManager.Instance != null)
+                StartCoroutine(FarmPersistenceManager.Instance.SaveFarm());
+        }
+
+        // --------------------------------------------------------------- helpers
+
+        private void HideEverything()
+        {
+            // Hands visibility to the guide. Anything the builders register after
+            // this point arrives hidden too, which is what the joystick and the
+            // jump button needed - they were being built after the old one-shot
+            // hide had already run, so they stayed on screen through the whole tour.
+            HudRegistry.BeginTutorialControl();
+            TutorialState.CropInspectionLocked = true;
+
+
+            // Panels are not part of the reveal - their own buttons open them, and
+            // the guide only watches them. Leave them exactly as their builders
+            // left them so nothing about their behaviour changes.
+            ShowPanelsAsBuilt();
+        }
+
+        private static void ShowPanelsAsBuilt()
+        {
+            HudPiece[] panels =
+            {
+                HudPiece.CropInfoPanel, HudPiece.ShopPanel, HudPiece.ObjectivesPanel,
+                HudPiece.SearchPlayersPanel, HudPiece.MarketplacePanel, HudPiece.ConfirmPopup
+            };
+
+            foreach (HudPiece panel in panels)
+            {
+                if (HudRegistry.TryGetPiece(panel, out GameObject go))
+                    go.SetActive(false);
+            }
+        }
+
+        private void Say(string text, AntonioExpression expression)
+        {
+            beats.Add(new LineBeat { Speaker = Antonio, Text = text, Expression = expression });
+        }
+
+        private void Narrate(string text)
+        {
+            beats.Add(new LineBeat { Speaker = null, Text = text, Expression = null });
+        }
+
+        private void Do(Action action)
+        {
+            beats.Add(new DoBeat { Run = action });
+        }
+
+        private void Reveal(HudPiece piece)
+        {
+            Do(() => HudRegistry.SetPieceVisible(piece, true));
+        }
+
+        private void RevealButton(int slot)
+        {
+            Do(() => HudRegistry.SetIconButtonVisible(slot, true));
+        }
+
+        private void WaitFor(Func<bool> satisfied, string hint, Action cleanup = null)
+        {
+            beats.Add(new GateBeat
+            {
+                IsSatisfied = satisfied,
+                Hint = () => hint,
+                Cleanup = cleanup
+            });
+        }
+
+        private void WaitForAction(string actionType, string hint,
+            Func<ClimateActionRecord, bool> extra = null)
+        {
+            // Created up front so it is already listening when its step is reached -
+            // otherwise an action performed a moment early would be missed.
+            TutorialGates.FarmAction gate = new TutorialGates.FarmAction(actionType, hint, extra);
+            disposables.Add(gate);
+            WaitFor(gate.IsSatisfied, hint, gate.Dispose);
+        }
+
+        private static void Grant(InventoryItemType item, int amount)
+        {
+            if (PlayerInventory.Instance != null)
+                PlayerInventory.Instance.AddItem(item, amount);
+        }
+
+        private static string District =>
+            string.IsNullOrWhiteSpace(SelectedAreaState.SelectedDistrictName)
+                ? "Davao"
+                : SelectedAreaState.SelectedDistrictName;
+
+        /// <summary>
+        /// What Antonio calls the player: the name they signed up with.
+        ///
+        /// AuthSession keeps the whole profile on CurrentUser, not just the token,
+        /// so the display name is already here. Falls back to "neighbour" if the
+        /// profile is missing, which fits how he talks anyway.
+        /// </summary>
+        private static string PlayerName
+        {
+            get
+            {
+                string name = AuthSession.Instance != null && AuthSession.Instance.CurrentUser != null
+                    ? AuthSession.Instance.CurrentUser.displayName
+                    : null;
+
+                return string.IsNullOrWhiteSpace(name) ? "neighbour" : name.Trim();
+            }
+        }
+
+        /// <summary>
+        /// The tools the shop does not stock. Handed over at the end rather than at
+        /// the start so the hotbar stays empty while Antonio is filling it himself,
+        /// but before the player could ever need them - harvesting comes days later.
+        /// </summary>
+        private static void GrantCompletionKit()
+        {
+            Grant(InventoryItemType.Machete, 1);
+            Grant(InventoryItemType.FruitBag, 10);
+        }
+
+        // ------------------------------------------------------------ the script
+
+        private void BuildBeats()
+        {
+            Step1Arrival();
+            Step2Controls();
+            Step3DigAndPlant();
+            Step4Water();
+            Step5Inspect();
+            Step6HowPlantsLive();
+            Step6BMulch();
+            Step7Threats();
+            Step8WeatherBoard();
+            Step9Map();
+            Step10Shop();
+            Step11Objectives();
+            Step12Farmers();
+            Step13Marketplace();
+            Step14SaveFarm();
+            Step15Farewell();
+        }
+
+        private void Step1Arrival()
+        {
+            Narrate("You bought a small plot here in " + District +
+                    ", Davao City. Today your new life as a farmer starts.");
+            Say("Hey! Over here!", AntonioExpression.Hello);
+            Narrate("Your neighbour sets down his rice and comes over, grinning.");
+            Say("You're the new farmer everyone's talking about? I'm Antonio - " +
+                "my plot is right beside yours.", AntonioExpression.Hello);
+            Narrate("You shake his hand and tell him your name.");
+            Say("Ohhh, " + PlayerName + "! Welcome to " + District +
+                "! So - do you know how to farm?", AntonioExpression.Surprise);
+            Narrate("You shake your head.");
+            Say("Ha! Don't worry, I'll teach you everything. Ready?", AntonioExpression.Hello);
+        }
+
+        private void Step2Controls()
+        {
+            Reveal(HudPiece.Joystick);
+            Reveal(HudPiece.JumpButton);
+
+            Say("First - you can't farm land you can't walk. The left circle moves you, " +
+                "the right button jumps.", AntonioExpression.Teaching);
+            Say("Go on. Walk around, and give me one jump.", AntonioExpression.Teaching);
+
+            TutorialGates.MoveAndJump moveGate = new TutorialGates.MoveAndJump();
+            WaitFor(moveGate.IsSatisfied, moveGate.Hint);
+
+            Say("Look at you. Already moving like a farmer.", AntonioExpression.Hello);
+        }
+
+        private void Step3DigAndPlant()
+        {
+            Reveal(HudPiece.Hotbar);
+            Do(() =>
+            {
+                Grant(InventoryItemType.Shovel, 1);
+                foreach (InventoryItemType seed in TutorialState.StartingSeeds)
+                    Grant(seed, DistrictCropPools.SeedsPerKind);
+            });
+
+            Say("Now the real work. Here - take these.", AntonioExpression.Teaching);
+            Narrate("Antonio hands you a shovel and a bundle of seed packets.");
+            Say("These grow well in " + District + " soil. That bar along the bottom is your " +
+                "hotbar - tap a slot to hold an item.", AntonioExpression.Teaching);
+            Say("Take the shovel and dig yourself a planting spot.", AntonioExpression.Teaching);
+
+            WaitForAction("DigPlantingSpot", "Dig a planting spot");
+
+            Say("There you go. Now plant a seed in the hole.", AntonioExpression.Hello);
+
+            WaitForAction("PlantCrop", "Plant a seed in the hole");
+
+            Say("Your very first crop! You're a farmer now, neighbour. Officially.",
+                AntonioExpression.Surprise);
+        }
+
+        private void Step4Water()
+        {
+            Do(() => Grant(InventoryItemType.WateringCan, 1));
+
+            Say("A seed in the ground isn't a plant yet. It needs water - especially early.",
+                AntonioExpression.Thinking);
+            Narrate("He unhooks a spare watering can from his belt and holds it out.");
+            Say("Take mine. Select it, then give that crop a drink.", AntonioExpression.Teaching);
+
+            WaitForAction("WaterCrop", "Water your crop");
+
+            Say("See? Not so hard.", AntonioExpression.Hello);
+        }
+
+        private void Step5Inspect()
+        {
+            // Inspection becomes available exactly when he introduces it.
+            Do(() => TutorialState.CropInspectionLocked = false);
+
+            Say("You can check on a crop any time. Tap the one you just planted.",
+                AntonioExpression.Teaching);
+
+            TutorialGates.PanelOpened inspect =
+                new TutorialGates.PanelOpened(HudPiece.CropInfoPanel, "Tap your crop");
+            WaitFor(inspect.IsSatisfied, inspect.Hint);
+
+            Say("Health, stress, moisture, and how well the soil suits it. A plant tells you " +
+                "something is wrong long before it dies - but only if you look.",
+                AntonioExpression.Teaching);
+        }
+
+        private void Step6HowPlantsLive()
+        {
+            Say("Here's what beginners get wrong: a plant isn't simply watered or not watered.",
+                AntonioExpression.Thinking);
+            Say("Soil, weather, temperature, moisture, pests - all of it moves its health every " +
+                "day, even while you're away. Same seed, different ground, different result.",
+                AntonioExpression.Teaching);
+        }
+
+        private void Step6BMulch()
+        {
+            Do(() => Grant(InventoryItemType.MulchBag, 3));
+
+            Narrate("He drops a few sacks of mulch at your feet.");
+            Say("So push back. Mulch holds the moisture in and steadies the soil - it helps in " +
+                "any weather. Put some on your crop.", AntonioExpression.Teaching);
+
+            WaitForAction("ApplyCropMaintenance", "Apply mulch to your crop");
+
+            Say("That's the idea behind every tool you'll buy: see the problem coming, and " +
+                "soften it before it lands.", AntonioExpression.Teaching);
+        }
+
+        private void Step7Threats()
+        {
+            Say("Your farm will get tested. Typhoons, drought, heavy rain, pests, disease - " +
+                "they come and go with the months and the heat.", AntonioExpression.Thinking);
+            Say("How much it hurts comes down to one thing: what you did before it arrived. " +
+                "Nets, windbreaks, drainage, sprays, traps - it's all at the shop.",
+                AntonioExpression.Teaching);
+            Say("And you won't face it alone. I'll warn you when I see weather coming, watch how " +
+                "you handle it, and tell you after what you did right.", AntonioExpression.Hello);
+        }
+
+        private void Step8WeatherBoard()
+        {
+            Reveal(HudPiece.WeatherPanel);
+
+            Say("That board top-left is the weather, time, date and temperature. Read it every " +
+                "morning - the month tells you what's coming.", AntonioExpression.Teaching);
+        }
+
+        private void Step9Map()
+        {
+            Reveal(HudPiece.Map);
+
+            Say("Your land is bigger than it looks. That little board on the right is your map - " +
+                "the white dot is you, the brown ones are your crops.", AntonioExpression.Teaching);
+            Say("Open it, have a good look, then close it again.", AntonioExpression.Teaching);
+
+            WaitFor(MapWasOpenedAndClosed, "Open the map, then close it");
+
+            Say("There. Now you'll never lose a plant again.", AntonioExpression.Hello);
+        }
+
+        private bool mapSeenOpen;
+
+        private bool MapWasOpenedAndClosed()
+        {
+            FarmMapUIBuilder map = UnityEngine.Object.FindFirstObjectByType<FarmMapUIBuilder>();
+            if (map == null)
+                return true;
+
+            if (map.IsExpanded)
+            {
+                mapSeenOpen = true;
+                return false;
+            }
+
+            return mapSeenOpen;
+        }
+
+        private void Step10Shop()
+        {
+            RevealButton(HudIconButton.SlotShop);
+            Reveal(HudPiece.Money);
+            Do(() =>
+            {
+                if (PlayerInventory.Instance != null)
+                    PlayerInventory.Instance.AddMoney(500);
+            });
+
+            Say("Farming takes money, too.", AntonioExpression.Teaching);
+            Narrate("Antonio presses a folded bundle of notes into your hand.");
+            Say("A welcome gift - pay me back in mangoes. Your money sits top right, and that " +
+                "cart is the shop: seeds, tools, sprays, everything.", AntonioExpression.Hello);
+            Say("Seeds your district does not grow are greyed out. You cannot buy those here, " +
+                "but you can still read about them.", AntonioExpression.Teaching);
+            Say("Open it, buy one thing - anything - then close it up.", AntonioExpression.Teaching);
+
+            Do(() => shopGate = new TutorialGates.BoughtSomethingAndClosedShop());
+            WaitFor(() => shopGate != null && shopGate.IsSatisfied(),
+                "Buy anything, then close the shop");
+
+            Say("Spending money to make money. That's farming.", AntonioExpression.Hello);
+        }
+
+        private TutorialGates.BoughtSomethingAndClosedShop shopGate;
+
+        private void Step11Objectives()
+        {
+            RevealButton(HudIconButton.SlotFarmObjectives);
+
+            Narrate("Antonio pulls a worn little notebook from his bag and holds it out.");
+            Say("Ever wake up wondering what to do today? This is for that. The book button up " +
+                "top opens it - take a look.", AntonioExpression.Teaching);
+
+            TutorialGates.PanelOpened opened =
+                new TutorialGates.PanelOpened(HudPiece.ObjectivesPanel, "Open the objectives book");
+            WaitFor(opened.IsSatisfied, opened.Hint);
+
+            Say("A few simple jobs each day, and money once you finish them all. Today wanted a " +
+                "spot dug and something planted - you've done both. Collect your reward.",
+                AntonioExpression.Teaching);
+
+            TutorialGates.DailyRewardClaimed claimed = new TutorialGates.DailyRewardClaimed();
+            WaitFor(claimed.IsSatisfied, claimed.Hint);
+
+            Say("Paid for work you'd already done. And once the day's jobs are finished, you " +
+                "don't have to wait around for sunset.", AntonioExpression.Hello);
+            Say("Press 'Skip Next Day' beside the reward. Go on, I'll wait.",
+                AntonioExpression.Teaching);
+
+            TutorialGates.DaySkipped skipped = new TutorialGates.DaySkipped();
+            WaitFor(skipped.IsSatisfied, skipped.Hint);
+
+            Say("Morning! Eight sharp, and the book already has fresh jobs. Do the work, take " +
+                "your pay, turn in, go again.", AntonioExpression.Hello);
+            Say("There's my kind of job too. If that book ever feels too easy, call me - I'll " +
+                "walk your farm myself and give you something harder, for a bigger reward.",
+                AntonioExpression.Teaching);
+            Say("Not yet though. Close the book and follow me.", AntonioExpression.Hello);
+
+            TutorialGates.PanelOpenedThenClosed closed =
+                new TutorialGates.PanelOpenedThenClosed(HudPiece.ObjectivesPanel, "Close the book");
+            WaitFor(closed.IsSatisfied, closed.Hint);
+        }
+
+        private void Step12Farmers()
+        {
+            RevealButton(HudIconButton.SlotSearchPlayers);
+
+            Say("And you're not out here on your own - plenty of farmers working their own plots.",
+                AntonioExpression.Thinking);
+            Say("That button finds them. Add them, message them, trade with them. Open it, then " +
+                "close it again.", AntonioExpression.Teaching);
+
+            TutorialGates.PanelOpenedThenClosed gate = new TutorialGates.PanelOpenedThenClosed(
+                HudPiece.SearchPlayersPanel, "Open the farmer list, then close it");
+            WaitFor(gate.IsSatisfied, gate.Hint);
+
+            Say("Good neighbours are worth more than good soil.", AntonioExpression.Hello);
+        }
+
+        private void Step13Marketplace()
+        {
+            RevealButton(HudIconButton.SlotMarketplace);
+
+            Say("This one is the marketplace. Farmers sell their seeds, tools and harvest here, " +
+                "and you can sell yours the same way.", AntonioExpression.Teaching);
+            Say("There's a small fee every time you list something, so price it properly. Take a " +
+                "look inside, then close it.", AntonioExpression.Thinking);
+
+            TutorialGates.PanelOpenedThenClosed gate = new TutorialGates.PanelOpenedThenClosed(
+                HudPiece.MarketplacePanel, "Open the marketplace, then close it");
+            WaitFor(gate.IsSatisfied, gate.Hint);
+        }
+
+        private void Step14SaveFarm()
+        {
+            RevealButton(HudIconButton.SlotSaveFarm);
+
+            Say("That barn button saves your farm - not onto this phone, but somewhere far away.",
+                AntonioExpression.Teaching);
+            Say("Save it and you can sign in on any device and find everything exactly as you " +
+                "left it. Open it and look, but don't save - I'll do that before I go.",
+                AntonioExpression.Teaching);
+
+            TutorialGates.PanelOpenedThenClosed gate = new TutorialGates.PanelOpenedThenClosed(
+                HudPiece.ConfirmPopup, "Open the save panel, then close it");
+            WaitFor(gate.IsSatisfied, gate.Hint);
+        }
+
+        private void Step15Farewell()
+        {
+            Say("I should get back to my rice before the birds finish it. But here - take this.",
+                AntonioExpression.Thinking);
+            Narrate("He scribbles a number on a strip of old feed sack and folds it into your hand.");
+
+            RevealButton(HudIconButton.SlotAdviserChat);
+
+            Say("My number. That phone button up top - ask me about your crops, your soil, the " +
+                "weather, what to plant. Any time.", AntonioExpression.Teaching);
+            Say("You'll do just fine out here, " + PlayerName + ". Welcome to " + District + "!",
+                AntonioExpression.Hello);
+            Narrate("Antonio waves, swings his rice over his shoulder, and heads off whistling.");
+
+            RevealButton(HudIconButton.SlotPause);
+        }
+    }
+}

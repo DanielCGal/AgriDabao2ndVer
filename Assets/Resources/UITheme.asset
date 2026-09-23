@@ -1,0 +1,211 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eab4e81b60374e843aad54c50a669d6e, type: 3}
+  m_Name: UITheme
+  m_EditorClassIdentifier: Assembly-CSharp::AgriDabao3D.UIThemeSprites
+  panelBoard: {fileID: 21300000, guid: f13af4c49bc6fc148bb45da5fd3928c3, type: 3}
+  loginLabel: {fileID: 21300000, guid: 10e41163551d2be42b9b833bff88623b, type: 3}
+  loginButton: {fileID: 21300000, guid: e176e75507c700145b7967172cb4d57b, type: 3}
+  signUpButton: {fileID: 21300000, guid: b20212e678cf6ad468a4076d4737de41, type: 3}
+  createAccountLabel: {fileID: 21300000, guid: 32e26c437910f5e4d93d15ddafd0081e, type: 3}
+  createButton: {fileID: 21300000, guid: 4adbaf05f3a08e14d9fd7a5abf2492b9, type: 3}
+  createBackButton: {fileID: 21300000, guid: 345d6ad0cbd040941a0b5c905ba08a2d, type: 3}
+  enterCodeLabel: {fileID: 21300000, guid: fb24ecbcc92cef64991612c009a56f5b, type: 3}
+  verifyButton: {fileID: 21300000, guid: 5ffbdc439c0cac54489aa89c3704eed7, type: 3}
+  verifyBackButton: {fileID: 21300000, guid: 345d6ad0cbd040941a0b5c905ba08a2d, type: 3}
+  resendCodeButton: {fileID: 21300000, guid: ec7d7ca254c124c4d9b82fff0dbd4b23, type: 3}
+  settingsLabel: {fileID: 21300000, guid: 4ec4a85bd16240e4c944bd8208d4ceae, type: 3}
+  closeButton: {fileID: 21300000, guid: 4e69fc00245f4ec4d87b29ac7924213c, type: 3}
+  sliderBar: {fileID: 21300000, guid: f589fda5c7366944184d2b9caabe05fe, type: 3}
+  sliderKnob: {fileID: 21300000, guid: 482492757d806b14fa710c95a5b69d7e, type: 3}
+  creditsButton: {fileID: 21300000, guid: 18161bf80a717e04db44a5eaad4ca136, type: 3}
+  creditsBoard: {fileID: 21300000, guid: bccf2eb8b2eac164899e92525b53d8ee, type: 3}
+  gameLogo: {fileID: 21300000, guid: 13199e5c5a8ad9f4fb8916eb3f42c4f2, type: 3}
+  teamLogo: {fileID: 21300000, guid: 1715fa826e1e22346a4b0885153bb5bf, type: 3}
+  areaSelectionPopupBoard: {fileID: 21300000, guid: 391800a6c76f3474aab934170b8d787c, type: 3}
+  areaSelectionPopupSize: {x: 900, y: 300}
+  prevDistrictButton: {fileID: 21300000, guid: 1e387ab93fe8c964c89b6faa42206513, type: 3}
+  nextDistrictButton: {fileID: 21300000, guid: 3dff970372c329f4f9633774989ade3a, type: 3}
+  areaBackButton: {fileID: 21300000, guid: 50717649575ead24c8feb51be29076d4, type: 3}
+  generateButton: {fileID: 21300000, guid: d6ec5881cd633ec4f9b265e816002823, type: 3}
+  districtNextButton: {fileID: 21300000, guid: 7ae52b7315bf6f948927e053addcfe52, type: 3}
+  infoPlank: {fileID: 21300000, guid: 1c59fdcc50860ea418f8cd780e6c711d, type: 3}
+  selectionBoxFrame: {fileID: 21300000, guid: 1bc025e86724f5f4286e317fb7d76916, type: 3}
+  districtSigns:
+  - districtName: Calinan
+    sign: {fileID: 21300000, guid: baaf84ab943a03543af4a50b9b075111, type: 3}
+  - districtName: Toril
+    sign: {fileID: 21300000, guid: d8e70ac92c2b77d4387ada4b7e48d679, type: 3}
+  - districtName: Baguio
+    sign: {fileID: 21300000, guid: 06827fe1dae0c994aab32a41ec90d43f, type: 3}
+  - districtName: Paquibato
+    sign: {fileID: 21300000, guid: 5eac067f101618a448dd9a33a9c0d1bc, type: 3}
+  - districtName: Marilog
+    sign: {fileID: 21300000, guid: 9da656b902c60ce46a8ecc92b27bdc14, type: 3}
+  - districtName: Buhangin
+    sign: {fileID: 21300000, guid: 21deb3e5f287dfa408e50c448f0574c6, type: 3}
+  - districtName: Tugbok
+    sign: {fileID: 21300000, guid: d1259a4fffe3a934699aeb12606233d6, type: 3}
+  pauseButton: {fileID: 21300000, guid: 7ba62d3ffa0d9f74592253dbd816da5b, type: 3}
+  pauseBoard: {fileID: 21300000, guid: 80cc1d2498ae73547a36453ba3f089f8, type: 3}
+  pauseSettingsButton: {fileID: 21300000, guid: 6501287d23ccff243b5e7f660d67c6bf, type: 3}
+  pauseMainMenuButton: {fileID: 21300000, guid: c17d6d3155b7c2b44a1a496a5db2a3c6, type: 3}
+  pauseResumeButton: {fileID: 21300000, guid: 18ddeeb984fc6b345a811cd46fb90aed, type: 3}
+  leavePromptBoard: {fileID: 21300000, guid: 043b5c43e99b89c46bb02bd13bb51b42, type: 3}
+  yesButton: {fileID: 21300000, guid: 6ad6187c57cb56e428be0d13c661c561, type: 3}
+  noButton: {fileID: 21300000, guid: 8575835c86b9d0d40b79b0fe9b33cf9d, type: 3}
+  cancelButton: {fileID: 21300000, guid: 639c51d8ff7c88a4da6c242d9645411a, type: 3}
+  chatbotButton: {fileID: 21300000, guid: 0e26e6d6ec880494a9cd6946e7d994ff, type: 3}
+  chatbotBoard: {fileID: 21300000, guid: 967f9afde3989da448652a5f0248d7f1, type: 3}
+  askQuestionsLabel: {fileID: 21300000, guid: bb1351430feaded4caf1869c008bd14d, type: 3}
+  chatWindowPanel: {fileID: 21300000, guid: e18da45ef2b041d46adb2cce8cb200ac, type: 3}
+  chatInputBar: {fileID: 21300000, guid: 975b4731d22678b448c0312a825be920, type: 3}
+  chatSendButton: {fileID: 21300000, guid: 1bafdc69ccb1f7e42b89babcbafce614, type: 3}
+  portraitFrame: {fileID: 21300000, guid: fb64002ac102a324fb3724b4142f6887, type: 3}
+  hotbarBar: {fileID: 21300000, guid: 104010bab68d3a241ab92edf6630be1d, type: 3}
+  hotbarBarSize: {x: 1180, y: 197}
+  bagButton: {fileID: 21300000, guid: b573788fd4c4fe74ebf858dee95d177b, type: 3}
+  backpackBoard: {fileID: 21300000, guid: cb23659978517494bbdd20499dbd020d, type: 3}
+  backpackBoardSize: {x: 880, y: 642}
+  backpackGridSize: {x: 800, y: 580}
+  backpackGridOffset: {x: 0, y: 0}
+  backpackSlotFill: 0.86
+  backpackLabel: {fileID: 21300000, guid: e2aa0dc83c28a92489da9064497cdebc, type: 3}
+  backpackCloseButton: {fileID: 21300000, guid: 2c6de6525bc1b5e45966a694536fc1eb, type: 3}
+  weatherSunny: {fileID: 21300000, guid: eb7d92aebb7282c4f8c1f62e090e6de8, type: 3}
+  weatherNight: {fileID: 21300000, guid: 2b09da8e07ed9f1498d44875f683d1ae, type: 3}
+  weatherRain: {fileID: 21300000, guid: 6fc630c7747da9c42b56cbb22b218728, type: 3}
+  weatherTyphoon: {fileID: 21300000, guid: b70034653aecc6743ac0a257dd5c5256, type: 3}
+  weatherDrought: {fileID: 21300000, guid: 399467a9f9c24a149aeea15a3dbc2f46, type: 3}
+  weatherPanelSize: {x: 560, y: 280}
+  shopButton: {fileID: 21300000, guid: e378e51beb62db342982b0e69119323e, type: 3}
+  farmObjectivesButton: {fileID: 21300000, guid: f0c45e3ff39970540a95133dd2a6cc4e, type: 3}
+  searchPlayersButton: {fileID: 21300000, guid: 938c43980e138ce4b82116c2e7edffa8, type: 3}
+  marketplaceButton: {fileID: 21300000, guid: a7451be37c91a314697ff3a0463f46cb, type: 3}
+  saveFarmButton: {fileID: 21300000, guid: c1a4b0451d7aa9a4198924163a90bb6e, type: 3}
+  moneyPlank: {fileID: 21300000, guid: 489e2ddf90d11764dba035d179fb9ce2, type: 3}
+  moneyPlankSize: {x: 360, y: 150}
+  tutorialDialogueBoard: {fileID: 21300000, guid: fd71cb75696d6054dba8b166e92959e6, type: 3}
+  tutorialDialogueSize: {x: 1240, y: 510}
+  tutorialPortraitSize: {x: 269, y: 380}
+  tutorialPortraitOffset: {x: 37, y: 68}
+  antonioHello: {fileID: 32900000, guid: 584f073ba37d5f346ade073d46c9b73a, type: 3}
+  antonioTeaching: {fileID: 32900000, guid: aeccde739a7454f45aac75829df843c5, type: 3}
+  antonioThinking: {fileID: 32900000, guid: 0c33745baeabaef419c5cc6f04b3ac87, type: 3}
+  antonioSurprise: {fileID: 32900000, guid: f3fd57ab17a069a42bf9678ff979dee0, type: 3}
+  tutorialPromptBoard: {fileID: 21300000, guid: da9a6d369b547744ea31f9a3821e9bcf, type: 3}
+  tutorialPromptLabel: {fileID: 0}
+  tutorialObjectiveBoard: {fileID: 21300000, guid: ea0b97911bfc05547879df6b8bc0094d, type: 3}
+  tutorialObjectiveSize: {x: 700, y: 150}
+  mapFrame: {fileID: 21300000, guid: 928b5c495a6fd3e40bc75912a12d6ae4, type: 3}
+  mapSmallSize: {x: 400, y: 300}
+  mapExpandedSize: {x: 1040, y: 780}
+  mapFieldInsetFraction: {x: 0.105, y: 0.125}
+  mapFieldColor: {r: 0.42, g: 0.6, b: 0.16, a: 1}
+  mapCloseButton: {fileID: 21300000, guid: ddcb978f411070e4387e4080a3fe766b, type: 3}
+  objectivesBook: {fileID: 21300000, guid: 496f98b3bb37c3a46bd82b7d3ae4ec42, type: 3}
+  objectivesBookSize: {x: 1300, y: 862}
+  dailyObjectivesLabel: {fileID: 21300000, guid: 34bc1985d823f0642b4946c9f3bf6184, type: 3}
+  antonioObjectivesLabel: {fileID: 21300000, guid: 78065c14ad56f4e4891312aaa1fdedac, type: 3}
+  collectRewardButton: {fileID: 21300000, guid: c8d78705e81ce174eb7caf3f924174b4, type: 3}
+  skipNextDayButton: {fileID: 21300000, guid: c4465acc15c70324181e350aae164508, type: 3}
+  callAntonioButton: {fileID: 21300000, guid: cc1b6f0c1f70da94986da57987bad8e2, type: 3}
+  skipTaskButton: {fileID: 21300000, guid: 8680bad58829b4e43a79ec0ca8977653, type: 3}
+  checkTaskButton: {fileID: 21300000, guid: 4539aaa067e734e4585cddd2e4302c64, type: 3}
+  socialBoard: {fileID: 21300000, guid: ed06447bd15c75a428620c59e9067bd6, type: 3}
+  socialListRow: {fileID: 21300000, guid: d1087f2e259c2f44da57c16317e0877d, type: 3}
+  socialButton: {fileID: 0}
+  searchFriendsLabel: {fileID: 21300000, guid: 1fda081a9aedddf4a885db44014e1947, type: 3}
+  searchButton: {fileID: 21300000, guid: 46983349696ce844792977df9b073354, type: 3}
+  requestButton: {fileID: 21300000, guid: 32b57bd90d5099a44bb168bc0bbf89a3, type: 3}
+  viewButton: {fileID: 21300000, guid: d86a27373a899e84290259666a3dcd3e, type: 3}
+  acceptButton: {fileID: 21300000, guid: 0177363eff5cec84986075f2a34b924c, type: 3}
+  declineButton: {fileID: 21300000, guid: 47d88a1385af4204b877b459700bc4de, type: 3}
+  socialCloseButton: {fileID: 21300000, guid: 04131d0609920d145bdb1f2a095fac93, type: 3}
+  playerInfoLabel: {fileID: 21300000, guid: 9caba0b78f09710499ab79a3375dd255, type: 3}
+  backButton: {fileID: 21300000, guid: 529579da5aaa8754a89ef41ad483dcd8, type: 3}
+  addFriendButton: {fileID: 21300000, guid: f765b4b38f6f129498d254876aa862d0, type: 3}
+  requestSentButton: {fileID: 21300000, guid: 32b57bd90d5099a44bb168bc0bbf89a3, type: 3}
+  friendsButton: {fileID: 21300000, guid: 54e4d99a605e2d44a85c79b8ccc0d50e, type: 3}
+  tradePlayerButton: {fileID: 21300000, guid: 62ad9d43f6aa2d14c91d3347ebe82404, type: 3}
+  chatPlayerButton: {fileID: 21300000, guid: 0d5031b6df94b374bb48ce4572bec6fa, type: 3}
+  farmTaskBoard: {fileID: 21300000, guid: 6368800c9a914da47b477b66230cfab8, type: 3}
+  farmTaskLabel: {fileID: 21300000, guid: bb267cc4e4ccc604bb0355a63fa26d65, type: 3}
+  farmTaskCloseButton: {fileID: 21300000, guid: eb829c8c783c6d54791cd52c5a688629, type: 3}
+  pestDiseaseBoard: {fileID: 21300000, guid: 1cb0cbb9e75411c4caf61e1ecfe9a100, type: 3}
+  pestDiseaseLabel: {fileID: 21300000, guid: 3003dfd9620921a44958223c0aa464fb, type: 3}
+  pestDiseaseOkayButton: {fileID: 21300000, guid: e43db9da2b17df54a8e0213793898573, type: 3}
+  maintenanceToastPlank: {fileID: 21300000, guid: e83916b283f4545498463fdd9057a49b, type: 3}
+  loadingBoard: {fileID: 21300000, guid: 8dda1dd9b5ba94b449ebebc2a64efdb8, type: 3}
+  loadingLabel: {fileID: 21300000, guid: 4774b6e0807fae947bc9009f9efc7c6b, type: 3}
+  joystickBase: {fileID: 21300000, guid: 52b93c78e2e15ae4c8192c534745f57f, type: 3}
+  joystickHandle: {fileID: 21300000, guid: 9cbc4669151cb624ab52dbd6917dc614, type: 3}
+  jumpButton: {fileID: 21300000, guid: 1caaf25cd54a45a4784c248489c2a5af, type: 3}
+  shopBoard: {fileID: 21300000, guid: 2da4af8baa79ddc4da9c840ff2a43800, type: 3}
+  shopLabel: {fileID: 21300000, guid: bbd45578f4e94c64c97c6ec544a82641, type: 3}
+  shopShelfGrid: {fileID: 21300000, guid: 4a47d8f84d01d464aa4056b700483ea0, type: 3}
+  shopPreviewFrame: {fileID: 21300000, guid: 2762b2fed657f4c4e8018d2f1b0f10d9, type: 3}
+  shopPrevPageButton: {fileID: 21300000, guid: 9d65a9f1e4ec0ef4ba6b89bf0953a110, type: 3}
+  shopNextPageButton: {fileID: 21300000, guid: c3e0629683578b94c86bc75ff02019bf, type: 3}
+  shopBuyButton: {fileID: 21300000, guid: 28c917979173e1246803cc4169283dac, type: 3}
+  climateEventBoard: {fileID: 21300000, guid: 37d75cf8ad8266f4aab6545530697ff1, type: 3}
+  climateEventLabel: {fileID: 21300000, guid: f85f52ec4a61b5d49a473a9728bcfb9f, type: 3}
+  climateEvaluationBoard: {fileID: 21300000, guid: c37f56fd3f38e54499b5dd58b20c486d, type: 3}
+  climateOkayButton: {fileID: 21300000, guid: 573562c15ba2c674da9db9d1178293e3, type: 3}
+  saveFarmBoard: {fileID: 21300000, guid: 14b7399573b6ce14ea17e9f49730ec12, type: 3}
+  saveFarmLabel: {fileID: 21300000, guid: 53ee96306e61b2a46bbb0532fca57b50, type: 3}
+  saveSettingsBoard: {fileID: 21300000, guid: eb35aa501ab8fcc45aa1b39292b37dca, type: 3}
+  saveSettingsLabel: {fileID: 21300000, guid: 5913d4c9ab115c94b96ae3af262ef6b3, type: 3}
+  confirmYesButton: {fileID: 21300000, guid: 9bd24ab28987d7b4bb6c66c6b74c5dbb, type: 3}
+  confirmNoButton: {fileID: 21300000, guid: 65ed4ad8b936b5a47b034c5b97011135, type: 3}
+  marketplaceLabel: {fileID: 21300000, guid: 965aa0ad83b69324fb0cf256dda20bb7, type: 3}
+  filterPrevButton: {fileID: 21300000, guid: 4fde144430cb4234da0c17a15286ad6d, type: 3}
+  filterNextButton: {fileID: 21300000, guid: 97290fdbbd2e88c42998fa14866a9a58, type: 3}
+  refreshButton: {fileID: 21300000, guid: a71e0489a3c7c9f48beb3ddba1a81c3a, type: 3}
+  sellItemsButton: {fileID: 21300000, guid: bda7878e916b35e43b810b6e66644697, type: 3}
+  marketplaceCloseButton: {fileID: 21300000, guid: 3635409f9ec800343a107df5ddfb8be7, type: 3}
+  cancelListingButton: {fileID: 21300000, guid: 70be6845b9125da40be0eb4a2ce67ad6, type: 3}
+  buyListingButton: {fileID: 21300000, guid: 079e7617eb292ce428b389579c1f81b4, type: 3}
+  sellItemsLabel: {fileID: 21300000, guid: fa8cc0d47fed6904f8368b747e30b854, type: 3}
+  createListingButton: {fileID: 21300000, guid: 4a44f24d658c2094dbb00cdc482b63d3, type: 3}
+  sellCancelButton: {fileID: 21300000, guid: 74a507d4f866c624fa0c4a9c7b4f161c, type: 3}
+  saleNotifyBoard: {fileID: 21300000, guid: c7e75c21911c67b45b0af528edf38039, type: 3}
+  saleNotifyLabel: {fileID: 21300000, guid: 50edb6d647c692647938b5e04038bc36, type: 3}
+  okayButton: {fileID: 21300000, guid: e5d41c99dd5d2814797df54a297821cf, type: 3}
+  chatBoard: {fileID: 21300000, guid: b4c4ea6e70ec9fe489826e0b8d2862a3, type: 3}
+  chatBubble: {fileID: 21300000, guid: 24ddacf93d7b90f49bf4e96d0bd10368, type: 3}
+  playerChatSendButton: {fileID: 21300000, guid: a8ab0dce0f5ac9d458cafa39ed34e818, type: 3}
+  playerChatCloseButton: {fileID: 21300000, guid: 7fa988a81ac2f734da8d2b2038628ff0, type: 3}
+  tradeRequestBoard: {fileID: 21300000, guid: 6ebb7c157f52abf4bbf59b5a652be0cb, type: 3}
+  tradeRequestLabel: {fileID: 21300000, guid: 8489ec697aa99514694ae805febae983, type: 3}
+  tradingLabel: {fileID: 21300000, guid: 46a0a5c5db5ea4e48bfea82041b42196, type: 3}
+  tradeInventoryGrid: {fileID: 21300000, guid: 62da3a498bb89424aa9320d00b779522, type: 3}
+  tradeOfferGrid: {fileID: 21300000, guid: d0b339b952e816a4085abde2e62ea8c8, type: 3}
+  tradeNamePlank: {fileID: 21300000, guid: 864cb3f9f4acbbb4a9bb11bd595253ab, type: 3}
+  tradeMoneyPlank: {fileID: 21300000, guid: 1fa054a8ab3de9f40be54adc3dbefd2f, type: 3}
+  tradeLogIcon: {fileID: 21300000, guid: 186520b0bce954440b633b39f85f0bf9, type: 3}
+  tradeLockIcon: {fileID: 21300000, guid: f650263af12c1004a910f97271baaf64, type: 3}
+  addMoneyPlank: {fileID: 21300000, guid: 0235575821ab0324fbe3562f6533d536, type: 3}
+  enterButton: {fileID: 21300000, guid: 7ae52b7315bf6f948927e053addcfe52, type: 3}
+  setTradeButton: {fileID: 21300000, guid: 8e44344b637616245960cf26560c68fd, type: 3}
+  cancelTradeButton: {fileID: 21300000, guid: 6ef149ba8298ab9458b32a7c11c4a38e, type: 3}
+  tradeConfirmBoard: {fileID: 21300000, guid: f077e40dbf8dd294e9d006162235e439, type: 3}
+  tradeConfirmLabel: {fileID: 21300000, guid: 46a0a5c5db5ea4e48bfea82041b42196, type: 3}
+  confirmAcceptButton: {fileID: 21300000, guid: 094e49ee2a8ccbe488a1d768fa7608e3, type: 3}
+  confirmDeclineButton: {fileID: 21300000, guid: db29379b710725748a6881a6948481b9, type: 3}
+  tradeLogSpinSpeed: 90
+  cropInfoBoard: {fileID: 21300000, guid: b22133128400e5843bcec37110945e0c, type: 3}
+  labelHeight: 150
+  labelOffsetY: -12
+  buttonSize: {x: 280, y: 95}
+  wideButtonSize: {x: 320, y: 95}
+  panelPaddingX: 170

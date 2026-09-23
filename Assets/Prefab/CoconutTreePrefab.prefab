@@ -1,0 +1,123 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &663739505929154587
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1100
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -5.27662
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.33186
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -41.38622
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      propertyPath: m_Name
+      value: CoconutTreePrefab
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7590300172467221277}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2132007090148374708}
+  m_SourcePrefab: {fileID: 100100000, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+--- !u!1 &429946711281093962 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 44738956ce5fdc249a683a2dcffc5875, type: 3}
+  m_PrefabInstance: {fileID: 663739505929154587}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &7590300172467221277
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429946711281093962}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.00048918, y: 0.00048918, z: 0.018967774}
+  m_Center: {x: 0.00002526003, y: 0.0002054306, z: -0.0000904347}
+--- !u!114 &2132007090148374708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429946711281093962}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0149beef4bbf7f045a026d0a5da9598f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgriDabao3D.TreeBillboardLOD
+  player: {fileID: 0}
+  switchToBillboardDistance: 15
+  switchBackToModelDistance: 10
+  updateInterval: 0.25
+  modelRoot: {fileID: 0}
+  billboardSprite: {fileID: 21300000, guid: 854eaa0021b0dcb4ab02a2b4b6f12fbb, type: 3}
+  billboardSize: {x: 10, y: 16}
+  billboardHeightOffset: 8

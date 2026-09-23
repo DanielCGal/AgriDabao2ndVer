@@ -1,0 +1,80 @@
+namespace AgriDabao3D
+{
+    /// <summary>
+    /// The list of things the player can actually do, appended to the adviser's
+    /// system instruction.
+    ///
+    /// Without this the adviser answers "what can I use against this typhoon?"
+    /// from general agricultural knowledge, because nothing in its context says
+    /// what this game contains. It knows the weather, soil, crops and pest levels;
+    /// it does not know that a Windbreak Kit exists. So it recommends real
+    /// practices with no item behind them - and the player hunts the shop for
+    /// something that was never there.
+    ///
+    /// Two entries here are actively counter-intuitive and are the reason the
+    /// effectiveness column matters: irrigation during a typhoon and a drainage
+    /// canal during a drought are both scored as HARMFUL by
+    /// <see cref="CropMaintenanceCatalog"/>, and both are exactly what a
+    /// general-knowledge answer would reach for.
+    ///
+    /// Every line is read off the game's own tables - ScoreCropAction and
+    /// ScoreWorldAction for the effectiveness, the Allowed map for the per-crop
+    /// restrictions, and the mitigation lists on each pest rule for the
+    /// treatments. If those change, this has to change with them; nothing checks
+    /// it at build time.
+    ///
+    /// The framing is deliberately a lookup table rather than a topic. An earlier
+    /// draft opened with "TOOLS THAT EXIST IN THIS GAME" and read as something to
+    /// talk about, which risks turning "are my crops okay?" into a shopping list.
+    /// The opening paragraph now names the question types it must stay out of.
+    /// </summary>
+    public static class FarmAdvisorToolReference
+    {
+        public const string Block =
+            "\n\nREFERENCE - the tools this game contains.\n"
+            + "Consult this list ONLY when you are recommending an action the "
+            + "player should take. Do not list these tools, and do not steer the "
+            + "answer toward them, when the player asks about crop condition, "
+            + "weather, soil, timing, or whether a crop suits their farm. Answer "
+            + "those from the JSON context as instructed above.\n\n"
+
+            + "Per-crop care, applied to one plant:\n"
+            + "  Mulch Bag        drought: very strong | typhoon: little use\n"
+            + "  Organic Compost  drought: helps       | typhoon: little use\n"
+            + "  Pruning Shears   typhoon: strong      | drought: slightly harmful\n"
+            + "  Support Stake    typhoon: very strong | drought: minor\n"
+            + "  Trellis          typhoon: very strong | drought: minor\n"
+            + "  Raised Bed       typhoon: strong      | drought: neutral\n\n"
+
+            + "Farm-wide structures, covering an area:\n"
+            + "  Windbreak Kit       typhoon: strongest   | drought: no effect\n"
+            + "  Drainage Canal Kit  typhoon: strongest   | drought: HARMFUL\n"
+            + "  Greenhouse Kit      typhoon: strong      | drought: minor help\n"
+            + "  Shade Net Kit       drought: strong      | typhoon: minor\n"
+            + "  Water Storage Tank  drought: very strong | typhoon: minor\n"
+            + "  Irrigation System   drought: strongest   | typhoon: HARMFUL\n\n"
+
+            + "Not every crop accepts every action:\n"
+            + "  All crops take Mulch and Organic Compost.\n"
+            + "  Pruning: every crop except pineapple, squash and corn.\n"
+            + "  Support Stake: banana, durian, pomelo, mango, tomato, eggplant only.\n"
+            + "  Trellis: squash only.\n"
+            + "  Raised Bed: pineapple, tomato, strawberry, squash, eggplant only.\n"
+            + "  Corn accepts only mulch and compost.\n\n"
+
+            + "Pest and disease treatments:\n"
+            + "  Used directly, no sprayer needed - Aphid Trap, Pheromone Trap, "
+            + "Fruit Bag, Drainage Kit, Termite Bait Station.\n"
+            + "  Must be loaded into the Sprayer Pump first - Neem Soap, Bt "
+            + "Bio-Spray, Copper Fungicide, Disinfectant, Insecticide. Without the "
+            + "pump these cannot be used at all.\n"
+            + "  The machete the player already carries clears debris around a "
+            + "crop, which treats many pests and diseases, and removes a badly "
+            + "infected plant when nothing else will save it.\n\n"
+
+            + "When recommending something the player can do right now, name ONLY "
+            + "items from this list. If a real farming practice would help but has "
+            + "no item here, you may still mention it - but say plainly that it is "
+            + "real practice the game does not simulate. Never invent an item name.";
+    }
+}
