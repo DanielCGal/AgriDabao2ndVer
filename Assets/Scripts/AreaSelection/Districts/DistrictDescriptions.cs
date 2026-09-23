@@ -9,7 +9,7 @@ namespace AgriDabao3D
     /// Two different kinds of fact are mixed here, and it is worth knowing which
     /// is which:
     ///
-    ///   The STARTER SEEDS section is read off DistrictCropPools, so it is exactly
+    ///   The STARTER CROPS section is read off DistrictCropPools, so it is exactly
     ///   what the game will hand the player. If a pool changes, the matching lines
     ///   here have to change with it.
     ///
@@ -23,11 +23,13 @@ namespace AgriDabao3D
     public static class DistrictDescriptions
     {
         private const string SeedRule =
-            "You begin with three kinds drawn at random from that list, three "
-            + "seeds of each. That list is also every seed a farm here can get: the "
-            + "shop only sells these, and no other seed can be bought on the "
-            + "marketplace or taken in a trade. The rest still appear in the shop, "
-            + "greyed out, so you can read about them.";
+            "You begin with planting material for three of these crops, three of "
+            + "each - always one that goes straight into the ground and one that "
+            + "starts in the Seedling Tent. These crops are also the only ones a farm "
+            + "here can grow: the shop sells only their seeds, suckers and seedlings, "
+            + "and no other planting material can be bought on the marketplace or "
+            + "taken in a trade. The rest still appear in the shop, greyed out, so "
+            + "you can read about them.";
 
         public static string For(string districtName)
         {
@@ -48,7 +50,7 @@ namespace AgriDabao3D
                     + "above sea level, with gentle to moderate slopes. It drains "
                     + "well, so waterlogging is less of a worry here than on the "
                     + "coast.\n\n"
-                    + "STARTER SEEDS\n"
+                    + "STARTER CROPS\n"
                     + "Pineapple, pomelo, mango, durian, banana, coconut, cacao and "
                     + "mangosteen. This is the widest pool of any district, because "
                     + "Calinan is the fruit belt and grows nearly everything the "
@@ -65,7 +67,7 @@ namespace AgriDabao3D
                     + "Flat near the sea, rising to moderate slopes further inland. "
                     + "The low ground holds water after heavy rain, so drainage "
                     + "matters more here than in the higher districts.\n\n"
-                    + "STARTER SEEDS\n"
+                    + "STARTER CROPS\n"
                     + "Coconut, banana, cacao, mango, pomelo, durian and pineapple "
                     + "- all tree and plantation crops, which is what this mix of "
                     + "coast and slope supports best. " + SeedRule;
@@ -80,7 +82,7 @@ namespace AgriDabao3D
                     + "Hilly and noticeably higher than the coastal districts, with "
                     + "moderate to steep slopes. Cooler air and steady moisture suit "
                     + "the shade-loving crops.\n\n"
-                    + "STARTER SEEDS\n"
+                    + "STARTER CROPS\n"
                     + "Coconut, mangosteen, banana, cacao, durian and corn. This is "
                     + "the first district where a short-cycle crop appears alongside "
                     + "the trees, so it is a good place to learn both rhythms. "
@@ -97,7 +99,7 @@ namespace AgriDabao3D
                     + "district in the game. "
                     + "Slopes shed water quickly, which helps in heavy rain and "
                     + "hurts in a dry spell.\n\n"
-                    + "STARTER SEEDS\n"
+                    + "STARTER CROPS\n"
                     + "Corn, banana, coconut and cacao. This is the smallest pool "
                     + "in the game, and deliberately so: the district genuinely "
                     + "grows less variety than the fruit belt. " + SeedRule;
@@ -114,7 +116,7 @@ namespace AgriDabao3D
                     + "High plateau and mountain slope, the steepest and highest of "
                     + "the districts in the game. The altitude is what makes the climate "
                     + "here different from everywhere else on the map.\n\n"
-                    + "STARTER SEEDS\n"
+                    + "STARTER CROPS\n"
                     + "Tomato, squash, eggplant, strawberry and mangosteen. Marilog "
                     + "is the only district that grows vegetables and strawberry, "
                     + "and the only one with no coconut, banana or cacao at all - "
@@ -133,7 +135,7 @@ namespace AgriDabao3D
                     + "Flat coastal lowland near sea level, with only gentle "
                     + "slopes. Easy ground to work, but low and flat land is slow "
                     + "to drain after a storm.\n\n"
-                    + "STARTER SEEDS\n"
+                    + "STARTER CROPS\n"
                     + "Coconut, cacao, banana and corn - hardy lowland staples that "
                     + "tolerate heat and do not need a slope. A small pool, but a "
                     + "forgiving one to start on. " + SeedRule;
@@ -152,7 +154,7 @@ namespace AgriDabao3D
                     + "mostly gentle to moderate slopes. The district gives its name "
                     + "to Tugbok clay, one of the most widespread soils in Davao "
                     + "City.\n\n"
-                    + "STARTER SEEDS\n"
+                    + "STARTER CROPS\n"
                     + "Banana, cacao, coconut, mangosteen, corn, durian and mango. "
                     + "One of the widest pools in the game: slow-growing fruit and "
                     + "plantation trees, with corn as the one quick, short-cycle "

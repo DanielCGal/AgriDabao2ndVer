@@ -297,7 +297,7 @@ MonoBehaviour:
       the chosen district
   - picture: {fileID: 21300000, guid: 25ce19439d4c84749afbcd7ed1349dfc, type: 3}
     text: You can also check the district description to learn more about the district
-      and the possible seeds that you will get in the game.
+      and the crops you can plant there.
   areaTutorialSlides:
   - picture: {fileID: 21300000, guid: 750347c10837b574193c7e406e448435, type: 3}
     text: There are some parts of the district that are Agricultural Area and some

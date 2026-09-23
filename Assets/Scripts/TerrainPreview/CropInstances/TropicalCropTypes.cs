@@ -76,25 +76,14 @@ namespace AgriDabao3D
             };
         }
 
+        /// <summary>
+        /// The crop's usual planting material. Pineapple, mango and strawberry no
+        /// longer come from seed items - see PlantingMaterialCatalog for every
+        /// material a crop can be planted from.
+        /// </summary>
         public static InventoryItemType GetSeedItem(TropicalCropKind crop)
         {
-            return crop switch
-            {
-                TropicalCropKind.Durian => InventoryItemType.DurianSeed,
-                TropicalCropKind.Pomelo => InventoryItemType.PomeloSeed,
-                TropicalCropKind.Cacao => InventoryItemType.CacaoSeed,
-                TropicalCropKind.Pineapple => InventoryItemType.PineappleSeed,
-                TropicalCropKind.Mangosteen => InventoryItemType.MangosteenSeed,
-                TropicalCropKind.Mango => InventoryItemType.MangoSeed,
-
-                TropicalCropKind.Corn => InventoryItemType.CornSeed,
-                TropicalCropKind.Eggplant => InventoryItemType.EggplantSeed,
-                TropicalCropKind.Squash => InventoryItemType.SquashSeed,
-                TropicalCropKind.Strawberry => InventoryItemType.StrawberrySeed,
-                TropicalCropKind.Tomato => InventoryItemType.TomatoSeed,
-
-                _ => InventoryItemType.None
-            };
+            return PlantingMaterialCatalog.DefaultMaterialFor(CropClimateRules.GetFarmCropType(crop));
         }
 
         public static InventoryItemType GetFruitItem(TropicalCropKind crop)

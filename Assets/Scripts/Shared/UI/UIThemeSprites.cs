@@ -233,6 +233,18 @@ namespace AgriDabao3D
         public Sprite searchPlayersButton;
         public Sprite marketplaceButton;
         public Sprite saveFarmButton;
+        [Tooltip("Round button that opens the Seedling Tent panel.")]
+        public Sprite seedlingTentButton;
+
+        [Header("Seedling Tent")]
+        [Tooltip("An empty polybag, no soil. Shown for a bag that has not been filled.")]
+        public Sprite seedlingBagNoSoil;
+        [Tooltip("A polybag filled with soil. Shown for a filled or sown bag.")]
+        public Sprite seedlingBagWithSoil;
+        [Tooltip("Round wooden icon of an empty bag, used on the Fill with Soil button.")]
+        public Sprite seedlingBagEmptyIcon;
+        [Tooltip("Round wooden icon of a bag with a sprout, used on the Sow button.")]
+        public Sprite seedlingBagSproutIcon;
 
         [Header("Farm HUD - Money")]
         [Tooltip("Plank the money amount is printed on, coins hanging off the left.")]

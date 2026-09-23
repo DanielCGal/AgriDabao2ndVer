@@ -30,6 +30,8 @@ namespace AgriDabao3D
                 crop.availableHarvestCount);
             CaptureDiseases(crop.gameObject, save);
             CaptureMaintenance(crop.gameObject, save);
+            CapturePlanting(save, crop.plantingMaterial, crop.nurseryDays, crop.fieldPlantedGameDay);
+            CaptureProtection(crop.gameObject, save);
             return save;
         }
         public static CropSaveDto Capture(BananaPlantInstance crop)
@@ -69,6 +71,8 @@ namespace AgriDabao3D
             }
             CaptureDiseases(crop.gameObject, save);
             CaptureMaintenance(crop.gameObject, save);
+            CapturePlanting(save, crop.plantingMaterial, crop.nurseryDays, crop.fieldPlantedGameDay);
+            CaptureProtection(crop.gameObject, save);
             return save;
         }
         public static CropSaveDto Capture(TropicalCropPlantInstance crop)
@@ -109,6 +113,8 @@ namespace AgriDabao3D
             }
             CaptureDiseases(crop.gameObject, save);
             CaptureMaintenance(crop.gameObject, save);
+            CapturePlanting(save, crop.plantingMaterial, crop.nurseryDays, crop.fieldPlantedGameDay);
+            CaptureProtection(crop.gameObject, save);
             return save;
         }
         private static CropSaveDto CaptureCommon(
@@ -202,6 +208,9 @@ namespace AgriDabao3D
             if (string.IsNullOrEmpty(crop.cropName)) crop.cropName = CropNaming.NextName("Coconut");
             if (Enum.TryParse(save.stage, out CoconutStage stage))
                 crop.stage = stage;
+            crop.plantingMaterial = RestoredMaterial(save);
+            crop.nurseryDays = Mathf.Max(0f, save.nurseryDays);
+            crop.fieldPlantedGameDay = save.fieldPlantedGameDay;
             RestoreDiseases(crop.gameObject, save);
             RestoreMaintenance(crop.gameObject, save);
         }
@@ -242,6 +251,9 @@ namespace AgriDabao3D
                     });
                 }
             }
+            crop.plantingMaterial = RestoredMaterial(save);
+            crop.nurseryDays = Mathf.Max(0f, save.nurseryDays);
+            crop.fieldPlantedGameDay = save.fieldPlantedGameDay;
             RestoreDiseases(crop.gameObject, save);
             RestoreMaintenance(crop.gameObject, save);
         }
@@ -284,6 +296,9 @@ namespace AgriDabao3D
                     });
                 }
             }
+            crop.plantingMaterial = RestoredMaterial(save);
+            crop.nurseryDays = Mathf.Max(0f, save.nurseryDays);
+            crop.fieldPlantedGameDay = save.fieldPlantedGameDay;
             RestoreDiseases(crop.gameObject, save);
             RestoreMaintenance(crop.gameObject, save);
         }
@@ -311,6 +326,54 @@ namespace AgriDabao3D
                 });
             }
         }
+        private static void CapturePlanting(CropSaveDto save, string material, float nurseryDays, float fieldPlantedGameDay)
+        {
+            save.plantingMaterial = material;
+            save.nurseryDays = nurseryDays;
+            save.fieldPlantedGameDay = fieldPlantedGameDay;
+        }
+
+        /// <summary>
+        /// The saved material, with an old seed name turned into the material that
+        /// replaced it. Empty for a crop saved before materials were recorded.
+        /// </summary>
+        private static string RestoredMaterial(CropSaveDto save)
+        {
+            return string.IsNullOrWhiteSpace(save.plantingMaterial)
+                ? null
+                : PlantingMaterialCatalog.UpgradeLegacyName(save.plantingMaterial.Trim());
+        }
+
+        private static void CaptureProtection(GameObject cropObject, CropSaveDto save)
+        {
+            CropProtectionState protection = cropObject.GetComponent<CropProtectionState>();
+            if (protection == null)
+                return;
+
+            save.hasFruitBag = protection.hasFruitBag;
+            save.hasDrainageImprovement = protection.hasDrainageImprovement;
+        }
+
+        /// <summary>
+        /// Puts back fruit bag and drainage kit protection. The drainage bonus
+        /// itself is already inside the saved drainage figure, so it is not added
+        /// a second time; only the flag that stops a second kit returns.
+        /// </summary>
+        public static void RestoreProtection(GameObject cropObject, CropSaveDto save, GameObject fruitBagPrefab)
+        {
+            if (cropObject == null || save == null ||
+                (!save.hasFruitBag && !save.hasDrainageImprovement))
+            {
+                return;
+            }
+
+            CropProtectionState protection = cropObject.GetComponent<CropProtectionState>();
+            if (protection == null)
+                protection = cropObject.AddComponent<CropProtectionState>();
+
+            protection.RestoreSaveData(save.hasFruitBag, save.hasDrainageImprovement, fruitBagPrefab);
+        }
+
         private static void CaptureMaintenance(GameObject cropObject, CropSaveDto save)
         {
             CropClimateMaintenanceState state = cropObject.GetComponent<CropClimateMaintenanceState>();

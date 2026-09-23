@@ -39,6 +39,27 @@ namespace AgriDabao3D
         public float Drainage => coconut != null ? coconut.drainage : banana != null ? banana.drainage : tropical.drainage;
         public float SoilSuitability => coconut != null ? coconut.soilSuitability : banana != null ? banana.soilSuitability : tropical.soilSuitability;
 
+        /// <summary>
+        /// The planting material the crop grew from, by item name. A crop planted
+        /// before materials were recorded reports what its old seed is called now.
+        /// </summary>
+        public string PlantingMaterial
+        {
+            get
+            {
+                string recorded = coconut != null ? coconut.plantingMaterial
+                    : banana != null ? banana.plantingMaterial
+                    : tropical.plantingMaterial;
+
+                return string.IsNullOrWhiteSpace(recorded)
+                    ? PlantingMaterialCatalog.DefaultMaterialFor(CropType).ToString()
+                    : recorded;
+            }
+        }
+
+        /// <summary>Game days the crop spent in the Seedling Tent; 0 if it was planted directly.</summary>
+        public float NurseryDays => coconut != null ? coconut.nurseryDays : banana != null ? banana.nurseryDays : tropical.nurseryDays;
+
         public void AddHealth(float value)
         {
             if (coconut != null) coconut.health = Mathf.Clamp(coconut.health + value, 0f, 100f);

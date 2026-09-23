@@ -5,6 +5,8 @@ namespace AgriDabao3D
 {
     public static class DailyTaskCatalog
     {
+        public const int ExpectedCount = 204;
+
         private static List<DailyTaskTemplate> cached;
 
         public static IReadOnlyList<DailyTaskTemplate> GetAll()
@@ -23,12 +25,15 @@ namespace AgriDabao3D
             AddTyphoonTasks(values);          // 106-130
             AddPestDiseaseTasks(values);      // 131-177
             AddAdvancedTasks(values);         // 178-200
+            AddNurseryTasks(values);          // 201-204
 
-            if (values.Count != 200)
+            // Ids are positions in this list, and a saved task keeps its id, so
+            // new templates only ever go on the end.
+            if (values.Count != ExpectedCount)
             {
                 throw new InvalidOperationException(
-                    "DailyTaskCatalog must contain exactly 200 templates, but contains " +
-                    values.Count + ".");
+                    "DailyTaskCatalog must contain exactly " + ExpectedCount +
+                    " templates, but contains " + values.Count + ".");
             }
 
             for (int i = 0; i < values.Count; i++)
@@ -131,7 +136,7 @@ namespace AgriDabao3D
             {
                 list.Add(Task(
                     "Plant " + crop,
-                    "Plant one " + crop + " seed in a prepared planting spot.",
+                    "Plant one " + crop + " in prepared ground.",
                     DailyTaskKind.PlantCrop,
                     DailyTaskDifficulty.Easy,
                     crop: crop,
@@ -156,24 +161,24 @@ namespace AgriDabao3D
         private static void AddGeneralTasks(List<DailyTaskTemplate> list)
         {
             list.Add(Task("Prepare a planting spot",
-                "Dig one new planting spot using the shovel.",
+                "Till ground with the shovel, then dig a planting hole, build a raised bed or open a furrow in it.",
                 DailyTaskKind.DigPlantingSpot, DailyTaskDifficulty.Easy,
                 item: "Shovel", amount: 1));
             list.Add(Task("Plant any crop",
-                "Plant any available seed in a prepared planting spot.",
+                "Plant any planting material in prepared ground, or transplant a ready seedling from the Seedling Tent.",
                 DailyTaskKind.PlantAnyCrop, DailyTaskDifficulty.Easy, amount: 1));
             list.Add(Task("Plant a fruit crop",
-                "Plant one available fruit-tree or tropical-fruit seed.",
+                "Plant one fruit-tree or tropical-fruit crop in prepared ground.",
                 DailyTaskKind.PlantAnyCrop, DailyTaskDifficulty.Easy,
-                item: "CoconutSeed|BananaSeed|DurianSeed|PomeloSeed|CacaoSeed|PineappleSeed|MangosteenSeed|MangoSeed",
+                item: "CoconutSeednut|BananaPlantlet|BananaSucker|DurianSeed|PomeloSeed|CacaoSeed|PineappleSucker|MangosteenSeed|MangoGraftedSeedling|MangoLiso",
                 amount: 1));
             list.Add(Task("Plant a vegetable crop",
-                "Plant one available corn, eggplant, squash, strawberry, or tomato seed.",
+                "Plant one corn, eggplant, squash, strawberry or tomato crop in prepared ground.",
                 DailyTaskKind.PlantAnyCrop, DailyTaskDifficulty.Easy,
-                item: "CornSeed|EggplantSeed|SquashSeed|StrawberrySeed|TomatoSeed",
+                item: "CornSeed|EggplantSeed|SquashSeed|SquashSeedling|StrawberryRunner|TomatoSeed",
                 amount: 1));
             list.Add(Task("Plant two crops",
-                "Plant two seeds during the current game day.",
+                "Plant two crops in prepared ground during the current game day.",
                 DailyTaskKind.PlantAnyCrop, DailyTaskDifficulty.Medium, amount: 2));
             list.Add(Task("Collect three crops",
                 "Collect at least three harvested crop items.",
@@ -566,6 +571,28 @@ namespace AgriDabao3D
                 "Lower average stress among affected crops by at least 5 points.",
                 DailyTaskKind.LowerAverageStress, DailyTaskDifficulty.Hard,
                 reduction: 5f, activeCondition: true));
+        }
+
+        /// <summary>
+        /// The planting system's own jobs: working ground, and the Seedling Tent.
+        /// A seed sown today cannot be transplanted before the day ends, so sowing
+        /// and transplanting are separate tasks rather than one "raise a seedling".
+        /// </summary>
+        private static void AddNurseryTasks(List<DailyTaskTemplate> list)
+        {
+            list.Add(Task("Sow a seedling bag",
+                "In the Seedling Tent, fill a bag with soil and sow a seed, a banana plantlet or a grafted mango seedling in it.",
+                DailyTaskKind.SowSeedlingBag, DailyTaskDifficulty.Easy, amount: 1));
+            list.Add(Task("Sow two seedling bags",
+                "Sow two seedling bags in the Seedling Tent during the current game day.",
+                DailyTaskKind.SowSeedlingBag, DailyTaskDifficulty.Medium, amount: 2));
+            list.Add(Task("Transplant a seedling",
+                "Move one ready seedling from the Seedling Tent into prepared ground.",
+                DailyTaskKind.TransplantSeedling, DailyTaskDifficulty.Medium, amount: 1));
+            list.Add(Task("Till new ground",
+                "Till one new patch of ground with the shovel.",
+                DailyTaskKind.TillGround, DailyTaskDifficulty.Easy,
+                item: "Shovel", amount: 1));
         }
 
         private static DailyTaskTemplate WorldTask(

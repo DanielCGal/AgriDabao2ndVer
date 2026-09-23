@@ -25,7 +25,13 @@ namespace AgriDabao3D
         RemoveInfectedPlant,
         RaiseCropMoisture,
         RaiseAverageHealth,
-        LowerAverageStress
+        LowerAverageStress,
+
+        // The planting system. Tasks are saved by kind name, but keep new kinds at
+        // the end anyway so the numbers of the old ones never move.
+        TillGround,
+        SowSeedlingBag,
+        TransplantSeedling
     }
 
     public enum DailyTaskDifficulty
@@ -147,7 +153,27 @@ namespace AgriDabao3D
         public bool harvestReady;
         public int availableHarvest;
         public string maintenanceState;
+        public string plantingMaterial;
         public List<FarmTaskConditionContext> conditions = new List<FarmTaskConditionContext>();
+    }
+
+    /// <summary>One Seedling Tent bag, as the adviser sees it.</summary>
+    [Serializable]
+    public class FarmTaskNurseryBagContext
+    {
+        public int bag;
+        public string status;
+        public string plantingMaterial;
+        public string cropType;
+        public float daysUntilNextStep;
+    }
+
+    /// <summary>A patch of tilled or prepared ground with nothing planted in it yet.</summary>
+    [Serializable]
+    public class FarmTaskPreparedGroundContext
+    {
+        public string preparation;
+        public bool mulched;
     }
 
     [Serializable]
@@ -196,6 +222,8 @@ namespace AgriDabao3D
         public List<FarmTaskInventoryContext> inventory = new List<FarmTaskInventoryContext>();
         public List<FarmTaskCropContext> crops = new List<FarmTaskCropContext>();
         public List<FarmTaskWorldObjectContext> worldObjects = new List<FarmTaskWorldObjectContext>();
+        public List<FarmTaskNurseryBagContext> seedlingTent = new List<FarmTaskNurseryBagContext>();
+        public List<FarmTaskPreparedGroundContext> preparedGround = new List<FarmTaskPreparedGroundContext>();
     }
 
     [Serializable]

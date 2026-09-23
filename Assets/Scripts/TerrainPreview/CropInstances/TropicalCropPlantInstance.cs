@@ -41,6 +41,16 @@ namespace AgriDabao3D
         public List<TropicalBundleHarvest> storedBundles = new List<TropicalBundleHarvest>();
         public float nextProductionGameDay;
 
+        [Header("Planting")]
+        [Tooltip("The planting material this crop grew from, saved by item name.")]
+        public string plantingMaterial;
+
+        [Tooltip("Game days it spent in the Seedling Tent before transplanting.")]
+        public float nurseryDays;
+
+        [Tooltip("Game day it went into the field; -1 for crops planted before this was recorded.")]
+        public float fieldPlantedGameDay = -1f;
+
         public string CropDisplayName => TropicalCropCatalog.GetDisplayName(cropKind);
         public TropicalHarvestMode HarvestMode => TropicalCropCatalog.GetHarvestMode(cropKind);
         public InventoryItemType FruitItemType => TropicalCropCatalog.GetFruitItem(cropKind);
@@ -64,6 +74,15 @@ namespace AgriDabao3D
         /// roughly the same span instead of marking the plant permanently.
         /// </summary>
         private const float ExternalEffectTimeConstantDays = 2f;
+
+        /// <summary>
+        /// Extra stress per game day on young cacao standing in open sun, on the
+        /// same scale as the weather tables. The user's notes call shade critical
+        /// for young cacao, and the Shade Net Kit is the game's shade. At 6 it
+        /// settles about fifteen points of stress - plainly visible on the crop
+        /// board, not enough to kill a watered plant.
+        /// </summary>
+        private const float YoungCacaoSunStressPerDay = 6f;
 
         // The stress and health this simulation last produced on its own. health
         // and stress are shared fields - the pest system, mitigation structures
@@ -115,6 +134,30 @@ namespace AgriDabao3D
             lastLoggedStage = stage;
             initialized = true;
         }
+
+        /// <summary>
+        /// Makes a freshly planted crop the age it already reached before the
+        /// field - days in the Seedling Tent, a grafted seedling's head start, or
+        /// a bought seedling's age. The first harvest moves by the same amount,
+        /// so the schedule stays measured from the plant's true age.
+        /// </summary>
+        public void ApplyStartingAge(float ageDays)
+        {
+            if (ageDays <= 0f)
+                return;
+
+            plantedGameDay -= ageDays;
+            nextProductionGameDay -= ageDays;
+            stage = GetStage();
+            lastLoggedStage = stage;
+        }
+
+        /// <summary>Young cacao - before it starts to fruit - wants shade overhead.</summary>
+        public bool NeedsShade =>
+            cropKind == TropicalCropKind.Cacao &&
+            stage < TropicalCropStage.PreFruiting;
+
+        public bool IsShaded => ClimateMitigationWorldObject.IsShadeOver(transform.position);
 
         private void Start()
         {
@@ -258,6 +301,9 @@ namespace AgriDabao3D
 
             if (waterlogged)
                 weatherStressPerDay += 8f;
+
+            if (NeedsShade && !IsShaded)
+                weatherStressPerDay += YoungCacaoSunStressPerDay;
 
             float targetStress01 =
                 (1f - waterScore) * 0.35f +
@@ -418,6 +464,7 @@ namespace AgriDabao3D
                     plantedGameDay = current - firstHarvest - 1f;
 
                 stage = GetStage();
+                fieldPlantedGameDay = -1f;
                 nextProductionGameDay = Mathf.Min(nextProductionGameDay, current);
             }
 
@@ -551,8 +598,15 @@ namespace AgriDabao3D
 
         public string GetInspectionText()
         {
+            string shade = NeedsShade
+                ? (IsShaded
+                    ? "\nShade: under a Shade Net"
+                    : "\nShade: none - young cacao needs a Shade Net nearby")
+                : string.Empty;
+
             return
                 $"Crop Name: {cropName}\n" +
+                CropPlantingText.PlantedFromLine(plantingMaterial, nurseryDays) +
                 $"Tree Stage: {stage}\n" +
                 $"Health: {health:F1}/100\n" +
                 $"Avg Health: {averageHealth:F1}/100\n" +
@@ -560,7 +614,9 @@ namespace AgriDabao3D
                 $"Water: {(moisture * 100f):F0}%\n" +
                 $"Drainage: {(drainage * 100f):F0}%\n" +
                 $"Fertility: {(fertility * 100f):F0}%\n" +
-                $"Soil Suitability: {(soilSuitability * 100f):F0}%";
+                $"Soil Suitability: {(soilSuitability * 100f):F0}%" +
+                shade +
+                CropPlantingText.RealWorldLine(plantingMaterial, CropClimateRules.GetFarmCropType(cropKind));
         }
 
         public void ForceNextStageForDev()
@@ -609,6 +665,9 @@ namespace AgriDabao3D
             plantedGameDay = currentDay - targetLivedDays - 1f;
 
             stage = GetStage();
+
+            // A forced stage has to show that stage, not the planting material.
+            fieldPlantedGameDay = -1f;
 
             GrowthStageVisualController visuals = GetComponent<GrowthStageVisualController>();
             if (visuals != null)

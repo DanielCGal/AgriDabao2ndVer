@@ -85,8 +85,19 @@ namespace AgriDabao3D
 
         private UIThemeSprites Theme => UIThemeSprites.Instance;
 
+        private static TutorialDialogueUI active;
+
+        /// <summary>
+        /// Whether the objective plank is on screen. It sits at the top centre,
+        /// over where a panel's own heading plank goes, so the Seedling Tent
+        /// steps its heading aside while the plank is up.
+        /// </summary>
+        public static bool ObjectiveShowing =>
+            active != null && active.objectiveRoot != null && active.objectiveRoot.activeInHierarchy;
+
         private void Awake()
         {
+            active = this;
             EnsureCanvas();
             Build();
             root.SetActive(false);
@@ -188,6 +199,20 @@ namespace AgriDabao3D
             objectiveText.text = string.IsNullOrWhiteSpace(hint) ? string.Empty : hint;
             objectiveRoot.SetActive(true);
             objectiveRoot.transform.SetAsLastSibling();
+        }
+
+        /// <summary>
+        /// Rewrites the instruction on a plank that is already up, for an objective
+        /// that changes with what the player does. Leaves everything else alone.
+        /// </summary>
+        public void SetObjectiveText(string hint)
+        {
+            if (objectiveText == null || objectiveRoot == null || !objectiveRoot.activeSelf)
+                return;
+
+            string text = string.IsNullOrWhiteSpace(hint) ? string.Empty : hint;
+            if (objectiveText.text != text)
+                objectiveText.text = text;
         }
 
         public void Hide()
@@ -531,6 +556,9 @@ namespace AgriDabao3D
 
         private void OnDestroy()
         {
+            if (active == this)
+                active = null;
+
             foreach (KeyValuePair<AntonioExpression, Portrait> entry in portraits)
             {
                 if (entry.Value.Texture == null)

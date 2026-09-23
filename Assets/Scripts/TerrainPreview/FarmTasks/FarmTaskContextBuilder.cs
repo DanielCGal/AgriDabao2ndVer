@@ -101,6 +101,7 @@ namespace AgriDabao3D
                 cropContext.maintenanceState = maintenance != null
                     ? maintenance.GetInspectionText()
                     : "None";
+                cropContext.plantingMaterial = crop.PlantingMaterial;
 
                 PestDiseaseAffectedCrop affected =
                     crop.Root.GetComponent<PestDiseaseAffectedCrop>();
@@ -182,6 +183,39 @@ namespace AgriDabao3D
                     radius = item.radius,
                     storedResource = item.storedResource,
                     resourceCapacity = item.resourceCapacity
+                });
+            }
+
+            NurserySystem nursery = NurserySystem.Instance;
+            if (nursery != null)
+            {
+                for (int slot = 0; slot < NurserySystem.BagCount; slot++)
+                {
+                    SeedlingBagStatus status = nursery.GetStatus(slot);
+                    if (status == SeedlingBagStatus.Empty)
+                        continue;
+
+                    bool sown = nursery.TryGetMaterial(slot, out PlantingMaterialInfo info);
+                    payload.seedlingTent.Add(new FarmTaskNurseryBagContext
+                    {
+                        bag = slot + 1,
+                        status = status.ToString(),
+                        plantingMaterial = sown ? info.Item.ToString() : null,
+                        cropType = sown ? info.Crop.ToString() : null,
+                        daysUntilNextStep = nursery.DaysUntilNextStep(slot)
+                    });
+                }
+            }
+
+            foreach (DigSpot spot in Object.FindObjectsByType<DigSpot>(FindObjectsSortMode.None))
+            {
+                if (spot == null || spot.occupied)
+                    continue;
+
+                payload.preparedGround.Add(new FarmTaskPreparedGroundContext
+                {
+                    preparation = spot.plotKind.ToString(),
+                    mulched = spot.mulched
                 });
             }
 
@@ -269,13 +303,15 @@ namespace AgriDabao3D
                 : InventoryItemType.None;
         }
 
-        public static InventoryItemType CropNameToSeedItem(string cropType)
+        /// <summary>
+        /// Every planting material of a crop named in a task ("Banana" gives the
+        /// plantlet and the sucker). Empty for a name that is not a crop.
+        /// </summary>
+        public static List<InventoryItemType> CropNameToPlantingMaterials(string cropType)
         {
-            if (string.IsNullOrWhiteSpace(cropType))
-                return InventoryItemType.None;
-            return Enum.TryParse(cropType + "Seed", true, out InventoryItemType item)
-                ? item
-                : InventoryItemType.None;
+            return PlantingMaterialCatalog.TryGetCropType(cropType, out FarmCropType crop)
+                ? PlantingMaterialCatalog.MaterialsFor(crop)
+                : new List<InventoryItemType>();
         }
 
         public static float GetTotalConditionSeverity()

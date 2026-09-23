@@ -704,26 +704,22 @@ namespace AgriDabao3D
 
             CreateSpacer(14f);
 
-            CreateLabel(contentRect, "Seed Amount", 21, 34f);
+            CreateLabel(contentRect, "Planting Material Amount", 21, 34f);
             seedInput = CreateInputField(contentRect, "10", 150f, 50f);
 
-            CreateButton(contentRect, "Add Coconut Seeds", () => AddSeeds(InventoryItemType.CoconutSeed));
-            CreateButton(contentRect, "Add Banana Seeds", () => AddSeeds(InventoryItemType.BananaSeed));
-            CreateButton(contentRect, "Add Durian Seeds", () => AddSeeds(InventoryItemType.DurianSeed));
-            CreateButton(contentRect, "Add Pomelo Seeds", () => AddSeeds(InventoryItemType.PomeloSeed));
-            CreateButton(contentRect, "Add Cacao Seeds", () => AddSeeds(InventoryItemType.CacaoSeed));
-            CreateButton(contentRect, "Add Pineapple Seeds", () => AddSeeds(InventoryItemType.PineappleSeed));
-            CreateButton(contentRect, "Add Mangosteen Seeds", () => AddSeeds(InventoryItemType.MangosteenSeed));
-            CreateButton(contentRect, "Add Mango Seeds", () => AddSeeds(InventoryItemType.MangoSeed));
-            CreateButton(contentRect, "Add Corn Seeds", () => AddSeeds(InventoryItemType.CornSeed));
-            CreateButton(contentRect, "Add Eggplant Seeds", () => AddSeeds(InventoryItemType.EggplantSeed));
-            CreateButton(contentRect, "Add Squash Seeds", () => AddSeeds(InventoryItemType.SquashSeed));
-            CreateButton(contentRect, "Add Strawberry Seeds", () => AddSeeds(InventoryItemType.StrawberrySeed));
-            CreateButton(contentRect, "Add Tomato Seeds", () => AddSeeds(InventoryItemType.TomatoSeed));
+            // One button per planting material, from the catalog, so a material
+            // added later gets its button without touching this list.
+            foreach (InventoryItemType material in PlantingMaterialCatalog.AllMaterials)
+            {
+                InventoryItemType captured = material;
+                CreateButton(contentRect, "Add " + PlantingMaterialCatalog.NameOf(material),
+                    () => AddSeeds(captured));
+            }
 
             CreateSpacer(14f);
             CreateButton(contentRect, "Next Growth Stage", OnForceNextStagePressed, 250f, 58f);
             CreateButton(contentRect, "Harvest", OnForceHarvestPressed, 250f, 58f);
+            CreateButton(contentRect, "Seedlings Ready", OnSeedlingsReadyPressed, 250f, 58f);
 
             CreateSpacer(14f);
             CreateLabel(contentRect, "Tutorial / HUD", 21, 34f);
@@ -1779,6 +1775,13 @@ namespace AgriDabao3D
 
             if (farming != null)
                 farming.ForceAllPlantsNextStageForDev();
+        }
+
+        /// <summary>Every sown bag in the Seedling Tent skips to ready to transplant.</summary>
+        private void OnSeedlingsReadyPressed()
+        {
+            int changed = NurserySystem.Instance != null ? NurserySystem.Instance.DevMakeAllReady() : 0;
+            Debug.Log("[DevTools] Seedling Tent bags made ready: " + changed);
         }
 
         private void AddSeeds(InventoryItemType item)

@@ -8,7 +8,10 @@ namespace AgriDabao3D
     public class FarmPersistenceManager : MonoBehaviour
     {
         public static FarmPersistenceManager Instance { get; private set; }
-        public const int CurrentSchemaVersion = 3;
+        // 4: the planting system - the Seedling Tent and its bags, prepared ground,
+        // and each crop's planting material and protection. Version-3 farms load
+        // unchanged; they simply start with an empty tent and no prepared ground.
+        public const int CurrentSchemaVersion = 4;
         public const string CurrentGeneratorVersion = "davao-terrain-v1";
         [Header("Scene References")]
         public FarmingInteractionSystem farmingSystem;
@@ -27,12 +30,14 @@ namespace AgriDabao3D
         {
             Instance = this;
             FarmTaskRuntimeBootstrap.EnsureInstalled();
+            NurseryRuntimeBootstrap.EnsureInstalled();
         }
         private void Start()
         {
             ResolveReferences();
             ClimateMaintenanceRuntimeBootstrap.EnsureInstalled();
             FarmTaskRuntimeBootstrap.EnsureInstalled();
+            NurseryRuntimeBootstrap.EnsureInstalled();
         }
         public void NotifyWorldReady(SoilSample loadedSampleA, SoilSample loadedSampleB,
             Vector2 loadedSampleAPosition, Vector2 loadedSampleBPosition)
@@ -43,6 +48,7 @@ namespace AgriDabao3D
             sampleBPosition = loadedSampleBPosition;
             ClimateMaintenanceRuntimeBootstrap.EnsureInstalled();
             FarmTaskRuntimeBootstrap.EnsureInstalled();
+            NurseryRuntimeBootstrap.EnsureInstalled();
             if (FarmLoadContext.IsRestoring) RestoreGameplayState(FarmLoadContext.PendingSnapshot);
             IsWorldReady = true;
             if (FarmLoadContext.IsRestoring)
@@ -151,6 +157,8 @@ namespace AgriDabao3D
             CaptureCrops(snapshot.crops);
             CaptureWorldObjects(snapshot.worldObjects);
             snapshot.tutorial = TutorialState.Capture();
+            if (NurserySystem.Instance != null) snapshot.nursery = NurserySystem.Instance.CaptureSaveData();
+            if (farmingSystem != null) snapshot.preparedPlots = farmingSystem.CapturePreparedGround();
             return snapshot;
         }
         private void RestoreGameplayState(FarmSnapshotDto snapshot)
@@ -163,6 +171,7 @@ namespace AgriDabao3D
             ResolveReferences();
             ClimateMaintenanceRuntimeBootstrap.EnsureInstalled();
             FarmTaskRuntimeBootstrap.EnsureInstalled();
+            NurseryRuntimeBootstrap.EnsureInstalled();
             if (GameTimeSystem.Instance != null) GameTimeSystem.Instance.RestoreTime(snapshot.gameTime);
             if (WeatherSystem.Instance != null) WeatherSystem.Instance.RestoreWeather(snapshot.weather);
             if (PlayerInventory.Instance != null) PlayerInventory.Instance.RestoreSaveData(snapshot.inventory);
@@ -199,6 +208,10 @@ namespace AgriDabao3D
                 }
             }
             if (!shippingBinWasRestored && shippingBinSpawner != null) shippingBinSpawner.SpawnBinNearPlayerNow();
+            // Prepared ground after the crops: a crop on a raised bed lifts its own
+            // bed on load, and an unplanted bed lifts its ground here.
+            if (farmingSystem != null) farmingSystem.RestorePreparedGround(snapshot.preparedPlots);
+            if (NurserySystem.Instance != null) NurserySystem.Instance.RestoreSaveData(snapshot.nursery);
             if (ClimateEventTracker.Instance != null) ClimateEventTracker.Instance.RestoreSaveData(snapshot.climateEvent);
             if (DailyTaskSystem.Instance != null) DailyTaskSystem.Instance.RestoreSaveData(snapshot.dailyTasks);
             if (AIAdvisorTaskSystem.Instance != null) AIAdvisorTaskSystem.Instance.RestoreSaveData(snapshot.aiAdvisorTask);

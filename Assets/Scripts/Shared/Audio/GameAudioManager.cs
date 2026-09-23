@@ -52,6 +52,16 @@ namespace AgriDabao3D
         public AudioClip placeMitigationSfx;
         public AudioClip rewardSfx;
 
+        [Header("Planting SFX (optional - each falls back to an existing sound)")]
+        [Tooltip("Tilling ground with the shovel. Falls back to Dig.")]
+        public AudioClip tillSfx;
+        [Tooltip("Moving a seedling into the field, or pricking one into its bag. Falls back to Plant Seed.")]
+        public AudioClip transplantSfx;
+        [Tooltip("Filling a seedling bag with soil. Falls back to Dig.")]
+        public AudioClip fillBagSfx;
+        [Tooltip("Watering a crop. Silent when empty, as watering always was.")]
+        public AudioClip waterSfx;
+
         // Volumes now live in GameSettings (user-adjustable + persisted) and are
         // read live at playback / applied via the GameSettings.Changed event.
 
@@ -180,6 +190,13 @@ namespace AgriDabao3D
         public void PlaySpray() => PlaySfx(spraySfx);
         public void PlayPlaceMitigation() => PlaySfx(placeMitigationSfx);
         public void PlayReward() => PlaySfx(rewardSfx);
+
+        // The persistent instance is the Main Menu's, so these clips are assigned
+        // there. Each falls back to the nearest existing sound until one is.
+        public void PlayTill() => PlaySfx(tillSfx != null ? tillSfx : digSfx);
+        public void PlayTransplant() => PlaySfx(transplantSfx != null ? transplantSfx : plantSeedSfx);
+        public void PlayFillBag() => PlaySfx(fillBagSfx != null ? fillBagSfx : digSfx);
+        public void PlayWater() => PlaySfx(waterSfx);
 
         // ---------------- Music / ambience (crossfaded) ----------------
 

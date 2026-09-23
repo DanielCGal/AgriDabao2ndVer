@@ -6,20 +6,22 @@ namespace AgriDabao3D
 {
     public static class SocialMarketplaceCatalog
     {
+        // Must match TRADABLE_ITEMS in the backend's EconomyJsonService, minus the
+        // five old seed items the server still accepts from older game versions.
         public static readonly InventoryItemType[] TradableItems =
         {
-            InventoryItemType.CoconutSeed, InventoryItemType.Coconut,
-            InventoryItemType.BananaSeed, InventoryItemType.Banana,
+            InventoryItemType.CoconutSeednut, InventoryItemType.Coconut,
+            InventoryItemType.BananaPlantlet, InventoryItemType.BananaSucker, InventoryItemType.Banana,
             InventoryItemType.DurianSeed, InventoryItemType.Durian,
             InventoryItemType.PomeloSeed, InventoryItemType.Pomelo,
             InventoryItemType.CacaoSeed, InventoryItemType.Cacao,
-            InventoryItemType.PineappleSeed, InventoryItemType.Pineapple,
+            InventoryItemType.PineappleSucker, InventoryItemType.Pineapple,
             InventoryItemType.MangosteenSeed, InventoryItemType.Mangosteen,
-            InventoryItemType.MangoSeed, InventoryItemType.Mango,
+            InventoryItemType.MangoGraftedSeedling, InventoryItemType.MangoLiso, InventoryItemType.Mango,
             InventoryItemType.CornSeed, InventoryItemType.Corn,
             InventoryItemType.EggplantSeed, InventoryItemType.Eggplant,
-            InventoryItemType.SquashSeed, InventoryItemType.Squash,
-            InventoryItemType.StrawberrySeed, InventoryItemType.Strawberry,
+            InventoryItemType.SquashSeed, InventoryItemType.SquashSeedling, InventoryItemType.Squash,
+            InventoryItemType.StrawberryRunner, InventoryItemType.Strawberry,
             InventoryItemType.TomatoSeed, InventoryItemType.Tomato,
             InventoryItemType.AphidTrap,
             InventoryItemType.InsecticideLiter,
@@ -47,6 +49,26 @@ namespace AgriDabao3D
             InventoryItemType.DrainageCanalKit
         };
 
+        /// <summary>
+        /// Every item whose count is merged back from the server after a sale or a
+        /// trade: the tradable items, plus the five old seed items. A trade with a
+        /// player still on an older version can hand one of those over; merged in
+        /// here, it becomes its new material as the backpack loads it, instead of
+        /// being silently dropped and then overwritten by the next save.
+        /// </summary>
+        public static readonly InventoryItemType[] MergeItems = BuildMergeItems();
+
+        private static InventoryItemType[] BuildMergeItems()
+        {
+            List<InventoryItemType> items = new List<InventoryItemType>(TradableItems);
+            foreach (InventoryItemType legacy in PlantingMaterialCatalog.LegacySeeds)
+            {
+                if (!items.Contains(legacy))
+                    items.Add(legacy);
+            }
+            return items.ToArray();
+        }
+
         // Per item, in centavos. Seeds mirror the shop's Davao City prices and
         // produce mirrors the shipping bin; the rest keep the NPC shop prices.
         // The server holds the same table (EconomyJsonService.buildBaseValues) and
@@ -54,19 +76,28 @@ namespace AgriDabao3D
         private static readonly Dictionary<InventoryItemType, int> BaseValues =
             new Dictionary<InventoryItemType, int>
             {
-                { InventoryItemType.PineappleSeed, PesoPrice.Centavos(10m) },
-                { InventoryItemType.BananaSeed, PesoPrice.Centavos(15m) },
                 { InventoryItemType.CacaoSeed, PesoPrice.Centavos(25m) },
-                { InventoryItemType.CoconutSeed, PesoPrice.Centavos(15m) },
-                { InventoryItemType.PomeloSeed, PesoPrice.Centavos(50m) },
-                { InventoryItemType.MangoSeed, PesoPrice.Centavos(30m) },
-                { InventoryItemType.MangosteenSeed, PesoPrice.Centavos(75m) },
                 { InventoryItemType.DurianSeed, PesoPrice.Centavos(60m) },
-                { InventoryItemType.CornSeed, PesoPrice.Centavos(388.89m) },
+                { InventoryItemType.MangosteenSeed, PesoPrice.Centavos(75m) },
+                { InventoryItemType.PomeloSeed, PesoPrice.Centavos(50m) },
+                { InventoryItemType.BananaPlantlet, PesoPrice.Centavos(30m) },
+                { InventoryItemType.BananaSucker, PesoPrice.Centavos(15m) },
+                { InventoryItemType.MangoGraftedSeedling, PesoPrice.Centavos(80m) },
+                { InventoryItemType.MangoLiso, PesoPrice.Centavos(30m) },
+                { InventoryItemType.CoconutSeednut, PesoPrice.Centavos(15m) },
+                { InventoryItemType.PineappleSucker, PesoPrice.Centavos(10m) },
+                { InventoryItemType.StrawberryRunner, PesoPrice.Centavos(3m) },
+                { InventoryItemType.TomatoSeed, PesoPrice.Centavos(9500m) },
                 { InventoryItemType.EggplantSeed, PesoPrice.Centavos(8200m) },
                 { InventoryItemType.SquashSeed, PesoPrice.Centavos(3000m) },
+                { InventoryItemType.SquashSeedling, PesoPrice.Centavos(3300m) },
+                { InventoryItemType.CornSeed, PesoPrice.Centavos(388.89m) },
+                // The old seed items, still valued as the server values them.
+                { InventoryItemType.PineappleSeed, PesoPrice.Centavos(10m) },
+                { InventoryItemType.BananaSeed, PesoPrice.Centavos(15m) },
+                { InventoryItemType.CoconutSeed, PesoPrice.Centavos(15m) },
+                { InventoryItemType.MangoSeed, PesoPrice.Centavos(30m) },
                 { InventoryItemType.StrawberrySeed, PesoPrice.Centavos(3m) },
-                { InventoryItemType.TomatoSeed, PesoPrice.Centavos(9500m) },
                 { InventoryItemType.Coconut, PesoPrice.Centavos(16.89m) },
                 { InventoryItemType.Banana, PesoPrice.Centavos(51m) },
                 { InventoryItemType.Durian, PesoPrice.Centavos(150m) },
@@ -130,6 +161,11 @@ namespace AgriDabao3D
 
         public static string FriendlyName(InventoryItemType item)
         {
+            // Planting materials carry their own names ("Grafted Mango Seedling"),
+            // which the camel-case split below would get wrong.
+            if (PlantingMaterialCatalog.TryGet(item, out PlantingMaterialInfo material))
+                return material.Name;
+
             switch (item)
             {
                 case InventoryItemType.NeemSoapLiter: return "Neem Soap Liter";

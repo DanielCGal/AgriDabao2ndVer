@@ -8,8 +8,8 @@ using UnityEngine.UI;
 namespace AgriDabao3D
 {
     /// <summary>
-    /// Runs Antonio's beginner guide: the fifteen steps that hand a new player the
-    /// game one piece at a time instead of all at once.
+    /// Runs Antonio's beginner guide: the steps that hand a new player the game
+    /// one piece at a time instead of all at once.
     ///
     /// The whole tour is a flat list of beats. A beat is either something Antonio
     /// says, something the game does silently (reveal a button, hand over an item),
@@ -68,10 +68,14 @@ namespace AgriDabao3D
             public Func<string> Hint;
             public Func<bool> IsSatisfied;
             public Action Cleanup;
+
+            /// <summary>Re-read while the gate is open, for a hint that follows what the player does.</summary>
+            public bool LiveHint;
         }
 
         private readonly List<Beat> beats = new List<Beat>();
         private int index = -1;
+        private float nextHintRefresh;
 
         private TutorialDialogueUI dialogue;
         private Image blackout;
@@ -272,11 +276,29 @@ namespace AgriDabao3D
                 return;
 
             if (!activeGate.IsSatisfied())
+            {
+                RefreshLiveHint();
                 return;
+            }
 
             activeGate.Cleanup?.Invoke();
             activeGate = null;
             Advance();
+        }
+
+        /// <summary>
+        /// Rewrites a live gate's instruction twice a second, so a player who has
+        /// gone off the expected path - dug the wrong kind of plot, filled theirs
+        /// back in - is told how to get back instead of reading an instruction
+        /// that no longer fits.
+        /// </summary>
+        private void RefreshLiveHint()
+        {
+            if (!activeGate.LiveHint || dialogue == null || Time.unscaledTime < nextHintRefresh)
+                return;
+
+            nextHintRefresh = Time.unscaledTime + 0.5f;
+            dialogue.SetObjectiveText(activeGate.Hint?.Invoke());
         }
 
         // ------------------------------------------------------------- the walk
@@ -355,7 +377,8 @@ namespace AgriDabao3D
             HudPiece[] panels =
             {
                 HudPiece.CropInfoPanel, HudPiece.ShopPanel, HudPiece.ObjectivesPanel,
-                HudPiece.SearchPlayersPanel, HudPiece.MarketplacePanel, HudPiece.ConfirmPopup
+                HudPiece.SearchPlayersPanel, HudPiece.MarketplacePanel, HudPiece.ConfirmPopup,
+                HudPiece.SeedlingTentPanel
             };
 
             foreach (HudPiece panel in panels)
@@ -410,6 +433,21 @@ namespace AgriDabao3D
             WaitFor(gate.IsSatisfied, hint, gate.Dispose);
         }
 
+        /// <summary>The same gate, with an instruction that is re-read while it waits.</summary>
+        private void WaitForAction(string actionType, Func<string> liveHint,
+            Func<ClimateActionRecord, bool> extra = null)
+        {
+            TutorialGates.FarmAction gate = new TutorialGates.FarmAction(actionType, null, extra);
+            disposables.Add(gate);
+            beats.Add(new GateBeat
+            {
+                IsSatisfied = gate.IsSatisfied,
+                Hint = liveHint,
+                Cleanup = gate.Dispose,
+                LiveHint = true
+            });
+        }
+
         private static void Grant(InventoryItemType item, int amount)
         {
             if (PlayerInventory.Instance != null)
@@ -457,8 +495,9 @@ namespace AgriDabao3D
         {
             Step1Arrival();
             Step2Controls();
-            Step3DigAndPlant();
+            Step3PrepareAndPlant();
             Step4Water();
+            Step4BSeedlingTent();
             Step5Inspect();
             Step6HowPlantsLive();
             Step6BMulch();
@@ -503,37 +542,192 @@ namespace AgriDabao3D
             Say("Look at you. Already moving like a farmer.", AntonioExpression.Hello);
         }
 
-        private void Step3DigAndPlant()
+        /// <summary>
+        /// The starting material this lesson plants: the first one dealt that goes
+        /// straight into the ground. The deal always includes one.
+        /// </summary>
+        private static PlantingMaterialInfo LessonMaterial()
         {
+            foreach (InventoryItemType item in TutorialState.StartingSeeds)
+            {
+                if (PlantingMaterialCatalog.TryGet(item, out PlantingMaterialInfo info) && info.PlantDirect)
+                    return info;
+            }
+
+            // Only a hand-edited or very old deal lacks one; bananas grow everywhere.
+            PlantingMaterialCatalog.TryGet(InventoryItemType.BananaSucker, out PlantingMaterialInfo fallback);
+            return fallback;
+        }
+
+        /// <summary>The starting material the Seedling Tent lesson sows, or null if none was dealt.</summary>
+        private static PlantingMaterialInfo TentLessonMaterial()
+        {
+            foreach (InventoryItemType item in TutorialState.StartingSeeds)
+            {
+                if (PlantingMaterialCatalog.TryGet(item, out PlantingMaterialInfo info) &&
+                    info.SowInBag && !info.PlantDirect)
+                {
+                    return info;
+                }
+            }
+
+            foreach (InventoryItemType item in TutorialState.StartingSeeds)
+            {
+                if (PlantingMaterialCatalog.TryGet(item, out PlantingMaterialInfo info) && info.SowInBag)
+                    return info;
+            }
+
+            return null;
+        }
+
+        private void Step3PrepareAndPlant()
+        {
+            PlantingMaterialInfo lesson = LessonMaterial();
+            bool lessonInDeal = TutorialState.StartingSeeds.Contains(lesson.Item);
+            string ground = PlantingMaterialCatalog.PlotName(lesson.Plot);
+            string choice = lesson.Plot == PreparedPlotKind.Hole ? "Planting Hole"
+                : lesson.Plot == PreparedPlotKind.RaisedBed ? "Raised Bed"
+                : "Furrow";
+
             Reveal(HudPiece.Hotbar);
             Do(() =>
             {
                 Grant(InventoryItemType.Shovel, 1);
                 foreach (InventoryItemType seed in TutorialState.StartingSeeds)
                     Grant(seed, DistrictCropPools.SeedsPerKind);
+
+                // Covered for a deal that somehow has nothing to plant straight away.
+                if (!lessonInDeal)
+                    Grant(lesson.Item, 1);
+
+                // A strawberry runner goes in through mulch, and the mulch sacks
+                // only come out a few steps later.
+                if (lesson.NeedsMulchedBed)
+                    Grant(InventoryItemType.MulchBag, 1);
             });
 
             Say("Now the real work. Here - take these.", AntonioExpression.Teaching);
-            Narrate("Antonio hands you a shovel and a bundle of seed packets.");
+            Narrate("Antonio hands you a shovel and a bundle of planting material.");
             Say("These grow well in " + District + " soil. That bar along the bottom is your " +
                 "hotbar - tap a slot to hold an item.", AntonioExpression.Teaching);
-            Say("Take the shovel and dig yourself a planting spot.", AntonioExpression.Teaching);
+            Say("Nothing grows in hard ground. Take the shovel and till a patch of soil first.",
+                AntonioExpression.Teaching);
 
-            WaitForAction("DigPlantingSpot", "Dig a planting spot");
+            WaitForAction("TillGround", "Till a patch of ground with the shovel");
 
-            Say("There you go. Now plant a seed in the hole.", AntonioExpression.Hello);
+            Say("Good. Now each crop wants its ground ready in its own way. Your " + lesson.Name +
+                " needs a " + ground + ": tap the tilled soil with the shovel again and choose " +
+                choice + ".", AntonioExpression.Teaching);
 
-            WaitForAction("PlantCrop", "Plant a seed in the hole");
+            // Only the kind of plot he asked for moves the lesson on. Any kind
+            // used to, and a player who picked another one was then told to
+            // plant into ground their material cannot go in.
+            WaitForAction("DigPlantingSpot", () => GroundHint(lesson, choice, false),
+                record => string.Equals(record.itemType, lesson.Plot.ToString(), StringComparison.OrdinalIgnoreCase));
+
+            if (lesson.NeedsMulchedBed)
+            {
+                Say("Strawberry runners are planted through mulch. Hold the mulch bag and tap the " +
+                    "bed to cover it.", AntonioExpression.Teaching);
+                WaitForAction("MulchBed", "Cover the raised bed with a mulch bag");
+            }
+
+            Say("There you go. Now hold your " + lesson.Name + " and tap the " + ground +
+                " to plant it.", AntonioExpression.Hello);
+
+            WaitForAction("PlantCrop", () => GroundHint(lesson, choice, true));
 
             Say("Your very first crop! You're a farmer now, neighbour. Officially.",
                 AntonioExpression.Surprise);
+        }
+
+        /// <summary>
+        /// The next thing to do toward the lesson's ground, read from the plots on
+        /// the farm as they are now. <paramref name="planting"/> is true once the
+        /// ground should be ready and the material is what is being waited on.
+        /// </summary>
+        private static string GroundHint(PlantingMaterialInfo lesson, string choice, bool planting)
+        {
+            bool tilled = false;
+            bool ready = false;
+            bool bedNeedsMulch = false;
+            DigSpot wrongKind = null;
+
+            foreach (DigSpot spot in UnityEngine.Object.FindObjectsByType<DigSpot>(FindObjectsSortMode.None))
+            {
+                if (spot == null || spot.occupied)
+                    continue;
+
+                if (spot.plotKind == PreparedPlotKind.Tilled)
+                    tilled = true;
+                else if (spot.plotKind == lesson.Plot)
+                {
+                    if (!lesson.NeedsMulchedBed || spot.mulched)
+                        ready = true;
+                    else
+                        bedNeedsMulch = true;
+                }
+                else if (spot.IsPrepared && wrongKind == null)
+                    wrongKind = spot;
+            }
+
+            string ground = PlantingMaterialCatalog.PlotName(lesson.Plot);
+
+            if (planting && ready)
+                return "Hold your " + lesson.Name + " and tap the " + ground;
+            if (planting && bedNeedsMulch)
+                return "Cover the raised bed with a mulch bag, then plant your " + lesson.Name;
+            if (tilled)
+                return "Tap the tilled ground with the shovel and choose " + choice;
+            if (wrongKind != null)
+            {
+                return "That is a " + wrongKind.DisplayName + ", not a " + ground +
+                       ". Till another patch with the shovel and choose " + choice;
+            }
+
+            return "Till a patch of ground with the shovel, then choose " + choice;
+        }
+
+        private void Step4BSeedlingTent()
+        {
+            PlantingMaterialInfo tentLesson = TentLessonMaterial();
+
+            RevealButton(HudIconButton.SlotSeedlingTent);
+
+            Say("Not everything goes straight into the ground, mind. Some crops start life in a " +
+                "little bag of soil, where you can look after them.", AntonioExpression.Thinking);
+            Say("That's what your Seedling Tent is for. The tent button up top opens it from " +
+                "anywhere on your farm.", AntonioExpression.Teaching);
+
+            if (tentLesson != null)
+            {
+                Say("Open it, fill a bag with soil, then sow your " + tentLesson.Name + " in it.",
+                    AntonioExpression.Teaching);
+
+                WaitForAction("SowSeedlingBag", "Open the Seedling Tent and sow a seedling bag");
+
+                Say("In a few days it'll be ready. Pick it in the tent, carry it out, and " +
+                    "transplant it into prepared ground. The days in the bag count toward its " +
+                    "growing, so nothing is lost.", AntonioExpression.Teaching);
+            }
+            else
+            {
+                Say("Seeds like cacao and tomato, banana plantlets and grafted mangoes all start " +
+                    "there. The shop sells them when you're ready.", AntonioExpression.Teaching);
+            }
+
+            Say("Close the tent for now and let's keep going.", AntonioExpression.Hello);
+
+            TutorialGates.PanelOpenedThenClosed closed = new TutorialGates.PanelOpenedThenClosed(
+                HudPiece.SeedlingTentPanel, "Open the Seedling Tent, then close it");
+            WaitFor(closed.IsSatisfied, closed.Hint);
         }
 
         private void Step4Water()
         {
             Do(() => Grant(InventoryItemType.WateringCan, 1));
 
-            Say("A seed in the ground isn't a plant yet. It needs water - especially early.",
+            Say("Something just planted isn't settled yet. It needs water - especially early.",
                 AntonioExpression.Thinking);
             Narrate("He unhooks a spare watering can from his belt and holds it out.");
             Say("Take mine. Select it, then give that crop a drink.", AntonioExpression.Teaching);
@@ -646,8 +840,8 @@ namespace AgriDabao3D
             Narrate("Antonio presses a folded bundle of notes into your hand.");
             Say("A welcome gift - pay me back in mangoes. Your money sits top right, and that " +
                 "cart is the shop: seeds, tools, sprays, everything.", AntonioExpression.Hello);
-            Say("Seeds your district does not grow are greyed out. You cannot buy those here, " +
-                "but you can still read about them.", AntonioExpression.Teaching);
+            Say("Seeds and planting material your district does not grow are greyed out. You " +
+                "cannot buy those here, but you can still read about them.", AntonioExpression.Teaching);
             Say("Open it, buy one thing - anything - then close it up.", AntonioExpression.Teaching);
 
             Do(() => shopGate = new TutorialGates.BoughtSomethingAndClosedShop());
@@ -671,8 +865,8 @@ namespace AgriDabao3D
                 new TutorialGates.PanelOpened(HudPiece.ObjectivesPanel, "Open the objectives book");
             WaitFor(opened.IsSatisfied, opened.Hint);
 
-            Say("A few simple jobs each day, and money once you finish them all. Today wanted a " +
-                "spot dug and something planted - you've done both. Collect your reward.",
+            Say("A few simple jobs each day, and money once you finish them all. Today wanted " +
+                "ground prepared and something planted - you've done both. Collect your reward.",
                 AntonioExpression.Teaching);
 
             TutorialGates.DailyRewardClaimed claimed = new TutorialGates.DailyRewardClaimed();

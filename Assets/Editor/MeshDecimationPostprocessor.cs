@@ -121,6 +121,28 @@ namespace AgriDabao3D.EditorTools
             // their vertex-to-triangle ratio is the worst in the project.
             new Target("Assets/Models/GrasspatchLarge/", WispyQuality),
             new Target("Assets/Models/GrasspatchSmall/", WispyQuality),
+
+            // The planting system. The tent and its racks stand once per farm, the
+            // bags up to eight times inside it; the seedlings and planting
+            // materials appear in the bags and for a crop's first days in the field.
+            new Target("Assets/Models/SeedlingTent/", SolidQuality),
+            new Target("Assets/Models/NurseryRack/", SolidQuality),
+            new Target("Assets/Models/SeedlingBag_Empty/", SolidQuality),
+            new Target("Assets/Models/SeedlingBag_Filled/", SolidQuality),
+            new Target("Assets/Models/SproutBanana/", FoliageQuality),
+            new Target("Assets/Models/SproutCacao/", FoliageQuality),
+            new Target("Assets/Models/SproutCorn/", FoliageQuality),
+            new Target("Assets/Models/SproutDurian/", FoliageQuality),
+            new Target("Assets/Models/SproutEggplant/", FoliageQuality),
+            new Target("Assets/Models/SproutMango/", FoliageQuality),
+            new Target("Assets/Models/SproutMangosteen/", FoliageQuality),
+            new Target("Assets/Models/SproutPomelo/", FoliageQuality),
+            new Target("Assets/Models/SproutSquash/", FoliageQuality),
+            new Target("Assets/Models/SproutTomato/", FoliageQuality),
+            new Target("Assets/Models/Sucker_Banana/", FoliageQuality),
+            new Target("Assets/Models/Sucker_Pineapple/", FoliageQuality),
+            new Target("Assets/Models/Runner_Strawberry/", FoliageQuality),
+            new Target("Assets/Models/Seednut_Coconut/", SolidQuality),
         };
 
         /// <summary>One folder of models and how much of their geometry to keep.</summary>

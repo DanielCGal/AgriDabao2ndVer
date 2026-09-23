@@ -158,6 +158,7 @@ namespace AgriDabao3D
             AddPanel("Map", () => map != null && map.IsExpanded);
             AddPiece("Backpack", HudPiece.BackpackPanel);
             AddPiece("Crop information", HudPiece.CropInfoPanel);
+            AddPiece("Seedling Tent", HudPiece.SeedlingTentPanel);
         }
 
         private void AddPiece(string label, HudPiece piece)

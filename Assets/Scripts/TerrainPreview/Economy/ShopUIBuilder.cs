@@ -22,20 +22,28 @@ namespace AgriDabao3D
         // becomes a charge in whole pesos.
         private static readonly Dictionary<InventoryItemType, int> seedPriceCentavos = new Dictionary<InventoryItemType, int>
         {
-            // Seeds - Davao City government prices
-            { InventoryItemType.PineappleSeed, PesoPrice.Centavos(10m) },
-            { InventoryItemType.BananaSeed, PesoPrice.Centavos(15m) },
+            // Planting materials. The seeds keep the Davao City government prices.
+            // The five materials that replaced the old seed items keep the price
+            // the old seed had (pineapple sucker = the old pineapple seed, and so
+            // on), so a player's money buys what it bought before. The banana
+            // plantlet, the grafted mango seedling and the ready squash seedling
+            // are new, and priced above the material they skip ahead of.
             { InventoryItemType.CacaoSeed, PesoPrice.Centavos(25m) },
-            { InventoryItemType.CoconutSeed, PesoPrice.Centavos(15m) },
-            { InventoryItemType.PomeloSeed, PesoPrice.Centavos(50m) },
-            { InventoryItemType.MangoSeed, PesoPrice.Centavos(30m) },
-            { InventoryItemType.MangosteenSeed, PesoPrice.Centavos(75m) },
             { InventoryItemType.DurianSeed, PesoPrice.Centavos(60m) },
-            { InventoryItemType.CornSeed, PesoPrice.Centavos(388.89m) },
+            { InventoryItemType.MangosteenSeed, PesoPrice.Centavos(75m) },
+            { InventoryItemType.PomeloSeed, PesoPrice.Centavos(50m) },
+            { InventoryItemType.BananaPlantlet, PesoPrice.Centavos(30m) },
+            { InventoryItemType.BananaSucker, PesoPrice.Centavos(15m) },
+            { InventoryItemType.MangoGraftedSeedling, PesoPrice.Centavos(80m) },
+            { InventoryItemType.MangoLiso, PesoPrice.Centavos(30m) },
+            { InventoryItemType.CoconutSeednut, PesoPrice.Centavos(15m) },
+            { InventoryItemType.PineappleSucker, PesoPrice.Centavos(10m) },
+            { InventoryItemType.StrawberryRunner, PesoPrice.Centavos(3m) },
+            { InventoryItemType.TomatoSeed, PesoPrice.Centavos(9500m) },
             { InventoryItemType.EggplantSeed, PesoPrice.Centavos(8200m) },
             { InventoryItemType.SquashSeed, PesoPrice.Centavos(3000m) },
-            { InventoryItemType.StrawberrySeed, PesoPrice.Centavos(3m) },
-            { InventoryItemType.TomatoSeed, PesoPrice.Centavos(9500m) },
+            { InventoryItemType.SquashSeedling, PesoPrice.Centavos(3300m) },
+            { InventoryItemType.CornSeed, PesoPrice.Centavos(388.89m) },
             // Equipment / pest tools
             { InventoryItemType.AphidTrap, PesoPrice.Centavos(35m) },
             { InventoryItemType.SprayerPump, PesoPrice.Centavos(250m) },
@@ -236,13 +244,16 @@ namespace AgriDabao3D
         /// <summary>Every item the shop sells, in the order they appear on the shelf.</summary>
         private static readonly InventoryItemType[] ShopStock =
         {
-            InventoryItemType.PineappleSeed, InventoryItemType.BananaSeed,
-            InventoryItemType.CacaoSeed, InventoryItemType.CoconutSeed,
-            InventoryItemType.PomeloSeed, InventoryItemType.MangoSeed,
-            InventoryItemType.MangosteenSeed, InventoryItemType.DurianSeed,
-            InventoryItemType.CornSeed, InventoryItemType.EggplantSeed,
-            InventoryItemType.SquashSeed, InventoryItemType.StrawberrySeed,
-            InventoryItemType.TomatoSeed, InventoryItemType.AphidTrap,
+            // Planting materials, grouped by crop in PlantingMaterialCatalog order.
+            InventoryItemType.CacaoSeed, InventoryItemType.DurianSeed,
+            InventoryItemType.MangosteenSeed, InventoryItemType.PomeloSeed,
+            InventoryItemType.BananaPlantlet, InventoryItemType.BananaSucker,
+            InventoryItemType.MangoGraftedSeedling, InventoryItemType.MangoLiso,
+            InventoryItemType.CoconutSeednut, InventoryItemType.PineappleSucker,
+            InventoryItemType.StrawberryRunner, InventoryItemType.TomatoSeed,
+            InventoryItemType.EggplantSeed, InventoryItemType.SquashSeed,
+            InventoryItemType.SquashSeedling, InventoryItemType.CornSeed,
+            InventoryItemType.AphidTrap,
             InventoryItemType.SprayerPump, InventoryItemType.InsecticideLiter,
             InventoryItemType.DisinfectantLiter, InventoryItemType.NeemSoapLiter,
             InventoryItemType.BtBioInsecticideLiter, InventoryItemType.CopperFungicideLiter,
@@ -709,79 +720,15 @@ namespace AgriDabao3D
             shopButtonsContent.sizeDelta = new Vector2(520f, 790f);
             scrollRect.viewport = viewportRect;
             scrollRect.content = shopButtonsContent;
+            // The same stock as the themed shelf, so both layouts sell the same
+            // things. This plain list only appears when the board art is missing.
             float y = -10f;
             float step = 62f;
-            CreateSeedButton(InventoryItemType.PineappleSeed, "Pineapple Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.BananaSeed, "Banana Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.CacaoSeed, "Cacao Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.CoconutSeed, "Coconut Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.PomeloSeed, "Pomelo Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.MangoSeed, "Mango Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.MangosteenSeed, "Mangosteen Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.DurianSeed, "Durian Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.CornSeed, "Corn Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.EggplantSeed, "Eggplant Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.SquashSeed, "Squash Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.StrawberrySeed, "Strawberry Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.TomatoSeed, "Tomato Seed", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.AphidTrap, "Aphid Trap", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.SprayerPump, "Sprayer Pump", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.InsecticideLiter, "Insecticide Liter", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.DisinfectantLiter, "Disinfectant Liter", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.NeemSoapLiter, "Neem Soap Liter", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.BtBioInsecticideLiter, "Bt Bio-Insecticide Liter", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.CopperFungicideLiter, "Copper Fungicide Liter", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.PheromoneTrap, "Pheromone Trap", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.FruitBag, "Fruit Bag", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.DrainageKit, "Drainage Kit", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.TermiteBaitStation, "Termite Bait Station", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.MulchBag, "Mulch Bag", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.OrganicCompostBag, "Organic Compost Bag", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.PruningShears, "Pruning Shears", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.SupportStakeKit, "Support Stake Kit", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.TrellisKit, "Trellis Kit", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.RaisedBedKit, "Raised Bed Kit", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.IrrigationSystemKit, "Irrigation System Kit", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.WaterStorageTankKit, "Water Storage Tank Kit", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.ShadeNetKit, "Shade Net Kit", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.WindbreakKit, "Windbreak Kit", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.GreenhouseKit, "Greenhouse Kit", new Vector2(0f, y));
-            y -= step;
-            CreateSeedButton(InventoryItemType.DrainageCanalKit, "Drainage Canal Kit", new Vector2(0f, y));
+            foreach (InventoryItemType item in ShopStock)
+            {
+                CreateSeedButton(item, FriendlyShopName(item), new Vector2(0f, y));
+                y -= step;
+            }
             shopButtonsContent.sizeDelta = new Vector2(520f, Mathf.Abs(y) + 80f);
             scrollRect.verticalNormalizedPosition = 1f;
         }

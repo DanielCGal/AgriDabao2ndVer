@@ -18,6 +18,47 @@ namespace AgriDabao3D
         public List<CropSaveDto> crops = new List<CropSaveDto>();
         public List<WorldObjectSaveDto> worldObjects = new List<WorldObjectSaveDto>();
         public TutorialSaveDto tutorial = new TutorialSaveDto();
+
+        // Added with save version 4. A version-3 farm has neither, and loads
+        // with a fresh Seedling Tent and no prepared ground.
+        public NurserySaveDto nursery = new NurserySaveDto();
+        public List<PreparedPlotSaveDto> preparedPlots = new List<PreparedPlotSaveDto>();
+    }
+
+    /// <summary>The Seedling Tent: where it stands and what is in each bag.</summary>
+    [Serializable]
+    public class NurserySaveDto
+    {
+        public bool tentPlaced;
+        public SerializableVector3 tentPosition;
+        public SerializableQuaternion tentRotation;
+        public List<SeedlingBagSaveDto> bags = new List<SeedlingBagSaveDto>();
+    }
+
+    [Serializable]
+    public class SeedlingBagSaveDto
+    {
+        public int slot;
+        public bool filled;
+        public string material;
+        public float sownGameDay;
+        public float prickedGameDay = -1f;
+    }
+
+    /// <summary>A patch of tilled or prepared ground that has not been planted yet.</summary>
+    [Serializable]
+    public class PreparedPlotSaveDto
+    {
+        public string plotId;
+        public string plotKind;
+        public bool mulched;
+        public string bedPatchId;
+        public float preparedGameDay;
+        public SerializableVector3 position;
+        public SerializableQuaternion rotation;
+        public SerializableVector3 terrainNormal;
+        public SoilSample soil;
+        public string districtName;
     }
 
     /// <summary>
@@ -146,6 +187,18 @@ namespace AgriDabao3D
         public List<BananaBulbHarvestSaveDto> bananaBulbs = new List<BananaBulbHarvestSaveDto>();
         public List<TropicalBundleHarvestSaveDto> tropicalBundles = new List<TropicalBundleHarvestSaveDto>();
         public List<PestConditionSaveDto> activeConditions = new List<PestConditionSaveDto>();
+
+        // Added with save version 4; older saves read as unknown material and a
+        // crop that has been in the field for a long time.
+        public string plantingMaterial;
+        public float nurseryDays;
+        public float fieldPlantedGameDay = -1f;
+
+        // Fruit bag and drainage kit protection. These were never saved before,
+        // so a reload silently removed both and let a second drainage kit stack
+        // another +25% drainage on the same crop.
+        public bool hasFruitBag;
+        public bool hasDrainageImprovement;
     }
     [Serializable]
     public class BananaBulbHarvestSaveDto

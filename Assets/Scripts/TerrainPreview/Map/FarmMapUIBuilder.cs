@@ -289,6 +289,15 @@ namespace AgriDabao3D
                     mitigationIconSize, MitigationColor, mitigationDotSize, 300));
             }
 
+            // The Seedling Tent, shown with its own round button art so the player
+            // can find it again after wandering off to plant.
+            SeedlingTentInstance tent = Object.FindFirstObjectByType<SeedlingTentInstance>();
+            if (tent != null)
+            {
+                markers.Add(IconOrDot(tent.transform, UIThemeSprites.Instance?.seedlingTentButton,
+                    mitigationIconSize * 1.25f, MitigationColor, mitigationDotSize, 400));
+            }
+
             // Grouped by kind. Every kind of picture is its own texture, and where
             // two different pictures overlap the canvas has to split its batch
             // between them; in scene order the kinds interleave, so a dense planting

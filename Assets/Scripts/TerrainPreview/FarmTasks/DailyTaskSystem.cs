@@ -450,7 +450,16 @@ namespace AgriDabao3D
                         template.itemType,
                         Mathf.Max(1, template.targetAmount));
                 case DailyTaskKind.DigPlantingSpot:
+                case DailyTaskKind.TillGround:
                     return HasInventoryItem("Shovel");
+                case DailyTaskKind.SowSeedlingBag:
+                    // Room in the tent, and enough to sow held today - a task
+                    // cannot count on a purchase the player may not make.
+                    return PlantingAvailability.CountFreeBags() >= Mathf.Max(1, template.targetAmount) &&
+                           PlantingAvailability.CountNurseryMaterialsHeld() >= Mathf.Max(1, template.targetAmount);
+                case DailyTaskKind.TransplantSeedling:
+                    return PlantingAvailability.CountTentSeedlingsPlantableToday() >=
+                           Mathf.Max(1, template.targetAmount);
                 case DailyTaskKind.CollectHarvest:
                     return CropRuntimeAdapter.FindAll()
                         .Sum(crop =>
@@ -798,6 +807,25 @@ namespace AgriDabao3D
                         task.progressAmount += quantity;
                     break;
 
+                case DailyTaskKind.TillGround:
+                    if (record.actionType == "TillGround")
+                        task.progressAmount += quantity;
+                    break;
+
+                case DailyTaskKind.SowSeedlingBag:
+                    if (record.actionType == "SowSeedlingBag" &&
+                        (string.IsNullOrWhiteSpace(task.itemType) ||
+                         AlternativeMatches(task.itemType, record.itemType)))
+                    {
+                        task.progressAmount += quantity;
+                    }
+                    break;
+
+                case DailyTaskKind.TransplantSeedling:
+                    if (record.actionType == "TransplantSeedling" && cropMatches)
+                        task.progressAmount += quantity;
+                    break;
+
                 case DailyTaskKind.CollectHarvest:
                     if (record.actionType == "CollectHarvest")
                         task.progressAmount += quantity;
@@ -1123,6 +1151,10 @@ namespace AgriDabao3D
             {
                 if (task.progressKeys == null)
                     task.progressKeys = new List<string>();
+
+                // A task saved before the planting materials may still name an
+                // old seed ("BananaSeed"); planting what replaced it has to count.
+                task.itemType = PlantingMaterialCatalog.UpgradeLegacyList(task.itemType);
                 EvaluateTaskFromState(task);
             }
             NotifyChanged();
@@ -1385,58 +1417,31 @@ namespace AgriDabao3D
                    PlayerInventory.Instance.HasItem(item, 1);
         }
 
+        /// <summary>
+        /// Whether the player can plant this many of a crop in the field today:
+        /// any of its materials that goes straight in, or a ready seedling in the
+        /// Seedling Tent, with ground for it ready or preparable. The old check only
+        /// counted items ending in "Seed", which missed suckers, runners, seednuts
+        /// and every tent seedling, and counted nursery seeds that cannot reach the
+        /// field before the day - and its task - ends.
+        /// </summary>
         private static bool CanPlant(
             string cropType,
             int requiredAmount = 1)
         {
-            InventoryItemType seed =
-                FarmTaskContextBuilder.CropNameToSeedItem(cropType);
-            return seed != InventoryItemType.None &&
-                   PlayerInventory.Instance != null &&
-                   PlayerInventory.Instance.HasItem(
-                       seed, Mathf.Max(1, requiredAmount)) &&
-                   HasPlantingCapability();
+            return PlantingMaterialCatalog.TryGetCropType(cropType, out FarmCropType crop) &&
+                   PlantingAvailability.CountPlantableToday(crop) >= Mathf.Max(1, requiredAmount);
         }
 
         private static bool CanPlantAny(
             string allowedItems,
             int requiredAmount = 1)
         {
-            if (PlayerInventory.Instance == null ||
-                !HasPlantingCapability())
-            {
-                return false;
-            }
+            Func<InventoryItemType, bool> allow = string.IsNullOrWhiteSpace(allowedItems)
+                ? null
+                : new Func<InventoryItemType, bool>(item => AlternativeMatches(allowedItems, item.ToString()));
 
-            int availableSeeds = 0;
-            foreach (InventoryItemType item in
-                     Enum.GetValues(typeof(InventoryItemType)))
-            {
-                if (!item.ToString().EndsWith(
-                        "Seed", StringComparison.Ordinal))
-                {
-                    continue;
-                }
-                if (!string.IsNullOrWhiteSpace(allowedItems) &&
-                    !AlternativeMatches(allowedItems, item.ToString()))
-                {
-                    continue;
-                }
-                availableSeeds +=
-                    PlayerInventory.Instance.GetCount(item);
-                if (availableSeeds >= Mathf.Max(1, requiredAmount))
-                    return true;
-            }
-            return false;
-        }
-
-        private static bool HasPlantingCapability()
-        {
-            bool hasOpenSpot =
-                Object.FindObjectsByType<DigSpot>(
-                        FindObjectsSortMode.None)
-                    .Any(spot => spot != null && !spot.occupied);
-            return hasOpenSpot || HasInventoryItem("Shovel");
+            return PlantingAvailability.CountPlantableToday(allow) >= Mathf.Max(1, requiredAmount);
         }
 
         private static bool HasSellableInventory(
@@ -2086,7 +2091,8 @@ namespace AgriDabao3D
                 id = 66,
                 title = "Prepare a planting spot",
                 description =
-                    "Dig one new planting spot using the shovel.",
+                    "Till ground with the shovel, then dig a planting hole, build a " +
+                    "raised bed or open a furrow in it.",
                 kind = DailyTaskKind.DigPlantingSpot,
                 difficulty = DailyTaskDifficulty.Easy,
                 itemType = "Shovel",
@@ -2101,7 +2107,8 @@ namespace AgriDabao3D
                 id = 66,
                 title = "Prepare two planting spots",
                 description =
-                    "Dig two new planting spots using the shovel.",
+                    "Till two patches of ground and prepare each one as a planting " +
+                    "hole, a raised bed or a furrow.",
                 kind = DailyTaskKind.DigPlantingSpot,
                 difficulty = DailyTaskDifficulty.Easy,
                 itemType = "Shovel",
@@ -2116,7 +2123,8 @@ namespace AgriDabao3D
                 id = 67,
                 title = "Plant any crop",
                 description =
-                    "Plant any available seed in a prepared planting spot.",
+                    "Plant any planting material in prepared ground, or transplant a " +
+                    "ready seedling from the Seedling Tent.",
                 kind = DailyTaskKind.PlantAnyCrop,
                 difficulty = DailyTaskDifficulty.Easy,
                 targetAmount = 1

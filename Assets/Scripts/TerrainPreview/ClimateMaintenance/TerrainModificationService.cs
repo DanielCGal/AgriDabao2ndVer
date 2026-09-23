@@ -60,6 +60,29 @@ namespace AgriDabao3D
             string key = "raised:" + patchId;
             if (!TryMarkApplied(terrain, key)) return false;
 
+            ApplyMound(terrain, center, radiusMeters, heightMeters);
+            return true;
+        }
+
+        /// <summary>
+        /// Lowers a raised bed that was lifted earlier with the same centre, size
+        /// and patch id, returning the ground to how it was. Used when the player
+        /// fills in a bed nothing was planted in. Does nothing for a patch that is
+        /// not currently applied, so it can never dig a pit.
+        /// </summary>
+        public static bool RemoveRaisedBed(Terrain terrain, Vector3 center, float radiusMeters, float heightMeters, string patchId)
+        {
+            if (terrain == null || terrain.terrainData == null) return false;
+            string key = "raised:" + patchId;
+            HashSet<string> patches = AppliedPatchesByTerrain.GetOrCreateValue(terrain);
+            if (!patches.Remove(key)) return false;
+
+            ApplyMound(terrain, center, radiusMeters, -heightMeters);
+            return true;
+        }
+
+        private static void ApplyMound(Terrain terrain, Vector3 center, float radiusMeters, float heightMeters)
+        {
             TerrainData data = terrain.terrainData;
             int resolution = data.heightmapResolution;
             Vector3 local = center - terrain.transform.position;
@@ -102,7 +125,6 @@ namespace AgriDabao3D
             }
             data.SetHeights(x0, z0, heights);
             terrain.Flush();
-            return true;
         }
 
         public static bool ApplyDrainageCanal(

@@ -48,11 +48,60 @@ namespace AgriDabao3D
         private float pendingGameDays;
         private Terrain terrain;
 
+        /// <summary>
+        /// Every structure currently standing, kept by the structures themselves.
+        /// Crops ask "is there shade over me?" every frame, and searching the scene
+        /// for that on every crop every frame would be far too slow on a phone.
+        /// </summary>
+        private static readonly List<ClimateMitigationWorldObject> Active =
+            new List<ClimateMitigationWorldObject>();
+
         protected virtual void Awake()
         {
             TemporaryTerrainGenerator generator =
                 Object.FindFirstObjectByType<TemporaryTerrainGenerator>();
             terrain = generator != null ? generator.targetTerrain : null;
+        }
+
+        protected virtual void OnEnable()
+        {
+            if (!Active.Contains(this))
+                Active.Add(this);
+        }
+
+        protected virtual void OnDisable()
+        {
+            Active.Remove(this);
+        }
+
+        /// <summary>
+        /// Whether a Shade Net or a Greenhouse covers this point. Young cacao
+        /// needs one of them overhead.
+        /// </summary>
+        public static bool IsShadeOver(Vector3 position)
+        {
+            for (int i = Active.Count - 1; i >= 0; i--)
+            {
+                ClimateMitigationWorldObject item = Active[i];
+                if (item == null)
+                {
+                    Active.RemoveAt(i);
+                    continue;
+                }
+
+                if (item.mitigationType != ClimateWorldMitigationType.ShadeNet &&
+                    item.mitigationType != ClimateWorldMitigationType.Greenhouse)
+                {
+                    continue;
+                }
+
+                Vector3 offset = item.transform.position - position;
+                offset.y = 0f;
+                if (offset.sqrMagnitude <= item.radius * item.radius)
+                    return true;
+            }
+
+            return false;
         }
 
         public void Initialize(
@@ -544,14 +593,16 @@ namespace AgriDabao3D
 
         public string GetInspectionText()
         {
+            // Each part on its own line. They used to be joined with nothing in
+            // between, so the board read "GreenhouseRadius: 10.0 m".
             string resource =
                 mitigationType == ClimateWorldMitigationType.WaterStorageTank
-                    ? "Water: " + storedResource.ToString("F0") +
+                    ? "\nWater: " + storedResource.ToString("F0") +
                       "/" + resourceCapacity.ToString("F0")
                     : string.Empty;
 
             return displayName +
-                   "Radius: " + radius.ToString("F1") + " m" +
+                   "\nRadius: " + radius.ToString("F1") + " m" +
                    resource;
         }
 

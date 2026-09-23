@@ -3,7 +3,9 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    public class FarmingInteractionSystem : MonoBehaviour
+    // Split across files: preparing ground, planting and transplanting live in
+    // FarmingInteractionSystem.Planting.cs.
+    public partial class FarmingInteractionSystem : MonoBehaviour
     {
         [Header("References")]
         public Camera playerCamera;
@@ -298,47 +300,11 @@ namespace AgriDabao3D
 
             InventoryItemType selected = PlayerInventory.Instance.selectedItem;
 
-            DigSpot clickedDigSpot =
-    hit.collider.GetComponentInParent<DigSpot>();
-
-            if (clickedDigSpot != null)
-            {
-                if (selected == InventoryItemType.Shovel)
-                {
-                    ShowFarmingMessage("This ground has already been dug.");
-                    return true;
-                }
-
-                // A dug spot can only be created within reach, but it stays there
-                // afterwards, so planting needs the same check or the player could
-                // seed a spot from the far side of the farm.
-                bool digSpotInReach = IsWithinReach(clickedDigSpot.transform.position);
-
-                if (selected == InventoryItemType.CoconutSeed)
-                    return digSpotInReach ? TryPlantSeed(clickedDigSpot) : ReportOutOfReach();
-
-                if (selected == InventoryItemType.BananaSeed)
-                    return digSpotInReach ? TryPlantBananaSeed(clickedDigSpot) : ReportOutOfReach();
-
-                if (TryGetCropKindFromSeed(
-                        selected,
-                        out TropicalCropKind clickedSpotCropKind))
-                {
-                    if (!digSpotInReach)
-                        return ReportOutOfReach();
-
-                    return TryPlantTropicalSeed(
-                        clickedDigSpot,
-                        clickedSpotCropKind
-                    );
-                }
-
-                ShowFarmingMessage(
-                    "This is a dug planting spot. Select a seed to plant here."
-                );
-
+            // The Seedling Tent, a transplant in progress, and prepared ground.
+            // Prepared ground stays where it was dug, so every action on it is
+            // reach-checked there, or the player could plant from across the farm.
+            if (TryHandlePlantingTap(hit, selected))
                 return true;
-            }
 
             AphidTrapInstance clickedTrap = hit.collider.GetComponentInParent<AphidTrapInstance>();
             if (clickedTrap != null)
@@ -553,18 +519,10 @@ namespace AgriDabao3D
                 return true;
 
             if (selected == InventoryItemType.Shovel)
-                return TryDigSpot(hit);
+                return TryTillGround(hit);
 
-            if (IsSeedItem(selected))
-            {
-                ShowFarmingMessage(
-                    "You cannot plant directly on the ground. Dig a planting spot first."
-                );
-
+            if (ReportBareGroundPlanting(selected))
                 return true;
-            }
-
-
 
             // Traps are placed on the ground the player tapped, so reach is measured
             // to that point.
@@ -1168,153 +1126,6 @@ namespace AgriDabao3D
             }
         }
 
-        private bool TryDigSpot(RaycastHit hit)
-        {
-            Terrain terrain = terrainGenerator.targetTerrain;
-
-            TerrainCollider terrainCollider =
-                terrain != null
-                    ? terrain.GetComponent<TerrainCollider>()
-                    : null;
-
-            // Shovel can only dig the actual generated terrain.
-            if (terrainCollider == null || hit.collider != terrainCollider)
-                return false;
-
-            if (!PlayerInventory.Instance.HasItem(
-                    InventoryItemType.Shovel,
-                    1))
-            {
-                ShowFarmingMessage("You do not own a Shovel.");
-                return true;
-            }
-
-            if (digSpotPrefab == null)
-            {
-                Debug.LogWarning(
-                    "FarmingInteractionSystem: Dig Spot Prefab is not assigned."
-                );
-
-                return true;
-            }
-
-            Vector3 groundPosition = hit.point;
-
-            groundPosition.y =
-                terrain.SampleHeight(groundPosition) +
-                terrain.transform.position.y;
-
-            // The tap ray runs the length of the map, so without a reach limit the
-            // shovel digs wherever the player happens to be looking - which on a
-            // phone is easy to trigger by accident, since a thumb slide that stays
-            // under the look-drag threshold still counts as a tap.
-            if (!IsWithinReach(groundPosition))
-            {
-                ShowFarmingMessage(
-                    "That ground is too far away. Move closer to dig."
-                );
-
-                return true;
-            }
-
-            if (HasNearbyCrop(groundPosition))
-            {
-                ShowFarmingMessage(
-                    "You cannot dig too close to an existing crop."
-                );
-
-                return true;
-            }
-
-            if (HasNearbyDigSpot(groundPosition))
-            {
-                ShowFarmingMessage(
-                    "There is already a dug planting spot nearby."
-                );
-
-                return true;
-            }
-
-            Vector3 terrainNormal =
-                GetTerrainNormal(terrain, groundPosition);
-
-            Quaternion slopeRotation =
-                Quaternion.FromToRotation(
-                    Vector3.up,
-                    terrainNormal
-                );
-
-            Quaternion finalRotation =
-                slopeRotation *
-                digSpotPrefab.transform.rotation;
-
-            GameObject digObject = Instantiate(
-                digSpotPrefab,
-                groundPosition,
-                finalRotation
-            );
-
-            digObject.name = "DigSpot_Runtime";
-
-            GameAudioManager.Instance.PlayDig();
-
-            DistanceCullable.Attach(digObject);
-
-            DigSpot digSpot = digObject.GetComponent<DigSpot>();
-
-            if (digSpot == null)
-                digSpot = digObject.AddComponent<DigSpot>();
-
-            EnsureCollider(digObject);
-
-            // Prevent an imported dirt model from falling or sliding.
-            Rigidbody[] rigidbodies =
-                digObject.GetComponentsInChildren<Rigidbody>(true);
-
-            foreach (Rigidbody body in rigidbodies)
-            {
-                if (body == null)
-                    continue;
-
-                body.useGravity = false;
-                body.isKinematic = true;
-            }
-
-            // Handles prefabs whose pivot is not exactly at the bottom.
-            SnapObjectBottomToTerrain(
-                digObject,
-                terrain,
-                digSpotGroundOffset
-            );
-
-            // Soil is sampled now, during digging.
-            GetSoilForPlanting(
-                groundPosition,
-                out SoilSample savedSoil,
-                out string savedDistrict
-            );
-
-            Vector3 savedPlantingPosition =
-                groundPosition +
-                Vector3.up * plantHeightOffset;
-
-            digSpot.Initialize(
-                savedSoil,
-                savedDistrict,
-                savedPlantingPosition,
-                terrainNormal
-            );
-
-            ShowFarmingMessage(
-                $"Ground dug successfully.\n" +
-                $"District: {savedDistrict}\n" +
-                $"Soil Type: {savedSoil.GetVisualSoilType()}\n" +
-                "Select a seed and tap this dirt spot."
-            );
-
-            return true;
-        }
-
         private Vector3 GetTerrainNormal(
     Terrain terrain,
     Vector3 worldPosition)
@@ -1453,20 +1264,6 @@ namespace AgriDabao3D
                 : Vector3.zero;
         }
 
-        private bool IsSeedItem(InventoryItemType item)
-        {
-            if (item == InventoryItemType.CoconutSeed)
-                return true;
-
-            if (item == InventoryItemType.BananaSeed)
-                return true;
-
-            return TryGetCropKindFromSeed(
-                item,
-                out TropicalCropKind unusedCropKind
-            );
-        }
-
         private void ShowFarmingMessage(string message)
         {
             Debug.Log("[Farming] " + message);
@@ -1483,98 +1280,6 @@ namespace AgriDabao3D
             {
                 soilAwareTerrain.ShowMessage(message);
             }
-        }
-
-        private bool TryPlantSeed(DigSpot digSpot)
-        {
-            if (digSpot == null)
-                return false;
-
-            if (!PlayerInventory.Instance.HasItem(
-                    InventoryItemType.CoconutSeed,
-                    1))
-            {
-                ShowFarmingMessage("You do not have a Coconut Seed.");
-                return true;
-            }
-
-            PlantGrowthVisualSet visualSet = MakeVisualSet(
-                coconutSproutPrefab,
-                coconutSecondStagePrefab,
-                coconutTreePrefab,
-                coconutSproutYOffset,
-                coconutSecondStageYOffset
-            );
-
-            if (!HasAnyVisualPrefab(visualSet))
-            {
-                Debug.LogWarning(
-                    "FarmingInteractionSystem: Coconut growth prefabs are not assigned."
-                );
-
-                return true;
-            }
-
-            if (!digSpot.TryReserve())
-            {
-                ShowFarmingMessage(
-                    "This planting spot is already being used."
-                );
-
-                return true;
-            }
-
-            Vector3 spawnPosition = digSpot.plantingPosition;
-
-            if (HasNearbyCrop(spawnPosition))
-            {
-                digSpot.Release();
-
-                ShowFarmingMessage(
-                    "A crop is already too close to this planting spot."
-                );
-
-                return true;
-            }
-
-            GameObject root = CreatePlantRoot(
-                "CoconutTree",
-                spawnPosition
-            );
-
-            CoconutTreeInstance treeInstance =
-                root.AddComponent<CoconutTreeInstance>();
-
-            EnsurePestDiseaseComponent(root);
-            AddGrowthVisuals(root, visualSet);
-            EnsureCollider(root);
-
-            treeInstance.Initialize(
-                digSpot.GetSoilCopy(),
-                digSpot.savedDistrict
-            );
-            treeInstance.cropName = CropNaming.NextName("Coconut");
-            GameAudioManager.Instance.PlayPlantSeed();
-
-            bool seedConsumed =
-                PlayerInventory.Instance.ConsumeItem(
-                    InventoryItemType.CoconutSeed,
-                    1
-                );
-
-            if (!seedConsumed)
-            {
-                Destroy(root);
-                digSpot.Release();
-                return true;
-            }
-
-            // Dirt disappears after the plant is created.
-            digSpot.Consume();
-
-            ShowTreeInfo(treeInstance);
-            ReportFarmAction("Planting");
-            return true;
         }
 
         private bool TrySprayCrop(PestDiseaseAffectedCrop disease)
@@ -1647,205 +1352,6 @@ namespace AgriDabao3D
         }
 
 
-        private bool TryPlantBananaSeed(DigSpot digSpot)
-        {
-            if (digSpot == null)
-                return false;
-
-            if (!PlayerInventory.Instance.HasItem(
-                    InventoryItemType.BananaSeed,
-                    1))
-            {
-                ShowFarmingMessage("You do not have a Banana Seed.");
-                return true;
-            }
-
-            PlantGrowthVisualSet visualSet = MakeVisualSet(
-                bananaSproutPrefab,
-                bananaSecondStagePrefab,
-                bananaTreePrefab,
-                bananaSproutYOffset,
-                bananaSecondStageYOffset
-            );
-
-            if (!HasAnyVisualPrefab(visualSet))
-            {
-                Debug.LogWarning(
-                    "FarmingInteractionSystem: Banana growth prefabs are not assigned."
-                );
-
-                return true;
-            }
-
-            if (!digSpot.TryReserve())
-            {
-                ShowFarmingMessage(
-                    "This planting spot is already being used."
-                );
-
-                return true;
-            }
-
-            Vector3 spawnPosition = digSpot.plantingPosition;
-
-            if (HasNearbyCrop(spawnPosition))
-            {
-                digSpot.Release();
-
-                ShowFarmingMessage(
-                    "A crop is already too close to this planting spot."
-                );
-
-                return true;
-            }
-
-            GameObject root = CreatePlantRoot(
-                "BananaPlant",
-                spawnPosition
-            );
-
-            BananaPlantInstance bananaInstance =
-                root.AddComponent<BananaPlantInstance>();
-
-            EnsurePestDiseaseComponent(root);
-            AddGrowthVisuals(root, visualSet);
-            EnsureCollider(root);
-
-            bananaInstance.Initialize(
-                digSpot.GetSoilCopy(),
-                digSpot.savedDistrict
-            );
-            bananaInstance.cropName = CropNaming.NextName("Banana");
-            GameAudioManager.Instance.PlayPlantSeed();
-
-            bool seedConsumed =
-                PlayerInventory.Instance.ConsumeItem(
-                    InventoryItemType.BananaSeed,
-                    1
-                );
-
-            if (!seedConsumed)
-            {
-                Destroy(root);
-                digSpot.Release();
-                return true;
-            }
-
-            digSpot.Consume();
-
-            ShowBananaInfo(bananaInstance);
-            ReportFarmAction("Planting");
-            return true;
-        }
-
-        private bool TryPlantTropicalSeed(
-    DigSpot digSpot,
-    TropicalCropKind cropKind)
-        {
-            if (digSpot == null)
-                return false;
-
-            InventoryItemType seedItem =
-                TropicalCropCatalog.GetSeedItem(cropKind);
-
-            if (!PlayerInventory.Instance.HasItem(seedItem, 1))
-            {
-                ShowFarmingMessage(
-                    $"You do not have a " +
-                    $"{TropicalCropCatalog.GetDisplayName(cropKind)} Seed."
-                );
-
-                return true;
-            }
-
-            GameObject adultPrefab =
-                GetTropicalTreePrefab(cropKind);
-
-            PlantGrowthVisualSet visualSet = MakeVisualSet(
-                GetTropicalSproutPrefab(cropKind),
-                GetTropicalSecondStagePrefab(cropKind),
-                adultPrefab,
-                GetTropicalSproutYOffset(cropKind),
-                GetTropicalSecondStageYOffset(cropKind)
-            );
-
-            if (!HasAnyVisualPrefab(visualSet))
-            {
-                Debug.LogWarning(
-                    $"FarmingInteractionSystem: " +
-                    $"{TropicalCropCatalog.GetDisplayName(cropKind)} " +
-                    "growth prefabs are not assigned."
-                );
-
-                return true;
-            }
-
-            if (!digSpot.TryReserve())
-            {
-                ShowFarmingMessage(
-                    "This planting spot is already being used."
-                );
-
-                return true;
-            }
-
-            Vector3 spawnPosition = digSpot.plantingPosition;
-
-            // Preserve your existing per-crop prefab offsets.
-            spawnPosition.y += GetTropicalGroundOffset(cropKind);
-
-            if (HasNearbyCrop(spawnPosition))
-            {
-                digSpot.Release();
-
-                ShowFarmingMessage(
-                    "A crop is already too close to this planting spot."
-                );
-
-                return true;
-            }
-
-            GameObject root = CreatePlantRoot(
-                $"{TropicalCropCatalog.GetDisplayName(cropKind)}Plant",
-                spawnPosition
-            );
-
-            TropicalCropPlantInstance instance =
-                root.AddComponent<TropicalCropPlantInstance>();
-
-            instance.cropKind = cropKind;
-
-            EnsurePestDiseaseComponent(root);
-            AddGrowthVisuals(root, visualSet);
-            EnsureCollider(root);
-
-            instance.Initialize(
-                digSpot.GetSoilCopy(),
-                digSpot.savedDistrict
-            );
-            instance.cropName = CropNaming.NextName(instance.CropDisplayName);
-            GameAudioManager.Instance.PlayPlantSeed();
-
-            bool seedConsumed =
-                PlayerInventory.Instance.ConsumeItem(
-                    seedItem,
-                    1
-                );
-
-            if (!seedConsumed)
-            {
-                Destroy(root);
-                digSpot.Release();
-                return true;
-            }
-
-            digSpot.Consume();
-
-            ShowTropicalInfo(instance);
-            ReportFarmAction("Planting");
-            return true;
-        }
-
         private Vector3 GetTerrainSpawnPosition(RaycastHit hit, Terrain terrain)
         {
             Vector3 spawnPos = hit.point;
@@ -1914,6 +1420,7 @@ namespace AgriDabao3D
 
             float beforeMoisture = tree.moisture;
             tree.Water(0.40f);
+            GameAudioManager.Instance.PlayWater();
 
             if (ClimateEventTracker.Instance != null)
                 ClimateEventTracker.Instance.RecordWaterAction(tree.cropId, "Coconut", beforeMoisture, tree.moisture);
@@ -1933,6 +1440,7 @@ namespace AgriDabao3D
 
             float beforeMoisture = tree.moisture;
             tree.Water(0.45f);
+            GameAudioManager.Instance.PlayWater();
 
             if (ClimateEventTracker.Instance != null)
                 ClimateEventTracker.Instance.RecordWaterAction(tree.cropId, "Banana", beforeMoisture, tree.moisture);
@@ -1952,6 +1460,7 @@ namespace AgriDabao3D
 
             float beforeMoisture = plant.moisture;
             plant.Water(TropicalCropCatalog.GetWaterAmount(plant.cropKind));
+            GameAudioManager.Instance.PlayWater();
 
             if (ClimateEventTracker.Instance != null)
                 ClimateEventTracker.Instance.RecordWaterAction(plant.cropId, plant.CropDisplayName, beforeMoisture, plant.moisture);
@@ -2270,54 +1779,6 @@ namespace AgriDabao3D
             return PesoPrice.CentavosFromInspector(pesos);
         }
 
-        private bool TryGetCropKindFromSeed(InventoryItemType item, out TropicalCropKind cropKind)
-        {
-            switch (item)
-            {
-                case InventoryItemType.DurianSeed:
-                    cropKind = TropicalCropKind.Durian;
-                    return true;
-                case InventoryItemType.PomeloSeed:
-                    cropKind = TropicalCropKind.Pomelo;
-                    return true;
-                case InventoryItemType.CacaoSeed:
-                    cropKind = TropicalCropKind.Cacao;
-                    return true;
-                case InventoryItemType.PineappleSeed:
-                    cropKind = TropicalCropKind.Pineapple;
-                    return true;
-                case InventoryItemType.MangosteenSeed:
-                    cropKind = TropicalCropKind.Mangosteen;
-                    return true;
-                case InventoryItemType.MangoSeed:
-                    cropKind = TropicalCropKind.Mango;
-                    return true;
-
-                case InventoryItemType.CornSeed:
-                    cropKind = TropicalCropKind.Corn;
-                    return true;
-
-                case InventoryItemType.EggplantSeed:
-                    cropKind = TropicalCropKind.Eggplant;
-                    return true;
-
-                case InventoryItemType.SquashSeed:
-                    cropKind = TropicalCropKind.Squash;
-                    return true;
-
-                case InventoryItemType.StrawberrySeed:
-                    cropKind = TropicalCropKind.Strawberry;
-                    return true;
-
-                case InventoryItemType.TomatoSeed:
-                    cropKind = TropicalCropKind.Tomato;
-                    return true;
-                default:
-                    cropKind = TropicalCropKind.Durian;
-                    return false;
-            }
-        }
-
         private GameObject GetTropicalTreePrefab(TropicalCropKind cropKind)
         {
             return cropKind switch
@@ -2402,15 +1863,16 @@ namespace AgriDabao3D
 
             GameObject root;
 
+            // What the crop was planted from decides the model it shows for its
+            // first days in the field. None for a crop saved before that existed.
+            InventoryItemType savedMaterial =
+                PlantingMaterialCatalog.TryParseItem(save.plantingMaterial, out InventoryItemType parsedMaterial)
+                    ? PlantingMaterialCatalog.UpgradeLegacy(parsedMaterial)
+                    : InventoryItemType.None;
+
             if (string.Equals(save.cropFamily, "Coconut", System.StringComparison.OrdinalIgnoreCase))
             {
-                PlantGrowthVisualSet visualSet = MakeVisualSet(
-                    coconutSproutPrefab,
-                    coconutSecondStagePrefab,
-                    coconutTreePrefab,
-                    coconutSproutYOffset,
-                    coconutSecondStageYOffset
-                );
+                PlantGrowthVisualSet visualSet = CropVisualSet(FarmCropType.Coconut, savedMaterial);
 
                 root = CreatePlantRoot("CoconutTree", save.position.ToVector3());
                 CoconutTreeInstance crop = root.AddComponent<CoconutTreeInstance>();
@@ -2420,18 +1882,13 @@ namespace AgriDabao3D
                 crop.Initialize(restoredSoil, save.districtName);
                 CropPersistenceMapper.Restore(crop, save);
                 RefreshRestoredVisual(root);
+                RestorePlantingDetails(root, save);
                 return root;
             }
 
             if (string.Equals(save.cropFamily, "Banana", System.StringComparison.OrdinalIgnoreCase))
             {
-                PlantGrowthVisualSet visualSet = MakeVisualSet(
-                    bananaSproutPrefab,
-                    bananaSecondStagePrefab,
-                    bananaTreePrefab,
-                    bananaSproutYOffset,
-                    bananaSecondStageYOffset
-                );
+                PlantGrowthVisualSet visualSet = CropVisualSet(FarmCropType.Banana, savedMaterial);
 
                 root = CreatePlantRoot("BananaPlant", save.position.ToVector3());
                 BananaPlantInstance crop = root.AddComponent<BananaPlantInstance>();
@@ -2441,6 +1898,7 @@ namespace AgriDabao3D
                 crop.Initialize(restoredSoil, save.districtName);
                 CropPersistenceMapper.Restore(crop, save);
                 RefreshRestoredVisual(root);
+                RestorePlantingDetails(root, save);
                 return root;
             }
 
@@ -2450,13 +1908,8 @@ namespace AgriDabao3D
                 return null;
             }
 
-            PlantGrowthVisualSet tropicalVisuals = MakeVisualSet(
-                GetTropicalSproutPrefab(cropKind),
-                GetTropicalSecondStagePrefab(cropKind),
-                GetTropicalTreePrefab(cropKind),
-                GetTropicalSproutYOffset(cropKind),
-                GetTropicalSecondStageYOffset(cropKind)
-            );
+            PlantGrowthVisualSet tropicalVisuals =
+                CropVisualSet(CropClimateRules.GetFarmCropType(cropKind), savedMaterial);
 
             root = CreatePlantRoot(
                 $"{TropicalCropCatalog.GetDisplayName(cropKind)}Plant",
@@ -2471,6 +1924,7 @@ namespace AgriDabao3D
             tropical.Initialize(restoredSoil, save.districtName);
             CropPersistenceMapper.Restore(tropical, save);
             RefreshRestoredVisual(root);
+            RestorePlantingDetails(root, save);
             return root;
         }
 
@@ -2821,9 +2275,16 @@ namespace AgriDabao3D
             tapTarget.radius = cropTapRadius;
             tapTarget.height = cropTapHeight;
 
-            // The crop root sits at ground level, so raise the capsule by half its
-            // height to span from the soil up rather than sinking half of it.
-            tapTarget.center = new Vector3(0f, cropTapHeight * 0.5f, 0f);
+            // Stand the capsule on the soil, not on the crop root. The root is
+            // where the planting height puts it - several metres above the ground
+            // for most crops in the farm scene - and a capsule centred there
+            // floated over young plants. The growth visual controller keeps it on
+            // the ground from here on, including after a raised bed lifts it.
+            Terrain terrain = TemporaryTerrainGenerator.ResolveActiveTerrain();
+            float localGround = terrain != null && terrain.terrainData != null
+                ? terrain.SampleHeight(root.transform.position) + terrain.transform.position.y - root.transform.position.y
+                : 0f;
+            tapTarget.center = new Vector3(0f, localGround + cropTapHeight * 0.5f, 0f);
         }
 
         private GameObject GetTropicalSproutPrefab(TropicalCropKind cropKind)

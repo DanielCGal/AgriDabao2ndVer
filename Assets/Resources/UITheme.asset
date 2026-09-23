@@ -92,6 +92,11 @@ MonoBehaviour:
   searchPlayersButton: {fileID: 21300000, guid: 938c43980e138ce4b82116c2e7edffa8, type: 3}
   marketplaceButton: {fileID: 21300000, guid: a7451be37c91a314697ff3a0463f46cb, type: 3}
   saveFarmButton: {fileID: 21300000, guid: c1a4b0451d7aa9a4198924163a90bb6e, type: 3}
+  seedlingTentButton: {fileID: 21300000, guid: b1d928aa47814fa478c0e071eea2c98d, type: 3}
+  seedlingBagNoSoil: {fileID: 21300000, guid: 9b510329ba19e9a4e960662abeb034ac, type: 3}
+  seedlingBagWithSoil: {fileID: 21300000, guid: 5b3dae6be429f5148b95993c8d658c10, type: 3}
+  seedlingBagEmptyIcon: {fileID: 21300000, guid: 126fc443807836a479188a869204f2ec, type: 3}
+  seedlingBagSproutIcon: {fileID: 21300000, guid: ba40838e8d5baff429d4cc1b17ba8313, type: 3}
   moneyPlank: {fileID: 21300000, guid: 489e2ddf90d11764dba035d179fb9ce2, type: 3}
   moneyPlankSize: {x: 360, y: 150}
   tutorialDialogueBoard: {fileID: 21300000, guid: fd71cb75696d6054dba8b166e92959e6, type: 3}

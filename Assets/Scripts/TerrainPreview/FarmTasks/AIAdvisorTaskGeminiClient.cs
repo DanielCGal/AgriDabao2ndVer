@@ -40,6 +40,24 @@ namespace AgriDabao3D
             "Refer to a crop only by its cropName, such as mangosteen_1. Never write its cropId " +
             "GUID and never add an \"(ID: ...)\" note after the name.";
 
+        /// <summary>
+        /// How planting works now, added to every task request. Kept in code rather
+        /// than in the Inspector text above, because the Inspector copy in the scene
+        /// would otherwise keep the old wording.
+        /// </summary>
+        private const string PlantingRules =
+            "\n\nPlanting rules. The planting material decides the route. Seeds of cacao, durian, " +
+            "mangosteen, pomelo, tomato and eggplant, banana plantlets and grafted mango seedlings " +
+            "are first raised for a few game days in a seedling bag in the Seedling Tent " +
+            "(seedlingTent lists the bags), then transplanted. Banana suckers, mango liso, coconut " +
+            "seednuts, pineapple suckers, strawberry runners and corn seed go straight into " +
+            "prepared ground; squash seed can go either way, and a squash seedling is bought " +
+            "ready. Ground is tilled with the shovel, then made into a planting hole (tree crops, " +
+            "banana, coconut), a raised bed (tomato, eggplant, squash, pineapple, strawberry - a " +
+            "strawberry bed must be mulched first) or a furrow (corn); preparedGround lists " +
+            "unplanted patches. For PlantQuantity, name the crop in cropType and any of its " +
+            "materials in itemType. Young cacao needs a Shade Net Kit over it.";
+
         public IEnumerator GenerateTask(
             string farmContextJson,
             Action<AIAdvisorTaskGenerationEnvelope> onSuccess,
@@ -94,6 +112,7 @@ namespace AgriDabao3D
                 "For HarvestQuantity/PlantQuantity/WaterCrops, use targetAmount. " +
                 "For ReduceCondition/ReduceFarmSeverity, use requiredReduction or targetThreshold. " +
                 "For InstallMitigation/ApplyMaintenance, set itemType and targetAmount. " +
+                PlantingRules +
                 "\n\nRequired JSON schema:\n" + schema +
                 "\n\nCurrent farm JSON:\n" + farmContextJson;
 

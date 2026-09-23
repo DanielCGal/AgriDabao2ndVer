@@ -54,7 +54,9 @@ namespace AgriDabao3D
             }
             merged.money = (int)mergedMoney;
 
-            foreach (InventoryItemType item in SocialMarketplaceCatalog.TradableItems)
+            // MergeItems, not only TradableItems: an item missing from this loop
+            // never reaches the backpack, and the next save would erase it.
+            foreach (InventoryItemType item in SocialMarketplaceCatalog.MergeItems)
             {
                 int baseCount = Count(knownBase, item);
                 int serverCount = Count(refreshedServer, item);

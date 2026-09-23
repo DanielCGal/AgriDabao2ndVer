@@ -26,6 +26,7 @@ namespace AgriDabao3D
         public const int SlotSearchPlayers = 4;
         public const int SlotMarketplace = 5;
         public const int SlotSaveFarm = 6;
+        public const int SlotSeedlingTent = 7;
 
         public static Vector2 PositionForSlot(int slot)
         {

@@ -46,6 +46,15 @@ namespace AgriDabao3D
         public int availableHarvestCount;
         public float nextProductionGameDay;
 
+        [Header("Planting")]
+        [Tooltip("The planting material this crop grew from, saved by item name.")]
+        public string plantingMaterial;
+
+        [Tooltip("Game days it spent in the Seedling Tent before transplanting.")]
+        public float nurseryDays;
+
+        [Tooltip("Game day it went into the field; -1 for crops planted before this was recorded.")]
+        public float fieldPlantedGameDay = -1f;
 
         private bool initialized;
         private CoconutStage lastLoggedStage;
@@ -126,6 +135,24 @@ namespace AgriDabao3D
             hasLoggedImmature = stage >= CoconutStage.Immature;
 
             initialized = true;
+        }
+
+        /// <summary>
+        /// Makes a freshly planted crop the age it already reached before the
+        /// field - time in the Seedling Tent, or the head start of a bought
+        /// seedling. The first harvest moves by the same amount, so the schedule
+        /// stays measured from the plant's true age.
+        /// </summary>
+        public void ApplyStartingAge(float ageDays)
+        {
+            if (ageDays <= 0f)
+                return;
+
+            plantedGameDay -= ageDays;
+            nextProductionGameDay -= ageDays;
+            stage = GetStage(GetAgeYears());
+            lastLoggedStage = stage;
+            hasLoggedImmature = stage >= CoconutStage.Immature;
         }
 
         private void Update()
@@ -365,6 +392,7 @@ namespace AgriDabao3D
                     plantedGameDay = current - neededAgeDays - 1f;
 
                 stage = GetStage(GetAgeYears());
+                fieldPlantedGameDay = -1f;
             }
 
             float maturityFactor = stage switch
@@ -540,6 +568,7 @@ namespace AgriDabao3D
         {
             return
                 $"Crop Name: {cropName}\n" +
+                CropPlantingText.PlantedFromLine(plantingMaterial, nurseryDays) +
                 $"Tree Stage: {stage}\n" +
                 $"Health: {health:F1}/100\n" +
                 $"Avg Health: {averageHealth:F1}/100\n" +
@@ -547,7 +576,8 @@ namespace AgriDabao3D
                 $"Water: {(moisture * 100f):F0}%\n" +
                 $"Drainage: {(drainage * 100f):F0}%\n" +
                 $"Fertility: {(fertility * 100f):F0}%\n" +
-                $"Soil Suitability: {(soilSuitability * 100f):F0}%";
+                $"Soil Suitability: {(soilSuitability * 100f):F0}%" +
+                CropPlantingText.RealWorldLine(plantingMaterial, FarmCropType.Coconut);
         }
 
         public void ForceNextStageForDev()
@@ -573,6 +603,9 @@ namespace AgriDabao3D
 
             plantedGameDay = currentDay - targetAgeDays - 1f;
             stage = GetStage(GetAgeYears());
+
+            // A forced stage has to show that stage, not the planting material.
+            fieldPlantedGameDay = -1f;
 
             GrowthStageVisualController visuals = GetComponent<GrowthStageVisualController>();
             if (visuals != null)

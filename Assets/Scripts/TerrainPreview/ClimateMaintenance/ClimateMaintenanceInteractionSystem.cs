@@ -60,6 +60,24 @@ namespace AgriDabao3D
                 return false;
             }
 
+            // Prepared ground and the Seedling Tent belong to the farming system:
+            // a Mulch Bag laid on a raised bed, a transplant, or any tap on the
+            // tent. Handing them over here stops "must be used directly on a crop"
+            // from swallowing them. A structure kit aimed at prepared ground still
+            // builds on the terrain behind it, as it always did.
+            if (hit.collider.GetComponentInParent<SeedlingTentInstance>() != null)
+                return false;
+
+            if (hit.collider.GetComponentInParent<DigSpot>() != null)
+            {
+                bool transplanting = NurserySystem.Instance != null && NurserySystem.Instance.IsTransplanting;
+                bool structureKit = ClimateMaintenanceItemCatalog.TryGetWorldMitigation(
+                    PlayerInventory.Instance.selectedItem, out _);
+
+                if (transplanting || !structureKit)
+                    return false;
+            }
+
             ClimateMitigationWorldObject clickedWorld =
                 hit.collider.GetComponentInParent<ClimateMitigationWorldObject>();
             InventoryItemType selected = PlayerInventory.Instance.selectedItem;
@@ -283,6 +301,22 @@ namespace AgriDabao3D
 
                 Show(missingPrefabMessage);
                 return true;
+            }
+
+            SeedlingTentInstance tent = NurserySystem.Instance != null
+                ? NurserySystem.Instance.Tent
+                : UnityEngine.Object.FindFirstObjectByType<SeedlingTentInstance>();
+            if (tent != null)
+            {
+                Vector3 fromTent = position - tent.transform.position;
+                fromTent.y = 0f;
+                if (fromTent.magnitude < minimumWorldObjectSpacing + 3f)
+                {
+                    string tentMessage = "That is too close to the Seedling Tent.";
+                    RecordAttempt("Place" + type, item, null, position, false, tentMessage);
+                    Show(tentMessage);
+                    return true;
+                }
             }
 
             foreach (ClimateMitigationWorldObject existing in

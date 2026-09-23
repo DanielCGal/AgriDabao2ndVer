@@ -430,7 +430,9 @@ namespace AgriDabao3D
 
         private static string FriendlyItem(string itemType)
         {
-            return SocialMarketplaceCatalog.TryParseItem(itemType, out InventoryItemType item)
+            // Any known item gets its proper name - including the old seed items a
+            // player on an older version may still list.
+            return PlantingMaterialCatalog.TryParseItem(itemType, out InventoryItemType item)
                 ? SocialMarketplaceCatalog.FriendlyName(item)
                 : itemType;
         }

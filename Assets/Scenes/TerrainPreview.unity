@@ -623,6 +623,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61b175222f53aee44b3f6e9761dbcf32, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AgriDabao3D.FarmingInteractionSystem
+  tilledGroundPrefab: {fileID: 3292465796121624205, guid: a52afcd324c3a8c439fd12c84e083311, type: 3}
+  plantingHolePrefab: {fileID: 7799044973621531128, guid: a26c231a8fc172f4b80eeea996e4d50d, type: 3}
+  raisedBedPrefab: {fileID: 6555389311778173962, guid: d741b109df1856b40bbe8554be50059f, type: 3}
+  furrowPrefab: {fileID: 8643233644132292220, guid: c2f8c6a26dbcc374690c2d2e1a848add, type: 3}
+  bedMulchPrefab: {fileID: 1928713264469333063, guid: f5f245728731718428afe080194330b9, type: 3}
+  bedMulchScale: 1
+  raisedBedRadius: 3.2
+  raisedBedHeight: 0.6
+  seedlingTentPrefab: {fileID: 3554665433985273424, guid: 7197617626307284f9b916e1f790b2f9, type: 3}
+  seedlingBagEmptyPrefab: {fileID: 8226968502427388143, guid: 60861cd1471440d48a6875a5f7589449, type: 3}
+  seedlingBagFilledPrefab: {fileID: 6414084722852592109, guid: 0cedd550e47807644b3c43910bd0c345, type: 3}
+  minDistanceFromSeedlingTent: 8
+  cacaoSeedlingPrefab: {fileID: 3701591366049471457, guid: b4b62e08b5fc7194aa8c3937e9fc11d1, type: 3}
+  durianSeedlingPrefab: {fileID: 4681253095560176118, guid: 555c232f3a9969e4e931b77f64a1c32d, type: 3}
+  mangosteenSeedlingPrefab: {fileID: 7310520662159431151, guid: 7ded85b866731884c8832e7018128d5b, type: 3}
+  pomeloSeedlingPrefab: {fileID: 3507863370044909017, guid: c97b30cc8d8f9de458f655db863a58cb, type: 3}
+  bananaPlantletPrefab: {fileID: 1112828899742517745, guid: 1abd67712156b404d8758a120e58c6b8, type: 3}
+  mangoSeedlingPrefab: {fileID: 7682470050597070601, guid: 77a86a9f8ea3fcd479fa3e27dad99dd1, type: 3}
+  tomatoSeedlingPrefab: {fileID: 785569281974265448, guid: f6ef07aa7af247446a46f5d1919983f0, type: 3}
+  eggplantSeedlingPrefab: {fileID: 2195597363721561545, guid: e6c121fe3122f3f4c8fcaf321d955d71, type: 3}
+  squashSeedlingPrefab: {fileID: 6880120956604674267, guid: 315724480a230ac45b9ac9d86b08c7bc, type: 3}
+  coconutSeednutPrefab: {fileID: 7226086519102422274, guid: f92d5bafd6b408d41bac0ab173b8ad36, type: 3}
+  bananaSuckerPrefab: {fileID: 8855101773499288587, guid: 69f0cdd4fe7c00c44a142697eb621b0b, type: 3}
+  pineappleSuckerPrefab: {fileID: 8591283310527656871, guid: 94b877212d005d2408076575f3f8c945, type: 3}
+  strawberryRunnerPrefab: {fileID: 6782662601271124351, guid: cc81d4e1cd3464d45ac39723cd8cb7d7, type: 3}
+  cornSeedlingPrefab: {fileID: 41958634356437960, guid: f3cb9ffb6b37a584fa1db610ad7b929c, type: 3}
   playerCamera: {fileID: 1996374437}
   terrainGenerator: {fileID: 1422080229}
   soilAwareTerrain: {fileID: 923716791}
@@ -1406,6 +1432,10 @@ MonoBehaviour:
   spraySfx: {fileID: 8300000, guid: f904e9844c684724bb31c447e59252a8, type: 3}
   placeMitigationSfx: {fileID: 8300000, guid: cec573234493b5846ad89b9bde28db86, type: 3}
   rewardSfx: {fileID: 8300000, guid: 421a97097f5ecd94f8a99f94c21823eb, type: 3}
+  tillSfx: {fileID: 0}
+  transplantSfx: {fileID: 0}
+  fillBagSfx: {fileID: 0}
+  waterSfx: {fileID: 0}
   crossfadeSeconds: 1.5
   autoPlayButtonClicks: 1
   buttonScanInterval: 0.3
@@ -7088,6 +7118,14 @@ MonoBehaviour:
   windbreakKitSprite: {fileID: 21300000, guid: 2493379fc54f1eb449b4f3ca4ec12295, type: 3}
   greenhouseKitSprite: {fileID: 21300000, guid: 53e68cd14812e984bb375086474aaab8, type: 3}
   drainageCanalKitSprite: {fileID: 21300000, guid: 2f2d8ce7e044e2c4397656f6bdc53570, type: 3}
+  bananaPlantletSprite: {fileID: 21300000, guid: fcb49cc43a0cec84cb6158784ce4c4f1, type: 3}
+  bananaSuckerSprite: {fileID: 21300000, guid: d167525a51d305f45bba4a284d0d3557, type: 3}
+  mangoGraftedSeedlingSprite: {fileID: 21300000, guid: 7edcd6376eb945b45ad3183bf8e4e033, type: 3}
+  mangoLisoSprite: {fileID: 21300000, guid: 2e02c05250590dd41b19ab4552a21ece, type: 3}
+  coconutSeednutSprite: {fileID: 21300000, guid: 2809208a1bd8b204f83e9e8d805e4a17, type: 3}
+  pineappleSuckerSprite: {fileID: 21300000, guid: eccc8bf0b1b334a49b50095ac08dc50c, type: 3}
+  strawberryRunnerSprite: {fileID: 21300000, guid: 911c30729b9ec2848aa8c8bd18eb976c, type: 3}
+  squashSeedlingSprite: {fileID: 21300000, guid: 0bc0b8fed51b59c41baa060c934c2679, type: 3}
   hotbarSlotSize: 130
   backpackSlotSize: 110
 --- !u!4 &1792993706

@@ -24,7 +24,8 @@ namespace AgriDabao3D
         MarketplacePanel,
         ConfirmPopup,
         AdviserChatPanel,
-        BackpackPanel
+        BackpackPanel,
+        SeedlingTentPanel
     }
 
     /// <summary>
@@ -201,6 +202,7 @@ namespace AgriDabao3D
                 case HudPiece.ConfirmPopup:
                 case HudPiece.AdviserChatPanel:
                 case HudPiece.BackpackPanel:
+                case HudPiece.SeedlingTentPanel:
                     return true;
                 default:
                     return false;

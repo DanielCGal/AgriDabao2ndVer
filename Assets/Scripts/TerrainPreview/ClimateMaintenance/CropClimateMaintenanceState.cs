@@ -159,6 +159,49 @@ namespace AgriDabao3D
             return false;
         }
 
+        /// <summary>
+        /// Takes over ground the player prepared before planting.
+        ///
+        /// A raised bed built with the shovel is the same bed the Raised Bed Kit
+        /// makes - the same terrain lift under the same patch id - so the crop
+        /// records it exactly as the kit would: the drainage bonus, and a flag that
+        /// stops a kit being installed on top of it. A bed mulched before planting
+        /// counts as the crop's mulch.
+        /// </summary>
+        public void AdoptPreparedGround(bool raisedBed, string bedPatchId, bool mulched, Terrain terrain)
+        {
+            if (crop == null && !CropRuntimeAdapter.TryCreate(gameObject, out crop))
+                return;
+
+            if (raisedBed && !hasRaisedBed)
+            {
+                hasRaisedBed = true;
+                raisedBedPatchId = string.IsNullOrWhiteSpace(bedPatchId)
+                    ? Guid.NewGuid().ToString("N")
+                    : bedPatchId;
+                crop.AddDrainage(0.18f);
+
+                // Measured the way ApplyRaisedBedAndSnapCrop measures it - the root's
+                // height above the ground at the bed's peak - so a reload, which lifts
+                // the bed again on bare terrain, puts the crop back at this height.
+                if (terrain != null && terrain.terrainData != null)
+                {
+                    Vector3 peak = TerrainModificationService.SnapToHeightmapVertex(
+                        terrain, crop.Transform.position);
+                    float ground = terrain.SampleHeight(peak) + terrain.transform.position.y;
+                    raisedBedRootOffset = crop.Transform.position.y - ground;
+                }
+            }
+
+            if (mulched && !hasMulch)
+            {
+                hasMulch = true;
+                crop.AddMoisture(0.08f);
+                crop.AddStress(-4f);
+                mulchVisual = CreateVisual(CropMaintenanceActionType.Mulch, mulchVisual);
+            }
+        }
+
         private GameObject CreateVisual(
     CropMaintenanceActionType action,
     GameObject current)
@@ -237,6 +280,11 @@ namespace AgriDabao3D
         /// </summary>
         public static float GetMulchScaleMultiplier(FarmCropType cropType, PlantVisualStage stage)
         {
+            // The planting material itself - a seedling, a runner, a sucker - is
+            // smaller than any sprout model, so it gets the smallest pile of all.
+            if (stage == PlantVisualStage.Planted)
+                return MulchScaleTinySprout;
+
             // Pineapple reuses one model for its sprout and second stage, and that
             // model sits low enough that even the sprout size hides it. It stays
             // small through both and only reaches full size on the adult prefab.

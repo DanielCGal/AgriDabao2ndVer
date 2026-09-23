@@ -28,6 +28,12 @@ namespace AgriDabao3D
             + "sure which one a reading belongs to when several are growing "
             + "together.\n\n"
 
+            + "PLANTED FROM\n"
+            + "The planting material this crop grew from, and whether it went "
+            + "straight into the ground or was raised in the Seedling Tent first. "
+            + "Days in the tent count toward the crop's age, so a transplanted "
+            + "seedling is further along than one just sown.\n\n"
+
             + "TREE STAGE\n"
             + "How far along this plant is: Seedling, Vegetative, PreFruiting, "
             + "Fruiting, then Old. Nothing can be harvested before PreFruiting, "
@@ -74,6 +80,17 @@ namespace AgriDabao3D
             + "low for another. A low figure is not a fault you can fix; it means "
             + "this crop is in the wrong place, and something else would do better "
             + "there.\n\n"
+
+            + "SHADE\n"
+            + "Young cacao only. Cacao grows up under shade, so until it starts to "
+            + "fruit it carries extra stress in open sun. A Shade Net Kit or a "
+            + "greenhouse nearby removes it.\n\n"
+
+            + "IN REAL FARMS\n"
+            + "How long this step takes on a real farm, from the crop notes the game "
+            + "is built on. The game shortens nursery and growing times so a farm "
+            + "moves at a pace you can play; this line keeps the real figure in "
+            + "view.\n\n"
 
             + "PEST / DISEASE STATUS\n"
             + "Anything currently attacking the plant, with how far it has "

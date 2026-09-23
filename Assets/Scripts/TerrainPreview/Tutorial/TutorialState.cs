@@ -24,7 +24,11 @@ namespace AgriDabao3D
         /// <summary>Index into the director's step table; -1 before it starts.</summary>
         public static int CurrentStep = -1;
 
-        /// <summary>The three seed kinds this farm was dealt from its district.</summary>
+        /// <summary>
+        /// The three planting materials this farm was dealt from its district:
+        /// first one that goes straight into the ground, then one for the Seedling
+        /// Tent, then one of either (see DistrictCropPools.RollStartingSeeds).
+        /// </summary>
         public static readonly List<InventoryItemType> StartingSeeds =
             new List<InventoryItemType>();
 
@@ -72,7 +76,7 @@ namespace AgriDabao3D
 
             Debug.Log("[Tutorial] " +
                       (string.IsNullOrWhiteSpace(districtName) ? "Unknown district" : districtName) +
-                      " starting seeds: " + DistrictCropPools.Describe(StartingSeeds) +
+                      " starting materials: " + DistrictCropPools.Describe(StartingSeeds) +
                       " (" + DistrictCropPools.SeedsPerKind + " each).");
         }
 
@@ -122,7 +126,10 @@ namespace AgriDabao3D
                 if (System.Enum.TryParse(name, out InventoryItemType seed) &&
                     seed != InventoryItemType.None)
                 {
-                    StartingSeeds.Add(seed);
+                    // A farm dealt one of the old seed items is dealt its
+                    // replacement material instead, so a guide resumed or declined
+                    // later hands over something that can still be planted.
+                    StartingSeeds.Add(PlantingMaterialCatalog.UpgradeLegacy(seed));
                 }
             }
         }

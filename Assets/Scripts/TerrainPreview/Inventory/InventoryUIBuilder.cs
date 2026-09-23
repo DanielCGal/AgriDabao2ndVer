@@ -79,6 +79,16 @@ namespace AgriDabao3D
         public Sprite greenhouseKitSprite;
         public Sprite drainageCanalKitSprite;
 
+        [Header("Planting Material Sprites")]
+        public Sprite bananaPlantletSprite;
+        public Sprite bananaSuckerSprite;
+        public Sprite mangoGraftedSeedlingSprite;
+        public Sprite mangoLisoSprite;
+        public Sprite coconutSeednutSprite;
+        public Sprite pineappleSuckerSprite;
+        public Sprite strawberryRunnerSprite;
+        public Sprite squashSeedlingSprite;
+
         [Header("Layout")]
         public float hotbarSlotSize = 130f;
         public float backpackSlotSize = 110f;
@@ -990,6 +1000,22 @@ namespace AgriDabao3D
                     return greenhouseKitSprite;
                 case InventoryItemType.DrainageCanalKit:
                     return drainageCanalKitSprite;
+                case InventoryItemType.BananaPlantlet:
+                    return bananaPlantletSprite;
+                case InventoryItemType.BananaSucker:
+                    return bananaSuckerSprite;
+                case InventoryItemType.MangoGraftedSeedling:
+                    return mangoGraftedSeedlingSprite;
+                case InventoryItemType.MangoLiso:
+                    return mangoLisoSprite;
+                case InventoryItemType.CoconutSeednut:
+                    return coconutSeednutSprite;
+                case InventoryItemType.PineappleSucker:
+                    return pineappleSuckerSprite;
+                case InventoryItemType.StrawberryRunner:
+                    return strawberryRunnerSprite;
+                case InventoryItemType.SquashSeedling:
+                    return squashSeedlingSprite;
                 default:
                     return null;
             }

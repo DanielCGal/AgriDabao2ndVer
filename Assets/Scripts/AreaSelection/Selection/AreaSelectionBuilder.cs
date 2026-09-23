@@ -1443,7 +1443,7 @@ namespace AgriDabao3D
                     "the chosen district"),
                 new TutorialSlide(
                     "You can also check the district description to learn more about the district " +
-                    "and the possible seeds that you will get in the game.")
+                    "and the crops you can plant there.")
             };
         }
 

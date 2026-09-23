@@ -42,7 +42,7 @@ Built from the two sprites already supplied (picture 5): a **portrait frame** on
 - **Narration lines** — *italic, no name label*. The frame keeps the last expression shown, so his face doesn't flicker between beats.
 - **Advance** — tap anywhere on the plank. A small blinking caret sits bottom-right when a line is finished.
 - **Typewriter reveal** — ~35 characters/second; tapping mid-line completes the line instantly rather than advancing.
-- **While a gate is open** — the box stays on screen showing the instruction line, dimmed slightly, with the caret replaced by a short objective hint (for example *"Dig a planting spot"*). It must not block the part of the screen the player has to touch.
+- **While a gate is open** — the box stays on screen showing the instruction line, dimmed slightly, with the caret replaced by a short objective hint (for example *"Till a patch of ground with the shovel"*). It must not block the part of the screen the player has to touch.
 
 ### Expressions
 
@@ -55,9 +55,9 @@ Built from the two sprites already supplied (picture 5): a **portrait frame** on
 
 ---
 
-## 3. Starting seeds by district
+## 3. Starting planting material by district
 
-The player is granted **3 different seed types drawn at random, without repeats, from their district's list — 3 seeds of each** — plus 1 shovel. So 9 seeds across 3 kinds, never 9 of the same kind. Everything else must be bought. This replaces the current `BuildStartingInventory()`, which hands out all 13 seed types plus every tool.
+The player is granted **3 different planting materials from 3 different crops of their district's list — 3 of each** — plus 1 shovel. So 9 pieces across 3 kinds, never 9 of the same kind. **The draw always includes one material that goes straight into the ground** (a sucker, runner, seednut, liso, corn or squash seed) **and one that starts in the Seedling Tent** (a seed raised in a bag, a banana plantlet or a grafted mango seedling). Every district grows both kinds. The ready-grown squash seedling is never dealt. Everything else must be bought.
 
 | District | Crop pool | Pool size |
 |---|---|---|
@@ -67,8 +67,9 @@ The player is granted **3 different seed types drawn at random, without repeats,
 | **Paquibato** | Corn, Banana, Coconut, Cacao | 4 |
 | **Marilog** | Tomato, Squash, Eggplant, Strawberry, Mangosteen | 5 |
 | **Buhangin** | Coconut, Cacao, Banana, Corn | 4 |
+| **Tugbok** | Banana, Cacao, Coconut, Mangosteen, Corn, Durian, Mango | 7 |
 
-Every crop above already exists as an `InventoryItemType` seed, so no new items are needed. The roll happens once at farm creation and is saved, so re-entering the tutorial cannot re-roll it.
+A district that grows a crop can get every planting material of that crop - Calinan gets both the banana plantlet and the banana sucker. The roll happens once at farm creation and is saved, so re-entering the tutorial cannot re-roll it. Old saves that were dealt banana, coconut, mango, pineapple or strawberry seed get the material that replaced it (sucker, seednut, liso, sucker, runner).
 
 Because Paquibato and Buhangin only have 4 crops each, a 3-of-4 draw there is nearly the whole pool — that is fine and intended, since those districts genuinely grow less variety.
 
@@ -79,13 +80,14 @@ Because Paquibato and Buhangin only have 4 crops each, a 3-of-4 draw there is ne
 ```mermaid
 flowchart TD
     A["District selected<br/>Farm generated"] --> T{"Take the tutorial?<br/>YES / NO plank"}
-    T -->|NO| Z["Grant shovel + 3 seeds + P500<br/>reveal full HUD<br/>tutorialCompleted = true<br/>days 1-2 still calm"]
+    T -->|NO| Z["Grant shovel + 3 materials + P500<br/>reveal full HUD<br/>tutorialCompleted = true<br/>days 1-2 still calm"]
     T -->|YES| B["Step 0 — lock down<br/>inventory empty · money 0<br/>all HUD hidden · movement locked"]
     B --> C["1 · Arrival<br/>fade from black · no UI"]
     C --> D["2 · Controls<br/>+joystick +jump<br/>GATE move & jump"]
-    D --> E["3 · Dig & plant<br/>+hotbar +shovel +3 seeds<br/>GATE dig then plant"]
+    D --> E["3 · Prepare & plant<br/>+hotbar +shovel +3 materials<br/>GATE till, prepare, plant"]
     E --> F["4 · Water<br/>+watering can<br/>GATE water"]
-    F --> G["5 · Inspect<br/>+crop tap<br/>GATE open crop panel"]
+    F --> F2["4B · Seedling Tent<br/>+tent button<br/>GATE sow a bag, close tent"]
+    F2 --> G["5 · Inspect<br/>+crop tap<br/>GATE open crop panel"]
     G --> H["6 · How plants live<br/>talk only"]
     H --> H2["6B · Mulch<br/>+mulch bags<br/>GATE apply mulch"]
     H2 --> I["7 · Weather, climate, pests<br/>talk only"]
@@ -100,12 +102,13 @@ flowchart TD
     Q --> R["Re-enable save, Antonio tasks<br/>and Skip Day<br/>tutorialCompleted = true<br/>auto-save"]
 ```
 
-### Reveal order of the seven HUD buttons
+### Reveal order of the eight HUD buttons
 
-They are revealed **right to left**, which is why the tour ends on the two leftmost buttons:
+They are revealed **right to left** (the Seedling Tent first, early, because the tour uses it), which is why the tour ends on the two leftmost buttons:
 
 | Slot | Button | Revealed at |
 |---|---|---|
+| 7 | Seedling Tent | Step 4B |
 | 2 | Shop | Step 10 |
 | 3 | Farm Objectives | Step 11 |
 | 4 | Search Players | Step 12 |
@@ -133,7 +136,7 @@ The moment the farm finishes generating, before the fade-in, a confirmation plan
 | Answer | What happens |
 |---|---|
 | **YES** | Continue to Step 0 and run the full sequence |
-| **NO** | Skip straight to a playable farm: grant the shovel, the 3 district seeds and ₱500 immediately, reveal the entire HUD, set `tutorialCompleted = true`, and save. **Days 1 and 2 are still forced calm** so a new player isn't dropped into a typhoon either way |
+| **NO** | Skip straight to a playable farm: grant the shovel, the watering can, 3 mulch bags, the 3 district planting materials and ₱500 immediately, reveal the entire HUD, set `tutorialCompleted = true`, and save. **Days 1 and 2 are still forced calm** so a new player isn't dropped into a typhoon either way |
 
 Because one account holds one farm, this prompt is only ever seen once per account — a player making a second farm is making a second account, and will be asked again there.
 
@@ -206,24 +209,37 @@ Deliberately **not** tied to `tutorialCompleted`: an abandoned or declined tutor
 
 ---
 
-### Step 3 — Digging and planting
+### Step 3 — Preparing the ground and planting
 
-**[REVEAL]** inventory hotbar. **[GRANT]** Shovel ×1, and the 3 rolled district seed types ×5 each.
+**[REVEAL]** inventory hotbar. **[GRANT]** Shovel ×1, and the 3 rolled planting materials ×3 each (plus 1 Mulch Bag if the lesson material is a strawberry runner).
+
+The lesson plants the **first material in the deal that goes straight into the ground** - the deal always has one. `{Material}` and `{Ground}` below are that material and the ground it needs (planting hole, raised bed or furrow).
 
 | # | Speaker | Expr. | Line |
 |---|---|---|---|
-| 1 | Antonio | **Teaching** | "Now the real work. Here — take these." |
-| 2 | *narration* | — | *Antonio presses a shovel into your hands, then a small bundle of seed packets.* |
-| 3 | Antonio | **Teaching** | "These seeds grow well in {District} soil. That's what I'd start with if I were you." |
-| 4 | Antonio | **Teaching** | "That bar along the bottom is your hotbar — everything you're carrying. Tap a slot to hold that item." |
-| 5 | Antonio | **Teaching** | "Take the shovel, find a clear patch of soil, and dig yourself a planting spot." |
-| 6 | Antonio | **Hello** | "There you go! That's a planting spot." |
-| 7 | Antonio | **Teaching** | "Now pick one of those seed packets and plant it right there in the hole." |
-| 8 | Antonio | **Surprise** | "Would you look at that! Your very first crop!" |
-| 9 | Antonio | **Hello** | "Congratulations, neighbour. You're a farmer now — officially." |
+| 1 | Antonio | **Teaching** | "Now the real work. Here - take these." |
+| 2 | *narration* | — | *Antonio hands you a shovel and a bundle of planting material.* |
+| 3 | Antonio | **Teaching** | "These grow well in {District} soil. That bar along the bottom is your hotbar - tap a slot to hold an item." |
+| 4 | Antonio | **Teaching** | "Nothing grows in hard ground. Take the shovel and till a patch of soil first." |
+| 5 | Antonio | **Teaching** | "Good. Now each crop wants its ground ready in its own way. Your {Material} needs a {Ground}: tap the tilled soil with the shovel again and choose {Choice}." |
+| 5b | Antonio | **Teaching** | *(strawberry only)* "Strawberry runners are planted through mulch. Hold the mulch bag and tap the bed to cover it." |
+| 6 | Antonio | **Hello** | "There you go. Now hold your {Material} and tap the {Ground} to plant it." |
+| 7 | Antonio | **Surprise** | "Your very first crop! You're a farmer now, neighbour. Officially." |
 
-**[GATE 1]** after line 5 — `DigPlantingSpot` recorded. Hint: *"Dig a planting spot"*.
-**[GATE 2]** after line 7 — `PlantCrop` recorded. Hint: *"Plant a seed in the hole"*.
+**[GATE 1]** after line 4 — `TillGround` recorded. Hint: *"Till a patch of ground with the shovel"*.
+**[GATE 2]** after line 5 — `DigPlantingSpot` recorded **for the {Ground} kind only**; another kind of plot does not pass it. Hint: *"Tap the tilled ground with the shovel and choose {Choice}"*.
+**[GATE 2b]** after line 5b, strawberry only — `MulchBed` recorded. Hint: *"Cover the raised bed with a mulch bag"*.
+**[GATE 3]** after line 6 — `PlantCrop` recorded. Hint: *"Hold your {Material} and tap the {Ground}"*.
+
+Gates 2 and 3 re-read their hint twice a second from the plots on the farm, so a player who goes off the path is told how to get back:
+
+| What is on the farm (open plots) | Hint |
+|---|---|
+| Gate 3 and the right plot is ready | *"Hold your {Material} and tap the {Ground}"* |
+| Gate 3, strawberry, bed not yet mulched | *"Cover the raised bed with a mulch bag, then plant your {Material}"* |
+| Tilled ground | *"Tap the tilled ground with the shovel and choose {Choice}"* |
+| Only a plot of the wrong kind | *"That is a {their plot}, not a {Ground}. Till another patch with the shovel and choose {Choice}"* |
+| Nothing (for example, they filled theirs in) | *"Till a patch of ground with the shovel, then choose {Choice}"* |
 
 ---
 
@@ -233,12 +249,31 @@ Deliberately **not** tied to `tutorialCompleted`: an abandoned or declined tutor
 
 | # | Speaker | Expr. | Line |
 |---|---|---|---|
-| 1 | Antonio | **Thinking** | "But a seed in the ground isn't a plant yet. It needs water — especially in the first days." |
+| 1 | Antonio | **Thinking** | "Something just planted isn't settled yet. It needs water - especially early." |
 | 2 | *narration* | — | *He unhooks a watering can from his belt and holds it out.* |
 | 3 | Antonio | **Teaching** | "Take my spare, I've got another. Select it, then give that crop a drink." |
 | 4 | Antonio | **Hello** | "See? Not so hard, right?" |
 
 **[GATE]** after line 3 — `WaterCrop` recorded on the crop planted in step 3. Hint: *"Water your crop"*.
+
+---
+
+### Step 4B — The Seedling Tent
+
+**[REVEAL]** Seedling Tent button (slot 7). The tent itself already stands on the farm; it is placed when the farm is created.
+
+`{TentMaterial}` is the material in the deal that starts in the tent - the deal always has one.
+
+| # | Speaker | Expr. | Line |
+|---|---|---|---|
+| 1 | Antonio | **Thinking** | "Not everything goes straight into the ground, mind. Some crops start life in a little bag of soil, where you can look after them." |
+| 2 | Antonio | **Teaching** | "That's what your Seedling Tent is for. The tent button up top opens it from anywhere on your farm." |
+| 3 | Antonio | **Teaching** | "Open it, fill a bag with soil, then sow your {TentMaterial} in it." |
+| 4 | Antonio | **Teaching** | "In a few days it'll be ready. Pick it in the tent, carry it out, and transplant it into prepared ground. The days in the bag count toward its growing, so nothing is lost." |
+| 5 | Antonio | **Hello** | "Close the tent for now and let's keep going." |
+
+**[GATE 1]** after line 3 — `SowSeedlingBag` recorded. Hint: *"Open the Seedling Tent and sow a seedling bag"*.
+**[GATE 2]** after line 5 — the Seedling Tent panel opened and closed. Hint: *"Open the Seedling Tent, then close it"*.
 
 ---
 
@@ -449,7 +484,7 @@ Kept from your earlier draft, but trimmed: Antonio hands over **mulch only**, no
 3. Close the dialogue box.
 4. Set `tutorialCompleted = true` and **auto-save the farm**, so the tutorial never replays even if the player closes the app immediately.
 
-The player keeps everything granted along the way — the shovel, the 9 seeds, the watering can, the 3 mulch bags, the ₱500, whatever they bought in step 10, and the daily reward claimed in step 11.
+The player keeps everything granted along the way — the shovel, the 9 pieces of planting material (one of them now in a seedling bag), the watering can, the 3 mulch bags, the ₱500, whatever they bought in step 10, and the daily reward claimed in step 11.
 
 ---
 
@@ -473,7 +508,7 @@ Nothing below is written yet — this is the list for your approval.
 | 12 | Lock the **existing** "Skip Next Day" button while the tour runs, release it at the end | `FarmTaskUIBuilder` | tiny |
 | 13 | Dev Tools button to replay the tutorial on the current farm | `DevToolsUIBuilder` | tiny |
 
-**Gates that need no new work** — dig, plant, water and mulch are all already recorded through `FarmTaskActionHub` as `DigPlantingSpot`, `PlantCrop`, `WaterCrop` and `ApplyCropMaintenance`. The tutorial can read the same hub the daily tasks use.
+**Gates that need no new work** — till, prepare, plant, water, mulch and sow are all recorded through `FarmTaskActionHub` as `TillGround`, `DigPlantingSpot`, `PlantCrop`, `WaterCrop`, `ApplyCropMaintenance` and `SowSeedlingBag`. The tutorial can read the same hub the daily tasks use.
 
 **Gates that need a small hook** — open/close events for the map, shop, objectives, search players, marketplace and save panels, plus the crop info panel. One event per builder.
 
@@ -483,7 +518,7 @@ Nothing below is written yet — this is the list for your approval.
 
 | # | Decision |
 |---|---|
-| 1 | **3 different seed types, 3 seeds of each** — 9 seeds total, never 9 of one kind |
+| 1 | **3 different planting materials, 3 of each** — 9 pieces total, never 9 of one kind; always one that goes straight into the ground and one for the Seedling Tent |
 | 2 | **No day-skip gate** - Antonio *points at* the Skip Next Day button instead, and it stays greyed out until the tour ends. Note this decision was made on bad information from me: the button already existed. Restoring the original gate is now possible if you want it |
 | 3 | **The tutorial is optional** — a Yes/No plank asks first. One account holds one farm, so a second farm means a second account and the question is asked again there |
 | 4 | **The mulch lesson stays**, as Step 6B, but grants mulch only rather than the whole 15-item kit |

@@ -57,6 +57,21 @@ namespace AgriDabao3D
         ShadeNetKit,
         WindbreakKit,
         GreenhouseKit,
-        DrainageCanalKit
+        DrainageCanalKit,
+        // Planting materials for the planting system. Keep new values at the end:
+        // saves store items by name, but the scene and Inspector store the number.
+        //
+        // BananaSeed, CoconutSeed, MangoSeed, PineappleSeed and StrawberrySeed above
+        // are no longer sold. They stay only so older saves and marketplace data
+        // still parse; PlantingMaterialCatalog turns them into the material that
+        // replaced them the moment they are loaded.
+        BananaPlantlet,
+        BananaSucker,
+        MangoGraftedSeedling,
+        MangoLiso,
+        CoconutSeednut,
+        PineappleSucker,
+        StrawberryRunner,
+        SquashSeedling
     }
 }

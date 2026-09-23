@@ -336,6 +336,8 @@ namespace AgriDabao3D
             if (state.objective == null)
                 state.objective =
                     new AIAdvisorTaskObjective();
+            state.objective.itemType =
+                PlantingMaterialCatalog.UpgradeLegacyList(state.objective.itemType);
             if (state.beforeSnapshots == null)
                 state.beforeSnapshots =
                     new List<CropSnapshot>();
@@ -536,28 +538,45 @@ namespace AgriDabao3D
         }
 
         /// <summary>
-        /// Whether the player can get the seed a planting objective names: they hold
-        /// one already, or their district's shop sells it. Without this the adviser
-        /// could set "plant tomato" on a farm whose district does not grow tomato,
-        /// and the task would sit there with no way to finish it. An objective that
-        /// names no particular seed is always fine.
+        /// Whether the player can get planting material for a planting objective:
+        /// they hold some already, a seedling of that crop is waiting in the
+        /// Seedling Tent, or their district's shop sells it. Without this the
+        /// adviser could set "plant tomato" on a farm whose district does not grow
+        /// tomato, and the task would sit there with no way to finish it. An
+        /// objective that names neither a crop nor a material is always fine.
+        ///
+        /// The adviser's tasks have no deadline, so a material still to be raised
+        /// in the tent counts here, unlike for the one-day daily tasks.
         /// </summary>
         private static bool CanObtainSeedFor(string cropType, string itemType)
         {
-            InventoryItemType seed = FarmTaskContextBuilder.CropNameToSeedItem(cropType);
-            if (seed == InventoryItemType.None && !string.IsNullOrWhiteSpace(itemType) &&
-                Enum.TryParse(itemType.Trim(), true, out InventoryItemType named))
+            List<InventoryItemType> options = new List<InventoryItemType>();
+
+            if (PlantingMaterialCatalog.TryParseItem(itemType, out InventoryItemType named) &&
+                PlantingMaterialCatalog.IsPlantingMaterial(PlantingMaterialCatalog.UpgradeLegacy(named)))
             {
-                seed = named;
+                options.Add(PlantingMaterialCatalog.UpgradeLegacy(named));
+            }
+            else
+            {
+                options.AddRange(FarmTaskContextBuilder.CropNameToPlantingMaterials(cropType));
             }
 
-            if (seed == InventoryItemType.None || !DistrictCropPools.IsDistrictRestricted(seed))
+            if (options.Count == 0)
                 return true;
 
-            if (PlayerInventory.Instance != null && PlayerInventory.Instance.GetCount(seed) > 0)
-                return true;
+            foreach (InventoryItemType option in options)
+            {
+                if (PlayerInventory.Instance != null && PlayerInventory.Instance.GetCount(option) > 0)
+                    return true;
 
-            return DistrictCropPools.IsAvailableToPlayer(seed);
+                if (DistrictCropPools.IsAvailableToPlayer(option))
+                    return true;
+            }
+
+            return PlantingMaterialCatalog.TryGetCropType(cropType, out FarmCropType crop) &&
+                   NurserySystem.Instance != null &&
+                   NurserySystem.Instance.CountReady(crop) > 0;
         }
 
         private static void NormalizeObjective(
@@ -573,8 +592,11 @@ namespace AgriDabao3D
                 CleanText(objective.cropId);
             objective.conditionType =
                 CleanText(objective.conditionType);
+            // An old seed name - from a saved task, or from the model still using
+            // one - becomes the material that replaced it.
             objective.itemType =
-                CleanText(objective.itemType);
+                PlantingMaterialCatalog.UpgradeLegacyList(
+                    CleanText(objective.itemType));
             objective.targetAmount =
                 Mathf.Clamp(objective.targetAmount, 0, 1000);
             objective.targetValue =
@@ -974,10 +996,11 @@ namespace AgriDabao3D
                     case "PlantQuantity":
                         if (action.actionType == "PlantCrop" &&
                             cropMatches && cropIdMatches &&
-                            ActionItemMatches(
-                                objective.itemType,
-                                action,
-                                allowTyphoonProtection: false))
+                            (ActionItemMatches(
+                                 objective.itemType,
+                                 action,
+                                 allowTyphoonProtection: false) ||
+                             SameCropMaterial(objective.itemType, action.itemType)))
                         {
                             amount += Mathf.Max(
                                 1, action.quantity);
@@ -1117,6 +1140,31 @@ namespace AgriDabao3D
                         "Check the target crop, quantity, value, severity, moisture, health, or stress before checking again."
                     }
             };
+        }
+
+        /// <summary>
+        /// A planting objective that names one material ("plant two banana
+        /// suckers") is met by planting any material of the same crop - a banana
+        /// plantlet grows the same banana. What the adviser measures is the crop.
+        /// </summary>
+        private static bool SameCropMaterial(string requirement, string plantedItem)
+        {
+            if (string.IsNullOrWhiteSpace(requirement) ||
+                !PlantingMaterialCatalog.TryGet(plantedItem, out PlantingMaterialInfo planted))
+            {
+                return false;
+            }
+
+            foreach (string option in requirement.Split('|'))
+            {
+                if (PlantingMaterialCatalog.TryGet(option.Trim(), out PlantingMaterialInfo wanted) &&
+                    wanted.Crop == planted.Crop)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool ActionItemMatches(

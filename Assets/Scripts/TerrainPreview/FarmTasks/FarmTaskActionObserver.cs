@@ -17,6 +17,7 @@ namespace AgriDabao3D
         {
             public string cropId;
             public string cropType;
+            public string plantingMaterial;
             public Vector3 position;
             public float moisture;
             public float health;
@@ -44,11 +45,18 @@ namespace AgriDabao3D
             public float capacity;
         }
 
+        /// <summary>What a patch of prepared ground was at the last scan.</summary>
+        private struct GroundObservation
+        {
+            public PreparedPlotKind kind;
+            public bool mulched;
+        }
+
         private readonly Dictionary<string, CropObservation> crops =
             new Dictionary<string, CropObservation>(
                 StringComparer.Ordinal);
-        private readonly HashSet<int> digSpots =
-            new HashSet<int>();
+        private readonly Dictionary<int, GroundObservation> digSpots =
+            new Dictionary<int, GroundObservation>();
         private readonly Dictionary<int, TrapObservation> traps =
             new Dictionary<int, TrapObservation>();
         private readonly HashSet<int> worldMitigations =
@@ -127,7 +135,7 @@ namespace AgriDabao3D
                          FindObjectsSortMode.None))
             {
                 if (spot != null)
-                    digSpots.Add(spot.GetInstanceID());
+                    digSpots[spot.GetInstanceID()] = ObserveGround(spot);
             }
 
             foreach (AphidTrapInstance trap in
@@ -212,10 +220,13 @@ namespace AgriDabao3D
                 if (!crops.TryGetValue(
                         now.cropId, out CropObservation before))
                 {
+                    // The material it was planted from - a sucker, a runner, a
+                    // transplanted seedling - so "plant a fruit crop" style tasks
+                    // can tell them apart.
                     Route(new ClimateActionRecord
                     {
                         actionType = "PlantCrop",
-                        itemType = now.cropType + "Seed",
+                        itemType = now.plantingMaterial,
                         cropType = now.cropType,
                         cropId = now.cropId,
                         gameDay = CurrentGameDay(),
@@ -453,37 +464,84 @@ namespace AgriDabao3D
             }
         }
 
+        /// <summary>
+        /// Ground work, in the three steps the shovel takes it through: newly
+        /// tilled ground ("TillGround"), tilled ground turned into a planting
+        /// hole, raised bed or furrow ("DigPlantingSpot" - a spot a crop can go
+        /// into, which is what that action always meant), and a raised bed covered
+        /// with mulch ("MulchBed").
+        /// </summary>
         private void ScanDigSpots()
         {
-            HashSet<int> current = new HashSet<int>();
+            Dictionary<int, GroundObservation> current =
+                new Dictionary<int, GroundObservation>();
+
             foreach (DigSpot spot in
                      Object.FindObjectsByType<DigSpot>(
                          FindObjectsSortMode.None))
             {
                 if (spot == null)
                     continue;
+
                 int id = spot.GetInstanceID();
-                current.Add(id);
-                if (digSpots.Contains(id))
-                    continue;
-                Route(new ClimateActionRecord
+                GroundObservation now = ObserveGround(spot);
+                current[id] = now;
+
+                bool known = digSpots.TryGetValue(id, out GroundObservation before);
+
+                if (!known && now.kind == PreparedPlotKind.Tilled)
                 {
-                    actionType = "DigPlantingSpot",
-                    itemType = "Shovel",
-                    gameDay = CurrentGameDay(),
-                    worldPosition =
-                        new SerializableVector3(
-                            spot.transform.position),
-                    quantity = 1,
-                    actionSucceeded = true,
-                    effectivenessScore = 0f,
-                    details =
-                        "A new planting spot was dug."
-                });
+                    RouteGround("TillGround", "Shovel", spot,
+                        "New ground was tilled.");
+                }
+                else if (spot.IsPrepared &&
+                         (!known || before.kind != now.kind))
+                {
+                    RouteGround("DigPlantingSpot", now.kind.ToString(), spot,
+                        "A " + spot.DisplayName + " was prepared for planting.");
+                }
+
+                if (now.mulched && (!known || !before.mulched))
+                {
+                    RouteGround("MulchBed", "MulchBag", spot,
+                        "A raised bed was covered with mulch.");
+                }
             }
+
             digSpots.Clear();
-            foreach (int id in current)
-                digSpots.Add(id);
+            foreach (KeyValuePair<int, GroundObservation> pair in current)
+                digSpots[pair.Key] = pair.Value;
+        }
+
+        private static GroundObservation ObserveGround(DigSpot spot)
+        {
+            return new GroundObservation
+            {
+                kind = spot.plotKind,
+                mulched = spot.mulched
+            };
+        }
+
+        private static void RouteGround(
+            string action,
+            string item,
+            DigSpot spot,
+            string details)
+        {
+            Route(new ClimateActionRecord
+            {
+                actionType = action,
+                itemType = item,
+                taskSource = "Shovel",
+                gameDay = CurrentGameDay(),
+                worldPosition =
+                    new SerializableVector3(
+                        spot.transform.position),
+                quantity = 1,
+                actionSucceeded = true,
+                effectivenessScore = 0f,
+                details = details
+            });
         }
 
         private void ScanTraps()
@@ -772,6 +830,7 @@ namespace AgriDabao3D
                 {
                     cropId = crop.CropId,
                     cropType = crop.CropDisplayName,
+                    plantingMaterial = crop.PlantingMaterial,
                     position = crop.Transform.position,
                     moisture = crop.Moisture,
                     health = crop.Health,

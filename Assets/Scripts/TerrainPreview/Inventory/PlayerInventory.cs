@@ -122,7 +122,8 @@ namespace AgriDabao3D
             if (!TutorialState.Completed)
                 return;
 
-            // Hotbar: harvesting tool, the district's three seed kinds, water, dig.
+            // Hotbar: harvesting tool, the district's three planting materials,
+            // water, dig.
             slots[0].Set(InventoryItemType.Machete, 1);
 
             int slot = 1;
@@ -138,10 +139,13 @@ namespace AgriDabao3D
             slots[HotbarSlotCount - 2].Set(InventoryItemType.WateringCan, 1);
             slots[HotbarSlotCount - 1].Set(InventoryItemType.Shovel, 1);
 
-            // Backpack: bags for carrying a harvest home. Everything else -
-            // sprayers, liquids, traps, mitigation kits, other districts' seeds -
-            // is bought from the shop.
+            // Backpack: bags for carrying a harvest home, and a little mulch in
+            // case a strawberry runner was dealt - it cannot be planted until its
+            // bed is mulched. Everything else - sprayers, liquids, traps,
+            // mitigation kits, other districts' planting materials - is bought
+            // from the shop.
             slots[HotbarSlotCount].Set(InventoryItemType.FruitBag, 10);
+            slots[HotbarSlotCount + 1].Set(InventoryItemType.MulchBag, 3);
         }
 
         public InventorySlotData GetSelectedSlot()
@@ -441,6 +445,10 @@ namespace AgriDabao3D
         }
         public bool AddItem(InventoryItemType item, int amount)
         {
+            // An old seed item - from a trade, an older farm's starting draw or the
+            // developer tools - arrives as the material that replaced it.
+            item = PlantingMaterialCatalog.UpgradeLegacy(item);
+
             if (item == InventoryItemType.None || amount <= 0)
                 return false;
             EnsureSlots();
@@ -709,7 +717,10 @@ namespace AgriDabao3D
                         slots[i].Clear();
                         continue;
                     }
-                    slots[i].itemType = itemType;
+                    // The five old seed items were replaced by planting materials
+                    // (banana seed by banana sucker, and so on). A farm saved with
+                    // them gets the replacement in the same slot and amount.
+                    slots[i].itemType = PlantingMaterialCatalog.UpgradeLegacy(itemType);
                     slots[i].amount = Mathf.Max(0, source.amount);
                     slots[i].liquidMl = Mathf.Max(0, source.liquidMl);
                     if (!Enum.TryParse(source.sprayerLiquid, out SprayerLiquidType liquid))

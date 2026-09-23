@@ -51,6 +51,16 @@ namespace AgriDabao3D
         public float averageSuitabilityPercent;
     }
 
+    /// <summary>One bag in the Seedling Tent. The tent is not near any crop, so it is listed on its own.</summary>
+    [System.Serializable]
+    public class AdvisorSeedlingBagData
+    {
+        public int bag;
+        public string status;
+        public string plantingMaterial;
+        public float daysUntilNextStep;
+    }
+
     [System.Serializable]
     public class AdvisorContextData
     {
@@ -60,6 +70,7 @@ namespace AgriDabao3D
         public AdvisorSoilData currentSoil;
         public List<AdvisorCropGroupData> cropGroups;
         public AdvisorPestDiseaseData pestDisease;
+        public List<AdvisorSeedlingBagData> seedlingTent;
     }
 
     public class FarmAdvisorContextBuilder : MonoBehaviour
@@ -91,7 +102,40 @@ namespace AgriDabao3D
             data.pestDisease = PestDiseaseSystem.Instance != null
             ? PestDiseaseSystem.Instance.BuildAdvisorPestData()
             : new AdvisorPestDiseaseData();
+            data.seedlingTent = BuildSeedlingTent();
             return data;
+        }
+
+        /// <summary>
+        /// The Seedling Tent's bags, wherever the player stands. Crops are only
+        /// described within 25 m of the player, and the tent is usually further
+        /// away than that, so without this the adviser could not see a single
+        /// seedling the player is raising.
+        /// </summary>
+        private static List<AdvisorSeedlingBagData> BuildSeedlingTent()
+        {
+            List<AdvisorSeedlingBagData> bags = new List<AdvisorSeedlingBagData>();
+            NurserySystem nursery = NurserySystem.Instance;
+            if (nursery == null)
+                return bags;
+
+            for (int slot = 0; slot < NurserySystem.BagCount; slot++)
+            {
+                SeedlingBagStatus status = nursery.GetStatus(slot);
+                if (status == SeedlingBagStatus.Empty)
+                    continue;
+
+                bool sown = nursery.TryGetMaterial(slot, out PlantingMaterialInfo info);
+                bags.Add(new AdvisorSeedlingBagData
+                {
+                    bag = slot + 1,
+                    status = status.ToString(),
+                    plantingMaterial = sown ? info.Name : string.Empty,
+                    daysUntilNextStep = nursery.DaysUntilNextStep(slot)
+                });
+            }
+
+            return bags;
         }
 
         public string BuildContextJson()

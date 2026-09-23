@@ -151,7 +151,7 @@ namespace AgriDabao3D
                 tracker.RecordAction(new ClimateActionRecord
                 {
                     actionType = "PlantCrop",
-                    itemType = observation.cropType + "Seed",
+                    itemType = crop.PlantingMaterial,
                     cropType = observation.cropType,
                     cropId = observation.cropId,
                     gameDay = CurrentGameDay(),
