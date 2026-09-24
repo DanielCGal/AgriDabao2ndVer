@@ -7,26 +7,13 @@ using System.Collections;
 
 namespace AgriDabao3D
 {
-    /// <summary>Which looping Antonio portrait is playing.</summary>
     public enum AdvisorMood
     {
-        /// <summary>Greeting - shown each time the chat panel is opened.</summary>
         Hello,
-        /// <summary>Waiting on the Gemini reply.</summary>
         Thinking,
-        /// <summary>Delivering an answer.</summary>
         Teaching
     }
 
-    /// <summary>
-    /// The AI-Adviser chat. Hidden behind a round corner button next to the pause
-    /// button; pressing that button toggles the panel open and closed.
-    ///
-    /// Art comes from the shared <see cref="UIThemeSprites"/> asset and is entirely
-    /// optional - with no sprites set, this falls back to the original dark panel.
-    /// Antonio's three looping portrait videos are Inspector fields on this
-    /// component (VideoClip cannot live on the shared sprite asset).
-    /// </summary>
     public class FarmAdvisorUIBuilder : MonoBehaviour
     {
         [Header("Antonio Portrait (looping videos)")]
@@ -54,9 +41,6 @@ namespace AgriDabao3D
         private RenderTexture portraitTexture;
         private AdvisorMood currentMood = AdvisorMood.Hello;
 
-        // Matches the board art's 2048x1242 aspect. Everything below is laid out
-        // inside the plank area only - the rolled logs at each side and the
-        // nailed sign plank across the top are kept clear.
         private const float PanelWidth = 1400f;
         private const float PanelHeight = 849f;
 
@@ -68,7 +52,6 @@ namespace AgriDabao3D
             BuildUI();
             CreateToggleButton();
 
-            // Starts closed - the round button in the corner opens it.
             chatPanel.SetActive(false);
         }
 
@@ -100,17 +83,13 @@ namespace AgriDabao3D
                 CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+                scaler.matchWidthOrHeight = 1f;
             }
         }
 
-        // ---------------- Open / close ----------------
-
-        /// <summary>The round button beside the pause button that opens the chat.</summary>
         private void CreateToggleButton()
         {
             GameObject go = new GameObject("AdvisorChatButton", typeof(RectTransform), typeof(Image), typeof(Button));
-            // Not created through HudIconButton.Create, so it registers itself.
             HudRegistry.RegisterIconButton(HudIconButton.SlotAdviserChat, go);
             go.transform.SetParent(canvas.transform, false);
 
@@ -121,7 +100,6 @@ namespace AgriDabao3D
             rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 1f);
             rect.sizeDelta = art != null ? new Vector2(size, size) : new Vector2(120f, 56f);
-            // Sits immediately right of the pause button (20 + size + 12 gap).
             rect.anchoredPosition = new Vector2(art != null ? 20f + size + 12f : 152f, -20f);
 
             Image image = go.GetComponent<Image>();
@@ -169,7 +147,6 @@ namespace AgriDabao3D
             chatPanel.SetActive(true);
             chatPanel.transform.SetAsLastSibling();
 
-            // Every fresh open greets the player again.
             SetMood(AdvisorMood.Hello, force: true);
         }
 
@@ -184,12 +161,6 @@ namespace AgriDabao3D
                 portraitPlayer.Stop();
         }
 
-        // ---------------- Portrait ----------------
-
-        /// <summary>
-        /// Switches Antonio's looping portrait. Called by
-        /// <see cref="FarmAdvisorChatSystem"/> around each Gemini request.
-        /// </summary>
         public void SetMood(AdvisorMood mood, bool force = false)
         {
             if (!force && currentMood == mood && portraitPlayer != null && portraitPlayer.isPlaying)
@@ -241,7 +212,6 @@ namespace AgriDabao3D
                 frameImage.color = new Color(0.10f, 0.08f, 0.05f, 0.9f);
             }
 
-            // The video surface sits inside the frame's painted border.
             GameObject videoGo = new GameObject("PortraitVideo", typeof(RectTransform), typeof(RawImage));
             videoGo.transform.SetParent(frame.transform, false);
 
@@ -269,12 +239,9 @@ namespace AgriDabao3D
             portraitPlayer.isLooping = true;
             portraitPlayer.renderMode = VideoRenderMode.RenderTexture;
             portraitPlayer.targetTexture = portraitTexture;
-            // The portraits are silent animations; keep them out of the audio mix.
             portraitPlayer.audioOutputMode = VideoAudioOutputMode.None;
             portraitPlayer.waitForFirstFrame = true;
         }
-
-        // ---------------- Panel ----------------
 
         private void BuildUI()
         {
@@ -289,7 +256,6 @@ namespace AgriDabao3D
 
             if (board != null)
             {
-                // Centred board, sized to the art's own aspect.
                 panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
                 panelRect.pivot = new Vector2(0.5f, 0.5f);
                 panelRect.sizeDelta = new Vector2(PanelWidth, PanelHeight);
@@ -313,10 +279,8 @@ namespace AgriDabao3D
             BuildInputArea(panel.transform);
         }
 
-        /// <summary>Layout that matches the painted chat board.</summary>
         private void BuildThemedPanel(Transform parent)
         {
-            // Hanging "Ask Questions!" sign across the top-left of the board.
             Sprite labelArt = theme?.askQuestionsLabel;
             if (labelArt != null)
             {
@@ -335,12 +299,8 @@ namespace AgriDabao3D
                 signImage.raycastTarget = false;
             }
 
-            // Antonio's portrait on the left of the plank area.
             BuildPortrait(parent, new Vector2(-355f, 75f), 340f);
 
-            // Transcript window starts exactly where the portrait frame ends
-            // (portrait centre -355 + half of 340 = -185) so the two edges meet
-            // without overlapping, and runs to the right-hand log.
             RectTransform window = BuildChatWindow(parent, new Vector2(175f, 75f), new Vector2(720f, 340f));
             BuildChatArea(window, Vector2.zero, Vector2.zero, theme?.chatWindowPanel);
 
@@ -369,7 +329,6 @@ namespace AgriDabao3D
             rowRect.anchorMin = rowRect.anchorMax = new Vector2(0.5f, 0.5f);
             rowRect.pivot = new Vector2(0.5f, 0.5f);
             rowRect.sizeDelta = new Vector2(1040f, 80f);
-            // Sits lower down the planks, clear of the transcript window above.
             rowRect.anchoredPosition = new Vector2(0f, -250f);
 
             Image rowImage = row.GetComponent<Image>();
@@ -421,7 +380,6 @@ namespace AgriDabao3D
             scrollRect.horizontal = false;
             scrollRect.vertical = true;
 
-            // Viewport
             GameObject viewportGo = new GameObject(
                 "Viewport",
                 typeof(RectTransform),
@@ -433,8 +391,6 @@ namespace AgriDabao3D
             RectTransform viewportRect = viewportGo.GetComponent<RectTransform>();
             viewportRect.anchorMin = Vector2.zero;
             viewportRect.anchorMax = Vector2.one;
-            // Must clear the window sprite's 9-slice border, which renders at its
-            // native pixel size (~45) regardless of how the panel is scaled.
             float pad = windowSprite != null ? 52f : 0f;
             viewportRect.offsetMin = new Vector2(pad, pad);
             viewportRect.offsetMax = new Vector2(-pad, -pad);
@@ -446,7 +402,6 @@ namespace AgriDabao3D
             Mask viewportMask = viewportGo.GetComponent<Mask>();
             viewportMask.showMaskGraphic = false;
 
-            // Content
             GameObject contentGo = new GameObject(
                 "Content",
                 typeof(RectTransform),
@@ -475,7 +430,6 @@ namespace AgriDabao3D
             contentFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
             contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            // Chat Text
             GameObject textGo = new GameObject(
                 "ChatText",
                 typeof(RectTransform),
@@ -505,7 +459,6 @@ namespace AgriDabao3D
             textFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
             textFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            // Connect scroll rect
             scrollRect.viewport = viewportRect;
             scrollRect.content = contentRect;
         }
@@ -531,11 +484,6 @@ namespace AgriDabao3D
 
             questionInput = inputGo.GetComponent<InputField>();
 
-            // Comfortably more than any real farming question needs, and short
-            // enough that nobody can paste a wall of text designed to bury the
-            // adviser's rules under it. Convenience only, not the guard: this
-            // limit is inside the APK, so the server enforces its own ceiling
-            // and is the one that actually holds.
             questionInput.characterLimit = 400;
 
             GameObject placeholderGo = new GameObject("Placeholder", typeof(RectTransform), typeof(Text));
@@ -568,10 +516,6 @@ namespace AgriDabao3D
             inputText.color = Color.black;
             inputText.text = "";
 
-            // Same guard as the other typed-into boxes: Unity's default Truncate
-            // discards a line taller than its rect instead of clipping it, so a
-            // large text setting would leave the adviser's question box drawing
-            // nothing while still taking keystrokes.
             placeholderText.verticalOverflow = VerticalWrapMode.Overflow;
             inputText.verticalOverflow = VerticalWrapMode.Overflow;
 
@@ -615,7 +559,6 @@ namespace AgriDabao3D
             Stretch(buttonText.rectTransform);
         }
 
-        /// <summary>Bottom-left input row used by the unthemed fallback layout.</summary>
         private void BuildInputArea(Transform parent)
         {
             GameObject holder = new GameObject("InputRow", typeof(RectTransform));
@@ -630,8 +573,6 @@ namespace AgriDabao3D
             BuildInputField(holder.transform, new Vector2(-50f, 0f), new Vector2(360f, 40f));
             BuildSendButton(holder.transform, new Vector2(190f, 0f), new Vector2(90f, 40f), null);
         }
-
-        // ---------------- Chat plumbing ----------------
 
         public void AppendMessage(string speaker, string message)
         {
@@ -672,8 +613,6 @@ namespace AgriDabao3D
             if (questionInput != null)
                 questionInput.text = "";
         }
-
-        // ---------------- Small helpers ----------------
 
         private static Text CreateText(Transform parent, string name, int size, TextAnchor alignment)
         {

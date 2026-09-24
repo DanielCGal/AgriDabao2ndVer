@@ -59,37 +59,12 @@ namespace AgriDabao3D
         private bool initialized;
         private TropicalCropStage lastLoggedStage;
 
-        /// <summary>
-        /// Converts "stress per game day" from the weather tables into a share of
-        /// the 0-1 stress target. At 40, the most typhoon-sensitive crop settles
-        /// near 48% weather stress and the most resistant near 30%, so the per-crop
-        /// difference is plainly visible without pinning every plant at 100.
-        /// </summary>
         private const float WeatherStressFullScalePerDay = 40f;
 
-        /// <summary>
-        /// How long, in game days, an effect applied from outside this simulation
-        /// keeps its grip before fading. A steady 3.5/day pest settles around 7
-        /// points of health loss; a cured pest or a passed storm releases over
-        /// roughly the same span instead of marking the plant permanently.
-        /// </summary>
         private const float ExternalEffectTimeConstantDays = 2f;
 
-        /// <summary>
-        /// Extra stress per game day on young cacao standing in open sun, on the
-        /// same scale as the weather tables. The user's notes call shade critical
-        /// for young cacao, and the Shade Net Kit is the game's shade. At 6 it
-        /// settles about fifteen points of stress - plainly visible on the crop
-        /// board, not enough to kill a watered plant.
-        /// </summary>
         private const float YoungCacaoSunStressPerDay = 6f;
 
-        // The stress and health this simulation last produced on its own. health
-        // and stress are shared fields - the pest system, mitigation structures
-        // and player actions all write to them between ticks - so the gap between
-        // these baselines and the public fields is exactly what those other
-        // systems contributed. Tracking it separately is what lets the smoothing
-        // below converge on its target without erasing their work.
         private float simulatedStress;
         private float simulatedHealth;
         private bool simulationBaselineReady;
@@ -135,12 +110,6 @@ namespace AgriDabao3D
             initialized = true;
         }
 
-        /// <summary>
-        /// Makes a freshly planted crop the age it already reached before the
-        /// field - days in the Seedling Tent, a grafted seedling's head start, or
-        /// a bought seedling's age. The first harvest moves by the same amount,
-        /// so the schedule stays measured from the plant's true age.
-        /// </summary>
         public void ApplyStartingAge(float ageDays)
         {
             if (ageDays <= 0f)
@@ -152,7 +121,6 @@ namespace AgriDabao3D
             lastLoggedStage = stage;
         }
 
-        /// <summary>Young cacao - before it starts to fruit - wants shade overhead.</summary>
         public bool NeedsShade =>
             cropKind == TropicalCropKind.Cacao &&
             stage < TropicalCropStage.PreFruiting;
@@ -186,9 +154,6 @@ namespace AgriDabao3D
             TropicalCropStage previousStage = stage;
             stage = GetStage();
 
-            // Adopt whatever the fields currently hold the first time this runs.
-            // Covers a fresh planting, a farm restored from the backend, and any
-            // dev tool that sets the stats directly.
             if (!simulationBaselineReady)
             {
                 simulatedStress = stress;
@@ -196,10 +161,6 @@ namespace AgriDabao3D
                 simulationBaselineReady = true;
             }
 
-            // Anything the public fields have drifted from the baselines was
-            // written by another system since the previous tick - pest damage,
-            // mitigation relief, watering, a harvest. Measure it now so the
-            // smoothing further down can preserve it instead of erasing it.
             float externalStress = stress - simulatedStress;
             float externalHealth = health - simulatedHealth;
 
@@ -223,11 +184,6 @@ namespace AgriDabao3D
                 weatherMoistureAdd = WeatherSystem.Instance.GetMoistureAdditionPerDay();
             }
 
-            // Moisture is integrated before the weather stress is measured, so the
-            // waterlogging and rain-relief tests below read this tick's moisture.
-            // The coconut and banana simulations already worked this way; reading
-            // the pre-drying value here made the same storm judge identical soil
-            // differently depending on which crop was standing in it.
             moisture = Mathf.Clamp01(
                 moisture -
                 dryRate * weatherDryMultiplier * deltaGameDays +
@@ -262,13 +218,6 @@ namespace AgriDabao3D
             float idealDrainage = TropicalCropCatalog.GetIdealDrainage(cropKind);
             float drainageFit = 1f - Mathf.Clamp01(Mathf.Abs(drainage - idealDrainage) / 0.70f);
 
-            // Stress per game day from the weather, deliberately NOT scaled by
-            // deltaGameDays: it feeds the stress target below and the smoothing
-            // converges on that target over time. Scaling it here and adding it
-            // after the smoothing - which is what this used to do - meant the pull
-            // back to target erased the whole contribution on the very next tick,
-            // so a typhoon moved a durian's stress by 0.0003 out of 100 instead of
-            // the 18/day its tables call for.
             float weatherStressPerDay = 0f;
 
             if (WeatherSystem.Instance != null)
@@ -291,10 +240,6 @@ namespace AgriDabao3D
                 }
             }
 
-            // Waterlogging is judged against this crop's own moisture ceiling
-            // rather than a shared constant, and now applies once instead of
-            // stacking with a second fixed-threshold check inside the weather
-            // system.
             bool waterlogged =
                 moisture > TropicalCropCatalog.GetIdealMoistureMax(cropKind) + 0.06f &&
                 drainage < 0.55f;
@@ -336,11 +281,6 @@ namespace AgriDabao3D
                 directHealthPenalty -
                 temperatureHealthPenalty;
 
-            // Smooth this simulation's own baselines toward their targets, then
-            // let the contributions other systems made fade on their own clock,
-            // and publish the sum. Pest damage of 3.5/day used to be wiped out
-            // every tick by a 22/day pull toward target; it now holds the plant
-            // down for as long as the infestation lasts.
             simulatedHealth = Mathf.Clamp(
                 Mathf.MoveTowards(simulatedHealth, targetHealth, 22f * deltaGameDays),
                 0f,
@@ -577,19 +517,6 @@ namespace AgriDabao3D
             return Mathf.FloorToInt(GameTimeSystem.Instance.TotalGameDays) + 1;
         }
 
-        /// <summary>
-        /// Developer tools only: force this crop's stress to a value and move its
-        /// own baseline with it.
-        ///
-        /// Writing <c>stress</c> alone would not hold. Each simulation step
-        /// recovers whatever another system wrote as
-        /// <c>externalStress = stress - simulatedStress</c> and then fades it with a
-        /// two-day time constant, so a directly assigned number decays back toward
-        /// whatever the soil dictates - which is right for a mulch bag and wrong
-        /// for a deliberate test setup. Moving the baseline too leaves no external
-        /// offset to fade, so the value stays until the simulation itself drifts
-        /// it.
-        /// </summary>
         public void DevSetStressBaseline(float value)
         {
             stress = Mathf.Clamp(value, 0f, 100f);
@@ -666,7 +593,6 @@ namespace AgriDabao3D
 
             stage = GetStage();
 
-            // A forced stage has to show that stage, not the planting material.
             fieldPlantedGameDay = -1f;
 
             GrowthStageVisualController visuals = GetComponent<GrowthStageVisualController>();

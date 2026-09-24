@@ -3,13 +3,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// What a patch of prepared ground currently is.
-    ///
-    /// The shovel tills bare ground first; tapping the tilled patch again turns it
-    /// into the preparation the crop needs. Values are saved by name, so new ones
-    /// can go anywhere, but keep None first as the default.
-    /// </summary>
     public enum PreparedPlotKind
     {
         None,
@@ -19,15 +12,6 @@ namespace AgriDabao3D
         Furrow
     }
 
-    /// <summary>
-    /// A patch of prepared ground: tilled, then dug into a planting hole, built
-    /// into a raised bed or opened into a furrow. It carries the soil sampled when
-    /// it was dug, so the crop planted here gets the soil of this spot.
-    ///
-    /// Kept under its old name so the DigSpot prefab and every system that already
-    /// looks for dug spots - the tutorial, the daily tasks, the task observer -
-    /// keep working.
-    /// </summary>
     public class DigSpot : MonoBehaviour
     {
         [Header("Saved Soil Information")]
@@ -56,13 +40,10 @@ namespace AgriDabao3D
         [Header("State")]
         public bool occupied;
 
-        /// <summary>The model currently shown for this preparation.</summary>
         [NonSerialized] public GameObject visual;
 
-        /// <summary>The mulch laid over a raised bed.</summary>
         [NonSerialized] public GameObject mulchVisual;
 
-        /// <summary>Ready to take a crop: a hole, a bed or a furrow, not just tilled ground.</summary>
         public bool IsPrepared =>
             plotKind == PreparedPlotKind.Hole ||
             plotKind == PreparedPlotKind.RaisedBed ||

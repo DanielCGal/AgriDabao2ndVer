@@ -110,7 +110,6 @@ namespace AgriDabao3D
         public string targetPlayerId;
     }
 
-    /// <summary>One "your listing sold" notification for the seller.</summary>
     [Serializable]
     public class MarketplaceSaleDto
     {
@@ -170,9 +169,6 @@ namespace AgriDabao3D
         public string expiresAt;
         public long? currentPlayerFarmRevision;
 
-        // Each player's farm district, so a seed can be refused the moment it is
-        // dragged in. Null from a server older than the district rule; an empty
-        // string for a farm with no district recorded, which uses the fallback pool.
         public string requesterDistrictName;
         public string targetDistrictName;
     }

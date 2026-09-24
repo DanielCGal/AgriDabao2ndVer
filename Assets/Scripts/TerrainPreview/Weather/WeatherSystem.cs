@@ -84,8 +84,6 @@ namespace AgriDabao3D
             if (FarmLoadContext.IsRestoring)
                 return;
 
-            // Weather no longer detects game-day changes here.
-            // GameTimeSystem owns the new-day order.
             RefreshCurrentConditions();
         }
 
@@ -274,10 +272,6 @@ namespace AgriDabao3D
             if (currentProfile == null)
                 return;
 
-            // A brand-new farmer gets two calm days before the sky is allowed to
-            // do anything to them. Without this a typhoon can land during the
-            // beginner guide, wiping out the first crop Antonio just taught them
-            // to plant and contradicting him mid-sentence.
             if (FarmGraceperiod.IsCalmWeatherDay)
             {
                 StartWeatherEvent(WeatherEventType.Clear, 0, 0f);
@@ -389,8 +383,6 @@ namespace AgriDabao3D
             float hour =
                 GameTimeSystem.Instance.CurrentHour;
 
-            // Daily low at around 2 AM.
-            // Daily high at around 2 PM.
             float warmth =
                 Mathf.Cos(
                     (hour - 14f) /
@@ -476,17 +468,6 @@ namespace AgriDabao3D
             };
         }
 
-        /// <summary>
-        /// Stress per game day caused by the active weather event alone.
-        ///
-        /// Waterlogging used to be folded in here against a fixed 0.85 moisture
-        /// line. That double-counted against crops which also run their own
-        /// waterlogging check, and it punished high-moisture crops such as
-        /// mangosteen (ideal max 0.90) inside the band their own profile calls
-        /// ideal. Each crop now tests waterlogging against its own band; what is
-        /// left here is only the part that is identical for every plant standing
-        /// in the same storm.
-        /// </summary>
         public float GetEventStressPerDay()
         {
             return currentEvent switch
@@ -538,8 +519,6 @@ namespace AgriDabao3D
                 forcedRainIntensity
             );
 
-            // Immediately adjust temperature and humidity
-            // according to the forced weather.
             RollDailyTemperatureRange();
             UpdateCurrentTemperatureAndHumidity();
 

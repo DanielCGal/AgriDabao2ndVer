@@ -111,7 +111,6 @@ namespace AgriDabao3D
             titleRect.offsetMax = new Vector2(-35f, -20f);
             titleText.text = "Farm Task";
 
-            // The painted sign carries the wording, so the plain title is hidden.
             if (theme?.farmTaskLabel != null)
             {
                 titleText.gameObject.SetActive(false);
@@ -158,10 +157,8 @@ namespace AgriDabao3D
             RectTransform scrollRect = scrollGo.GetComponent<RectTransform>();
             scrollRect.anchorMin = new Vector2(0f, 0f);
             scrollRect.anchorMax = new Vector2(1f, 1f);
-            // Wider inset with the board art so the text clears the rolled logs.
             scrollRect.offsetMin = new Vector2(themedBoard ? 120f : 40f, themedBoard ? 125f : 105f);
             scrollRect.offsetMax = new Vector2(themedBoard ? -120f : -40f, themedBoard ? -170f : -90f);
-            // The board already provides the panel look behind the text.
             scrollGo.GetComponent<Image>().color = themedBoard
                 ? new Color(1f, 1f, 1f, 0f)
                 : new Color(1f, 1f, 1f, 0.045f);
@@ -274,7 +271,6 @@ namespace AgriDabao3D
 
             if (art != null)
             {
-                // The word is painted into the art, so no Text child is added.
                 image.sprite = art;
                 image.preserveAspect = true;
                 image.color = Color.white;
@@ -314,7 +310,7 @@ namespace AgriDabao3D
                 scaler = canvas.gameObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+            scaler.matchWidthOrHeight = 1f;
             if (canvas.GetComponent<GraphicRaycaster>() == null)
                 canvas.gameObject.AddComponent<GraphicRaycaster>();
             return canvas;

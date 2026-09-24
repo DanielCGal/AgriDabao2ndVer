@@ -60,38 +60,15 @@ namespace AgriDabao3D
         private CoconutStage lastLoggedStage;
         private bool hasLoggedImmature;
 
-        /// <summary>
-        /// Coconut's own storm and drought ratings, on the same 0-14 scale the
-        /// tropical crop catalogue uses. This simulation previously had no typhoon
-        /// or drought branch at all, which left coconut the one crop of the
-        /// thirteen a storm could not touch. The values sit at the resistant end
-        /// deliberately - a deep-rooted palm rides out weather that flattens
-        /// strawberry - but resistant is not immune.
-        /// </summary>
-        // Coconut is the most storm-hardy crop on the farm, and these numbers say
-        // so: 4 is below every one of the eleven catalogued crops, the lowest of
-        // which is pineapple at 5. A palm bends with the wind and sheds it
-        // through its fronds instead of catching it, which is why coconut stands
-        // through storms that flatten everything around it - and it is the
-        // difference the game should be teaching about planting near the coast.
-        //
-        // It used to be 6, identical to banana, which put the most typhoon-proof
-        // crop and the most typhoon-prone one on the same footing.
         private const float TyphoonStressPerDay = 4f;
 
-        /// <summary>Deep roots reach water long after shallow-rooted crops wilt.</summary>
         private const float DroughtStressPerDay = 5f;
 
-        /// <summary>Upper end of the moisture band <see cref="GetWaterScore"/> treats as ideal.</summary>
         private const float IdealMoistureMax = 0.80f;
 
-        /// <summary>See TropicalCropPlantInstance for the reasoning behind both constants.</summary>
         private const float WeatherStressFullScalePerDay = 40f;
         private const float ExternalEffectTimeConstantDays = 2f;
 
-        // Baselines this simulation owns; the gap between these and the public
-        // fields is what the pest system, mitigation structures and player actions
-        // contributed since the previous tick.
         private float simulatedStress;
         private float simulatedHealth;
         private bool simulationBaselineReady;
@@ -137,12 +114,6 @@ namespace AgriDabao3D
             initialized = true;
         }
 
-        /// <summary>
-        /// Makes a freshly planted crop the age it already reached before the
-        /// field - time in the Seedling Tent, or the head start of a bought
-        /// seedling. The first harvest moves by the same amount, so the schedule
-        /// stays measured from the plant's true age.
-        /// </summary>
         public void ApplyStartingAge(float ageDays)
         {
             if (ageDays <= 0f)
@@ -176,8 +147,6 @@ namespace AgriDabao3D
             CoconutStage previousStage = stage;
             stage = GetStage(GetAgeYears());
 
-            // Adopt whatever the fields currently hold on the first tick, covering
-            // a fresh planting, a restored farm, and the dev tools.
             if (!simulationBaselineReady)
             {
                 simulatedStress = stress;
@@ -209,10 +178,6 @@ namespace AgriDabao3D
                 + (weatherMoistureAdd * deltaGameDays)
             );
 
-            // Weather stress per game day. Not scaled by deltaGameDays - it feeds
-            // the stress target below, which the smoothing converges on. Adding it
-            // after the smoothing, as this used to, let the pull back to target
-            // erase it every tick.
             float weatherStressPerDay = 0f;
 
             if (WeatherSystem.Instance != null)
@@ -226,8 +191,6 @@ namespace AgriDabao3D
                 {
                     weatherStressPerDay += TyphoonStressPerDay;
 
-                    // Matches the curve the tropical crops use, so coconut sits on
-                    // the same scale as the other twelve rather than outside it.
                     directHealthPenalty += Mathf.Lerp(2f, 8f, TyphoonStressPerDay / 12f);
                 }
 
@@ -238,8 +201,6 @@ namespace AgriDabao3D
                 }
             }
 
-            // Waterlogging against coconut's own moisture ceiling. This used to
-            // come from a shared fixed 0.85 threshold inside the weather system.
             bool waterlogged =
                 moisture > IdealMoistureMax + 0.06f &&
                 drainage < 0.55f;
@@ -300,8 +261,6 @@ namespace AgriDabao3D
                 directHealthPenalty -
                 temperatureHealthPenalty;
 
-            // Smooth this simulation's own baselines toward their targets, fade
-            // what other systems contributed, then publish the sum.
             simulatedHealth = Mathf.Clamp(
                 Mathf.MoveTowards(simulatedHealth, targetHealth, 20f * deltaGameDays),
                 0f,
@@ -545,19 +504,6 @@ namespace AgriDabao3D
             );
         }
 
-        /// <summary>
-        /// Developer tools only: force this crop's stress to a value and move its
-        /// own baseline with it.
-        ///
-        /// Writing <c>stress</c> alone would not hold. Each simulation step
-        /// recovers whatever another system wrote as
-        /// <c>externalStress = stress - simulatedStress</c> and then fades it with a
-        /// two-day time constant, so a directly assigned number decays back toward
-        /// whatever the soil dictates - which is right for a mulch bag and wrong
-        /// for a deliberate test setup. Moving the baseline too leaves no external
-        /// offset to fade, so the value stays until the simulation itself drifts
-        /// it.
-        /// </summary>
         public void DevSetStressBaseline(float value)
         {
             stress = Mathf.Clamp(value, 0f, 100f);
@@ -604,7 +550,6 @@ namespace AgriDabao3D
             plantedGameDay = currentDay - targetAgeDays - 1f;
             stage = GetStage(GetAgeYears());
 
-            // A forced stage has to show that stage, not the planting material.
             fieldPlantedGameDay = -1f;
 
             GrowthStageVisualController visuals = GetComponent<GrowthStageVisualController>();

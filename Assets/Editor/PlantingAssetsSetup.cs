@@ -5,18 +5,6 @@ using UnityEngine;
 
 namespace AgriDabao3D.EditorTools
 {
-    /// <summary>
-    /// Builds the planting system's prefabs from the Meshy models, sets the new
-    /// UI images up as sprites, and wires both into the farm scene and the UI
-    /// theme. Kept as menu items so any step can be run again after a model or
-    /// sprite is replaced.
-    ///
-    /// The Meshy models all import with a 100x scale on their root and are about
-    /// 1.9 units across at that scale, pivot at their centre. Each prefab here
-    /// is an empty root standing at the model's base, with the model inside it
-    /// scaled to its real size, so every one of them can be placed on the ground
-    /// by its root.
-    /// </summary>
     public static class PlantingAssetsSetup
     {
         private const string PrefabFolder = "Assets/Prefab/";
@@ -52,7 +40,6 @@ namespace AgriDabao3D.EditorTools
                     continue;
                 }
 
-                // Matches the existing HUD and item icons.
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.mipmapEnabled = false;
@@ -71,8 +58,6 @@ namespace AgriDabao3D.EditorTools
         {
             Material dugSoil = EnsureDugSoilMaterial();
 
-            // Seedlings: shown in the tent's bags, and for a transplanted crop's
-            // first days in the field.
             BuildModelPrefab("Seedling_Cacao", "SproutCacao", 0.18f, true);
             BuildModelPrefab("Seedling_Durian", "SproutDurian", 0.18f, true);
             BuildModelPrefab("Seedling_Mangosteen", "SproutMangosteen", 0.18f, true);
@@ -84,13 +69,11 @@ namespace AgriDabao3D.EditorTools
             BuildModelPrefab("Seedling_Squash", "SproutSquash", 0.15f, true);
             BuildModelPrefab("Seedling_Corn", "SproutCorn", 0.15f, true);
 
-            // Planting materials that go straight into the ground.
             BuildModelPrefab("Seednut_Coconut", "Seednut_Coconut", 0.3f, true);
             BuildModelPrefab("Sucker_Banana", "Sucker_Banana", 0.4f, true);
             BuildModelPrefab("Sucker_Pineapple", "Sucker_Pineapple", 0.25f, true);
             BuildModelPrefab("Runner_Strawberry", "Runner_Strawberry", 0.15f, true);
 
-            // Seedling bags, about 20 cm tall like a real polybag.
             BuildModelPrefab("SeedlingBag_Empty", "SeedlingBag_Empty", 0.1f, false);
             BuildModelPrefab("SeedlingBag_Filled", "SeedlingBag_Filled", 0.105f, false);
 
@@ -166,8 +149,6 @@ namespace AgriDabao3D.EditorTools
             Debug.Log("[PlantingSetup] TerrainPreview wired. Save the scene to keep it.");
         }
 
-        // ----------------------------------------------------------- building
-
         private static void BuildModelPrefab(string prefabName, string modelFolder, float scale, bool collider)
         {
             GameObject root = new GameObject(prefabName);
@@ -179,11 +160,6 @@ namespace AgriDabao3D.EditorTools
             Save(root, prefabName);
         }
 
-        /// <summary>
-        /// Prepared ground, drawn from the dug-soil model: flattened for tilled
-        /// ground and the top of a raised bed, with a dark opening for a hole and
-        /// a trench between two ridges for a furrow.
-        /// </summary>
         private static void BuildGroundPrefabs(Material dugSoil)
         {
             GameObject tilled = new GameObject("Ground_Tilled");
@@ -217,11 +193,6 @@ namespace AgriDabao3D.EditorTools
             Save(bedMulch, "Ground_BedMulch");
         }
 
-        /// <summary>
-        /// The Seedling Tent: the tent, two racks along its side walls, and eight
-        /// bag positions on the racks' middle shelves. The tent is a trigger so the
-        /// player can walk in among the racks; the racks are solid.
-        /// </summary>
         private static void BuildTentPrefab()
         {
             GameObject root = new GameObject("SeedlingTent");
@@ -271,11 +242,6 @@ namespace AgriDabao3D.EditorTools
             return anchors;
         }
 
-        /// <summary>
-        /// Adds a model under a holder whose scale reshapes it, then seats it so its
-        /// base is on the holder's origin and it is centred over it. Returns the
-        /// model instance; its parent is the holder.
-        /// </summary>
         private static GameObject AddModel(Transform parent, string modelFolder, float scale, Vector3 shape, string name)
         {
             GameObject source = LoadModel(modelFolder);
@@ -290,7 +256,6 @@ namespace AgriDabao3D.EditorTools
             instance.transform.localRotation = source.transform.localRotation;
             instance.transform.localScale = source.transform.localScale * scale;
 
-            // Built at the world origin with no rotation, so world and local agree.
             Bounds bounds = WorldBounds(instance);
             Vector3 holderPosition = holder.transform.position;
             Vector3 correction = new Vector3(

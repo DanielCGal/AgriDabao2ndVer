@@ -3,11 +3,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Used by Pheromone/Bait Traps and Termite Bait Stations.
-    /// It continuously applies a database-controlled mitigation
-    /// to crops inside its radius.
-    /// </summary>
     public class AreaMitigationTrapInstance : MonoBehaviour
     {
         [Header("Identity")]

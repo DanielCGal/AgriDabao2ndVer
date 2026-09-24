@@ -5,34 +5,17 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// The rolling credits.
-    ///
-    /// The roll scrolls upward on its own, but the player can grab and drag it at
-    /// any time. Auto-scroll pauses while they hold it, waits a moment after they
-    /// let go, then resumes from wherever they left it - and stops for good once
-    /// the end is reached rather than looping.
-    ///
-    /// Built entirely in code like the rest of the game's UI, so there is no
-    /// prefab to wire up; only the sprites in UITheme are needed.
-    /// </summary>
     public class CreditsUIBuilder : MonoBehaviour
     {
         public static CreditsUIBuilder Instance { get; private set; }
 
-        /// <summary>Roll speed in reference pixels per second.</summary>
         private const float ScrollSpeed = 45f;
 
-        /// <summary>Idle time after the player lets go before the roll resumes.</summary>
         private const float ResumeDelay = 1.2f;
 
         private const float PanelWidth = 1100f;
         private const float PanelHeight = 820f;
 
-        /// <summary>
-        /// BackgroundUI.png is 9-sliced with 130px log caps, so content is inset
-        /// past them exactly as the settings and social boards do.
-        /// </summary>
         private const float BoardInset = 160f;
 
         private Canvas canvas;
@@ -60,7 +43,6 @@ namespace AgriDabao3D
             dragging = false;
             resumeAt = 0f;
 
-            // Always start from the top so the game logo leads every time.
             Canvas.ForceUpdateCanvases();
             if (scroll != null)
                 scroll.verticalNormalizedPosition = 1f;
@@ -80,8 +62,6 @@ namespace AgriDabao3D
             if (root == null || !root.activeSelf || scroll == null || reachedEnd)
                 return;
 
-            // Hold off while the player is dragging, and for a beat afterwards so
-            // the roll does not fight them the instant they release.
             if (dragging || Time.unscaledTime < resumeAt)
                 return;
 
@@ -90,7 +70,6 @@ namespace AgriDabao3D
             if (scrollable <= 1f)
                 return;
 
-            // verticalNormalizedPosition runs 1 (top) to 0 (bottom).
             float step = ScrollSpeed / scrollable * Time.unscaledDeltaTime;
             float next = scroll.verticalNormalizedPosition - step;
 
@@ -103,8 +82,6 @@ namespace AgriDabao3D
 
             scroll.verticalNormalizedPosition = next;
         }
-
-        // ----------------------------------------------------------------- build
 
         private void Build()
         {
@@ -137,9 +114,6 @@ namespace AgriDabao3D
                 board.color = new Color(0.05f, 0.10f, 0.06f, 0.97f);
             }
 
-            // No title above the roll: the game logo is the first thing the roll
-            // shows, so a "CREDITS" heading would only repeat what is already there
-            // and eat vertical space the roll can use instead.
             BuildScrollArea(panelRect);
             BuildCloseButton(panelRect);
         }
@@ -153,18 +127,14 @@ namespace AgriDabao3D
             RectTransform scrollRect = scrollGo.GetComponent<RectTransform>();
             scrollRect.anchorMin = new Vector2(0f, 0f);
             scrollRect.anchorMax = new Vector2(1f, 1f);
-            // Reaches nearer the top now that no title sits above it; the inset
-            // still clears the board's top log cap.
             scrollRect.offsetMin = new Vector2(BoardInset, 120f);
             scrollRect.offsetMax = new Vector2(-BoardInset, -90f);
 
-            // RectMask2D needs no Image of its own, so the board shows through.
             GameObject viewportGo = new GameObject("Viewport",
                 typeof(RectTransform), typeof(RectMask2D), typeof(Image));
             viewportGo.transform.SetParent(scrollGo.transform, false);
             RectTransform viewport = viewportGo.GetComponent<RectTransform>();
             Stretch(viewport);
-            // Transparent, but still a raycast target so drags anywhere register.
             Image viewportImage = viewportGo.GetComponent<Image>();
             viewportImage.color = new Color(1f, 1f, 1f, 0.001f);
 
@@ -202,7 +172,6 @@ namespace AgriDabao3D
             scroll.scrollSensitivity = 30f;
             scroll.inertia = true;
             scroll.decelerationRate = 0.12f;
-            // No scrollbar: nothing should be drawn over the board art.
             scroll.horizontalScrollbar = null;
             scroll.verticalScrollbar = null;
 
@@ -210,15 +179,12 @@ namespace AgriDabao3D
             watcher.owner = this;
         }
 
-        /// <summary>Called by the drag watcher while the player is holding the roll.</summary>
         internal void NotifyDragging(bool isDragging)
         {
             dragging = isDragging;
             if (!isDragging)
             {
                 resumeAt = Time.unscaledTime + ResumeDelay;
-                // Touching the roll again re-arms it, so a player who scrolls back
-                // up is not left with a frozen screen.
                 reachedEnd = false;
             }
         }
@@ -254,11 +220,8 @@ namespace AgriDabao3D
             label.text = "CLOSE";
         }
 
-        // --------------------------------------------------------------- content
-
         private void BuildCreditsContent(Transform parent)
         {
-            // The roll opens on the game logo and closes on the team logo.
             AddLogo(parent, theme?.gameLogo, 520f, 200f);
             AddGap(parent, 20f);
 
@@ -289,8 +252,6 @@ namespace AgriDabao3D
 
             AddHeading(parent, "LIBRARIES");
             AddLine(parent, "Json.NET for Unity (com.unity.nuget.newtonsoft-json)");
-            // MIT requires the copyright notice to travel with the software, so it
-            // is reproduced here rather than only linked.
             AddSubtle(parent, "Copyright (c) 2007 James Newton-King");
             AddSubtle(parent, "Licensed under the MIT License");
             AddGap(parent, 12f);
@@ -313,7 +274,6 @@ namespace AgriDabao3D
             AddHeading(parent, "SCIENTIFIC DATA");
             AddLine(parent, "Soil data (c) ISRIC - World Soil Information");
             AddLine(parent, "SoilGrids REST API");
-            // CC BY 4.0 requires visible attribution wherever the work is used.
             AddSubtle(parent, "Licensed under CC BY 4.0");
             AddSubtle(parent, "rest.isric.org/soilgrids/v2.0");
             AddGap(parent, 12f);
@@ -348,10 +308,6 @@ namespace AgriDabao3D
             AddLine(parent, "Artlist AI (AI Starter Tier) - for the Game User");
             AddLine(parent, "Interface Artwork");
             AddLine(parent, "Playpen Sans by TypeTogether");
-            // The OFL requires the copyright notice and the licence to travel with
-            // the font wherever it is redistributed, and shipping it inside the APK
-            // is redistribution. The full licence text is bundled alongside the
-            // typeface at Resources/Fonts/PlaypenSans-OFL.txt.
             AddSubtle(parent, "(c) 2023 The Playpen Sans Project Authors");
             AddSubtle(parent, "Licensed under the SIL Open Font License 1.1");
             AddGap(parent, 24f);
@@ -382,7 +338,6 @@ namespace AgriDabao3D
             AddFitter(text.gameObject);
         }
 
-        /// <summary>Licence notices and disclaimers, set smaller and dimmer.</summary>
         private void AddSubtle(Transform parent, string value)
         {
             Text text = CreateText(parent as RectTransform, "Note", 19,
@@ -424,8 +379,6 @@ namespace AgriDabao3D
             fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
-
-        // --------------------------------------------------------------- helpers
 
         private static Text CreateText(RectTransform parent, string name, int size,
             TextAnchor alignment, FontStyle style)
@@ -484,12 +437,6 @@ namespace AgriDabao3D
         }
     }
 
-    /// <summary>
-    /// Reports drag start and end to the credits roll.
-    ///
-    /// ScrollRect handles the dragging itself; this only tells the builder when to
-    /// hold the auto-scroll so the two do not fight for the same position.
-    /// </summary>
     public class CreditsDragWatcher : MonoBehaviour, IBeginDragHandler, IEndDragHandler
     {
         internal CreditsUIBuilder owner;

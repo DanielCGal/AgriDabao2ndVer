@@ -3,23 +3,6 @@ using UnityEngine.Video;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Drag-and-drop home for every Main Menu / Auth / Settings UI sprite.
-    ///
-    /// The Login, Sign-up, Verify and Settings panels are all built at runtime,
-    /// so those components have no Inspector of their own to drop sprites into.
-    /// This asset solves that: it lives in Assets/Resources as a single
-    /// "UITheme" asset, the builders load it by name, and every slot below shows
-    /// up in one Inspector.
-    ///
-    /// Every slot is optional. A slot left empty simply falls back to the old
-    /// flat-colour look for that one element, so the UI never breaks while the
-    /// art is still being made.
-    ///
-    /// SETUP: right-click in Assets/Resources -> Create -> AgriDabao -> UI Theme,
-    /// and name it exactly "UITheme".
-    /// </summary>
-    /// <summary>One district's painted name sign, paired with the district it belongs to.</summary>
     [System.Serializable]
     public class DistrictSign
     {
@@ -35,7 +18,6 @@ namespace AgriDabao3D
         private static UIThemeSprites cached;
         private static bool lookedUp;
 
-        /// <summary>The one theme asset, or null if it has not been created yet.</summary>
         public static UIThemeSprites Instance
         {
             get
@@ -46,8 +28,6 @@ namespace AgriDabao3D
                 lookedUp = true;
                 cached = Resources.Load<UIThemeSprites>(ResourceName);
 
-                // Normalise Unity's "fake null" to a real null so callers can
-                // safely use the ?. operator against this reference.
                 if (cached == null)
                 {
                     cached = null;
@@ -136,7 +116,6 @@ namespace AgriDabao3D
             new DistrictSign { districtName = "Tugbok" }
         };
 
-        /// <summary>The painted sign for a district, or null to fall back to text.</summary>
         public Sprite GetDistrictSign(string districtName)
         {
             if (districtSigns == null || string.IsNullOrWhiteSpace(districtName))
@@ -266,10 +245,6 @@ namespace AgriDabao3D
                  "top-left. X runs right, Y runs down. Tune to your art rather " +
                  "than editing code; the video is clipped to this rectangle.")]
         public Vector2 tutorialPortraitOffset = new Vector2(37f, 68f);
-        // These four are VideoClips, not Sprites, so Antonio's portrait moves while
-        // he talks. Drop the .mp4 files straight in. Note that MP4 carries no alpha
-        // channel: whatever is behind him in the video is what will show inside the
-        // frame, so keep all four on the same background.
         [Tooltip("Waving. Greetings, farewells, praise.")]
         public VideoClip antonioHello;
         [Tooltip("Pointing. Instructions and explanations - the most used one.")]

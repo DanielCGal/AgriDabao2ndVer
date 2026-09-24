@@ -3,12 +3,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Central, throttled distance-based renderer culler for farm content.
-    /// Registered objects have only their renderers toggled (never their
-    /// GameObject or scripts), so all gameplay logic keeps running while hidden.
-    /// Lazily created the first time a <see cref="DistanceCullable"/> registers.
-    /// </summary>
     public class DistanceCullingManager : MonoBehaviour
     {
         private static DistanceCullingManager instance;

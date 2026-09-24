@@ -7,26 +7,19 @@ namespace AgriDabao3D
 {
     public enum SeedlingBagStatus
     {
-        /// <summary>No soil in the bag yet.</summary>
         Empty,
 
-        /// <summary>Filled with soil, waiting for something to be sown.</summary>
         Filled,
 
-        /// <summary>A seed germinating in the seed tray, before it is pricked into this bag.</summary>
         Germinating,
 
-        /// <summary>Germinated and waiting for the player to prick it into the bag.</summary>
         NeedsPricking,
 
-        /// <summary>Growing (or hardening) toward transplant size.</summary>
         Growing,
 
-        /// <summary>Ready to transplant.</summary>
         Ready
     }
 
-    /// <summary>One seedling bag on the Seedling Tent's racks.</summary>
     [Serializable]
     public class SeedlingBag
     {
@@ -47,30 +40,12 @@ namespace AgriDabao3D
         }
     }
 
-    /// <summary>
-    /// The farm's Seedling Tent: eight seedling bags on two racks, where nursery
-    /// materials are raised before they go to the field.
-    ///
-    /// A bag is filled with soil, then sown. Durian and pomelo seeds germinate in
-    /// a seed tray first and wait for the player to prick them into their bag,
-    /// as the user's notes describe. When a seedling is ready the player picks it
-    /// in the tent panel and walks it to prepared ground: the next tap on a
-    /// matching hole or bed transplants it (see FarmingInteractionSystem).
-    ///
-    /// Time is the game clock's, measured from the day each bag was sown, so days
-    /// skipped from the objectives book or the developer tools count too.
-    ///
-    /// Created at runtime by <see cref="NurseryRuntimeBootstrap"/>, like the other
-    /// farm systems, so the scene needs no wiring beyond the prefabs on the
-    /// farming system.
-    /// </summary>
     public class NurserySystem : MonoBehaviour
     {
         public const int BagCount = 8;
 
         public static NurserySystem Instance { get; private set; }
 
-        /// <summary>Raised whenever a bag, the transplant state or the tent changes.</summary>
         public event Action Changed;
 
         private readonly SeedlingBag[] bags = new SeedlingBag[BagCount];
@@ -112,8 +87,6 @@ namespace AgriDabao3D
 
         private void Update()
         {
-            // A new farm gets its tent once the world exists. A loaded farm gets
-            // it from RestoreSaveData, which runs before the world is marked ready.
             if (!tentHandled && !FarmLoadContext.IsRestoring &&
                 FarmPersistenceManager.Instance != null &&
                 FarmPersistenceManager.Instance.IsWorldReady)
@@ -123,8 +96,6 @@ namespace AgriDabao3D
                     PlaceTentNearPlayer();
             }
 
-            // Growth is continuous, but the tent only needs redrawing when a bag
-            // moves from one state to the next, or its seedling visibly grows.
             if (Time.unscaledTime < nextStatusCheck)
                 return;
 
@@ -152,8 +123,6 @@ namespace AgriDabao3D
             else if (tent != null)
                 tent.RefreshGrowth(this);
         }
-
-        // ------------------------------------------------------------- reading
 
         public SeedlingBag GetBag(int slot)
         {
@@ -200,7 +169,6 @@ namespace AgriDabao3D
                 : bag.sownGameDay + info.NurseryDays;
         }
 
-        /// <summary>Game days until the bag's next step: germination, or ready to transplant.</summary>
         public float DaysUntilNextStep(int slot)
         {
             SeedlingBag bag = GetBag(slot);
@@ -218,7 +186,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>How far the seedling is toward transplant size, 0 to 1, for the models and the panel.</summary>
         public float GrowthProgress(int slot)
         {
             SeedlingBag bag = GetBag(slot);
@@ -244,7 +211,6 @@ namespace AgriDabao3D
             return Mathf.Clamp01(grown / info.NurseryDays);
         }
 
-        /// <summary>Days a seedling has spent in its bag, counted from sowing.</summary>
         public float DaysInNursery(int slot)
         {
             SeedlingBag bag = GetBag(slot);
@@ -262,7 +228,6 @@ namespace AgriDabao3D
             return count;
         }
 
-        /// <summary>Ready seedlings of a crop, for the daily tasks and the adviser.</summary>
         public int CountReady(FarmCropType? crop = null)
         {
             int count = 0;
@@ -276,8 +241,6 @@ namespace AgriDabao3D
             }
             return count;
         }
-
-        // ------------------------------------------------------------- actions
 
         public bool FillBag(int slot, out string message)
         {
@@ -392,7 +355,6 @@ namespace AgriDabao3D
             return true;
         }
 
-        /// <summary>Throws out whatever is in a bag, soil included. The material is lost.</summary>
         public bool EmptyBag(int slot, out string message)
         {
             SeedlingBag bag = GetBag(slot);
@@ -436,7 +398,6 @@ namespace AgriDabao3D
             NotifyChanged();
         }
 
-        /// <summary>What is being carried to the field, without taking it out of its bag yet.</summary>
         public bool TryGetTransplant(out PlantingMaterialInfo info, out float daysInNursery)
         {
             info = null;
@@ -449,10 +410,6 @@ namespace AgriDabao3D
             return true;
         }
 
-        /// <summary>
-        /// Called once the seedling is in the ground. The soil goes with the
-        /// seedling, so the bag is left empty and has to be refilled to use again.
-        /// </summary>
         public void FinishTransplant()
         {
             if (!IsValidSlot(transplantSlot))
@@ -463,7 +420,6 @@ namespace AgriDabao3D
             NotifyChanged();
         }
 
-        /// <summary>Developer tools: every sown bag skips straight to ready.</summary>
         public int DevMakeAllReady()
         {
             int changed = 0;
@@ -503,8 +459,6 @@ namespace AgriDabao3D
             }
         }
 
-        // ---------------------------------------------------------------- tent
-
         private Vector3 TentPosition => tent != null ? tent.transform.position : Vector3.zero;
 
         private void PlaceTentNearPlayer()
@@ -524,10 +478,6 @@ namespace AgriDabao3D
             Vector3 forward = Flat(playerTransform.forward, Vector3.forward);
             Vector3 right = Flat(playerTransform.right, Vector3.right);
 
-            // To the player's left, on the other side from the shipping bin, and
-            // far enough out that the two never touch. Other spots are tried in
-            // turn so a farm loaded from an older save does not put the tent on
-            // top of its crops.
             Vector3[] offsets =
             {
                 forward * 14f - right * 9f,
@@ -606,8 +556,6 @@ namespace AgriDabao3D
             tent.Refresh(this);
         }
 
-        // ------------------------------------------------------ saving/loading
-
         public NurserySaveDto CaptureSaveData()
         {
             NurserySaveDto save = new NurserySaveDto
@@ -655,8 +603,6 @@ namespace AgriDabao3D
                     SeedlingBag bag = bags[saved.slot];
                     bag.filled = saved.filled;
 
-                    // Anything no longer sown in bags is dropped rather than left to
-                    // sit in a bag that can never finish.
                     string material = PlantingMaterialCatalog.UpgradeLegacyName(saved.material);
                     bag.material = PlantingMaterialCatalog.TryGet(material, out PlantingMaterialInfo info) && info.SowInBag
                         ? info.Item.ToString()
@@ -676,22 +622,12 @@ namespace AgriDabao3D
             }
             else
             {
-                // A farm saved before the Seedling Tent existed gets one now, near
-                // wherever the player was standing.
                 tentHandled = false;
             }
 
             NotifyChanged();
         }
 
-        // ------------------------------------------------------------ records
-
-        /// <summary>
-        /// Reports a nursery action to the daily tasks, the adviser's task and the
-        /// beginner guide. It deliberately skips the climate event tracker: sowing
-        /// a bag is not a response to a typhoon or a drought, and counting it there
-        /// would pad the event's evaluation with unrelated work.
-        /// </summary>
         public static void RecordNurseryAction(
             string actionType,
             string itemType,

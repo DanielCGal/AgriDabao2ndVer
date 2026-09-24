@@ -85,7 +85,6 @@ namespace AgriDabao3D
             uiBuilder.AppendMessage("Player", question);
             uiBuilder.ClearInput();
 
-            // Antonio thinks while the request is in flight, then teaches once it lands.
             uiBuilder.SetMood(AdvisorMood.Thinking);
 
             SetBusy(true);
@@ -107,15 +106,11 @@ namespace AgriDabao3D
                     {
                         Debug.LogError("[FarmAdvisor] Gemini error callback received.\n" + error);
                         uiBuilder.AppendMessage("AI Adviser", "Error:\n" + error);
-                        // Stop the thinking loop even when the request failed.
                         uiBuilder.SetMood(AdvisorMood.Teaching);
                         SetBusy(false);
                     },
                     onIncomplete: () =>
                     {
-                        // The reply was cut off partway. Half an answer about crop
-                        // health is worse than none, so ask the player to try again
-                        // rather than showing the fragment.
                         Debug.LogWarning("[FarmAdvisor] Reply was incomplete; asking the player to repeat.");
                         uiBuilder.AppendMessage("AI Adviser", "Can you repeat that question again?");
                         uiBuilder.SetMood(AdvisorMood.Teaching);

@@ -4,14 +4,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// The three pictures one district needs on the area selection screen.
-    ///
-    /// All three are drawn on the same canvas as the base satellite map and must
-    /// be exported at the same pixel size, because the game lines them up by
-    /// stretching each one over the same rectangle. If one of them is a different
-    /// shape, its barangays will not sit where the satellite says they are.
-    /// </summary>
     [Serializable]
     public class DistrictMapArt
     {
@@ -41,41 +33,17 @@ namespace AgriDabao3D
 
     public enum AreaSelectionVerdict
     {
-        /// <summary>Every sampled point of the box is on green land.</summary>
         Valid,
 
-        /// <summary>Some part of the box is off the district altogether.</summary>
         OutsideDistrict,
 
-        /// <summary>The box is inside the district but touches red land.</summary>
         NonAgricultural,
 
-        /// <summary>No agricultural area spot picture has been assigned yet.</summary>
         SpotMapMissing,
 
-        /// <summary>The picture is assigned but the game is not allowed to read it.</summary>
         SpotMapUnreadable
     }
 
-    /// <summary>
-    /// Reads a district's "barangay agricultural area spot" picture.
-    ///
-    /// The picture is a flat map: green where the barangay is an agricultural
-    /// area, red where it is not, and white everywhere outside the district. That
-    /// is the whole rule - the game asks this picture what colour is under the
-    /// player's box and answers accordingly, the same way the old screen asked the
-    /// district border map what colour a point was.
-    ///
-    /// Colours are classified by which channel leads rather than by matching an
-    /// exact swatch, so a slightly different green, a resized import or a little
-    /// JPEG-ish softening around the shapes all still read correctly. Pixels that
-    /// lead with neither - the blended ring one pixel wide where green meets red -
-    /// are reported as undecided and simply ignored.
-    ///
-    /// Each picture is decoded once and kept, because the player steps back and
-    /// forth between districts and re-reading a few million pixels on every
-    /// Generate would stutter.
-    /// </summary>
     public static class DistrictAreaSpot
     {
         private enum Cell : byte
@@ -99,33 +67,17 @@ namespace AgriDabao3D
         private static readonly Dictionary<Sprite, Decoded> cache = new Dictionary<Sprite, Decoded>();
         private static readonly HashSet<Sprite> unreadable = new HashSet<Sprite>();
 
-        /// <summary>
-        /// Decodes a picture ahead of time. Reading one costs a few hundred
-        /// thousand pixels, which is nothing spread over the frames after the
-        /// screen opens but is a visible hitch if it lands on the frame the player
-        /// presses >> on.
-        /// </summary>
         public static void Prewarm(Sprite spot)
         {
             Get(spot);
         }
 
-        /// <summary>
-        /// Drops every decoded picture. Called when the area selection screen goes
-        /// away, so the farm does not carry a few megabytes of map around with it.
-        /// </summary>
         public static void ClearCache()
         {
             cache.Clear();
             unreadable.Clear();
         }
 
-        /// <summary>
-        /// The district's own extent in the picture, as a normalized rect and
-        /// centroid (u = 0 left to 1 right, v = 0 bottom to 1 top). Green and red
-        /// together make up the district, so both count toward the footprint.
-        /// Used to aim the camera at the district and to park the selection box.
-        /// </summary>
         public static bool TryGetFootprint(Sprite spot, out Rect bounds, out Vector2 center)
         {
             bounds = new Rect(0f, 0f, 1f, 1f);
@@ -140,12 +92,6 @@ namespace AgriDabao3D
             return true;
         }
 
-        /// <summary>
-        /// Checks the box the player dragged against the district's spot picture.
-        /// Every sampled point has to be on green land; one point off the district
-        /// or on red land is enough to refuse, which is what keeps a plot from
-        /// straddling a boundary it should not cross.
-        /// </summary>
         public static AreaSelectionVerdict Validate(Sprite spot, Rect normalizedRect, int resolution)
         {
             if (spot == null)
@@ -184,10 +130,6 @@ namespace AgriDabao3D
                 }
             }
 
-            // Leaving the district is the more basic mistake, so it is reported
-            // first even when the box also clips a red barangay. A box that landed
-            // entirely on blended edge pixels counts as off the district too -
-            // there is no evidence it is on farmland.
             if (anyOutside || (!anyAgricultural && !anyNonAgricultural))
                 return AreaSelectionVerdict.OutsideDistrict;
 
@@ -244,8 +186,6 @@ namespace AgriDabao3D
 
         private static Decoded Decode(Sprite spot, Texture2D texture, Color32[] pixels)
         {
-            // textureRect rather than the whole texture, so a sprite packed into an
-            // atlas or trimmed on import still reads its own region.
             Rect region = spot.textureRect;
 
             int originX = Mathf.Clamp(Mathf.RoundToInt(region.x), 0, Mathf.Max(0, texture.width - 1));
@@ -291,10 +231,6 @@ namespace AgriDabao3D
                 }
             }
 
-            // One district on a whole-city canvas is a small part of it. Much more
-            // than this and the wrong picture is almost certainly in the slot - a
-            // satellite photo reads as green almost everywhere, and would quietly
-            // approve every area the player picked.
             if (count > width * (long)height * 6L / 10L)
             {
                 Debug.LogWarning(
@@ -338,16 +274,9 @@ namespace AgriDabao3D
             int max = Mathf.Max(r, Mathf.Max(g, b));
             int min = Mathf.Min(r, Mathf.Min(g, b));
 
-            // Paper white is the land that does not belong to this district.
             if (min >= 200 && max - min <= 30)
                 return Cell.Outside;
 
-            // Dark ink is undecided rather than outside, which matters if the spot
-            // map is ever exported with barangay outlines on it: a box sitting on
-            // the line between two green barangays would otherwise be refused as
-            // off the district. Undecided points are ignored, so the green either
-            // side of the line still decides it. A box that finds nothing but ink
-            // is refused anyway, so a black background behaves like a white one.
             if (max <= 60)
                 return Cell.Undecided;
 

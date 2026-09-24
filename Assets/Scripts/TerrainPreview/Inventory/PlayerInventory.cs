@@ -69,9 +69,6 @@ namespace AgriDabao3D
             }
             else
             {
-                // A genuinely new farm. Clear any tutorial progress and seed draw
-                // left in these statics by a farm played earlier in this same app
-                // session, or the new farm would inherit the old one's seeds.
                 TutorialState.ResetForNewFarm();
                 BuildStartingInventory();
                 money = 0;
@@ -94,19 +91,6 @@ namespace AgriDabao3D
             for (int i = 0; i < slots.Length; i++)
                 slots[i].Clear();
         }
-        /// <summary>
-        /// What a brand-new farm begins with.
-        ///
-        /// This used to hand out all thirteen seed types plus every tool and
-        /// mitigation kit in the game, which made the district choice cosmetic and
-        /// left the shop with nothing to sell. A farm now starts with three seed
-        /// kinds drawn from its own district (see <see cref="DistrictCropPools"/>)
-        /// and only the tools that cannot be bought back.
-        ///
-        /// The machete, shovel and watering can are deliberately included: the shop
-        /// does not stock them, so a player without them could never harvest, dig or
-        /// water and the farm would be unrecoverable.
-        /// </summary>
         private void BuildStartingInventory()
         {
             ClearAllSlots();
@@ -114,16 +98,9 @@ namespace AgriDabao3D
             TutorialState.EnsureStartingSeedsRolled(
                 SelectedAreaState.SelectedDistrictName);
 
-            // When the beginner guide is about to run, it hands these over itself -
-            // the shovel and seeds when it teaches digging, the watering can when it
-            // teaches watering, the machete at the end. Filling the hotbar here as
-            // well would both spoil the reveal and give the player two of everything.
-            // The guide also covers the case where it is declined.
             if (!TutorialState.Completed)
                 return;
 
-            // Hotbar: harvesting tool, the district's three planting materials,
-            // water, dig.
             slots[0].Set(InventoryItemType.Machete, 1);
 
             int slot = 1;
@@ -139,11 +116,6 @@ namespace AgriDabao3D
             slots[HotbarSlotCount - 2].Set(InventoryItemType.WateringCan, 1);
             slots[HotbarSlotCount - 1].Set(InventoryItemType.Shovel, 1);
 
-            // Backpack: bags for carrying a harvest home, and a little mulch in
-            // case a strawberry runner was dealt - it cannot be planted until its
-            // bed is mulched. Everything else - sprayers, liquids, traps,
-            // mitigation kits, other districts' planting materials - is bought
-            // from the shop.
             slots[HotbarSlotCount].Set(InventoryItemType.FruitBag, 10);
             slots[HotbarSlotCount + 1].Set(InventoryItemType.MulchBag, 3);
         }
@@ -244,7 +216,6 @@ namespace AgriDabao3D
                     treatmentStrength = 15f;
                     treatmentName = "Disinfectant";
                     return true;
-                // Keep the old general insecticide item usable.
                 case SprayerLiquidType.Insecticide:
                     mitigation =
                         PestDiseaseMitigation.BtBioSpray;
@@ -333,8 +304,6 @@ namespace AgriDabao3D
                     mitigation,
                     treatmentStrength
                 );
-            // The spray was used, even if it was the wrong
-            // treatment for the crop's current condition.
             pumpSlot.liquidMl = Mathf.Max(
                 0,
                 pumpSlot.liquidMl - liquidUseMl
@@ -445,8 +414,6 @@ namespace AgriDabao3D
         }
         public bool AddItem(InventoryItemType item, int amount)
         {
-            // An old seed item - from a trade, an older farm's starting draw or the
-            // developer tools - arrives as the material that replaced it.
             item = PlantingMaterialCatalog.UpgradeLegacy(item);
 
             if (item == InventoryItemType.None || amount <= 0)
@@ -466,7 +433,6 @@ namespace AgriDabao3D
             }
             int remaining = amount;
             int maxStack = GetMaxStack(item);
-            // Fill existing stacks first.
             for (int i = 0; i < slots.Length && remaining > 0; i++)
             {
                 if (slots[i].IsEmpty || slots[i].itemType != item)
@@ -478,7 +444,6 @@ namespace AgriDabao3D
                 slots[i].amount += add;
                 remaining -= add;
             }
-            // Then use empty slots.
             for (int i = 0; i < slots.Length && remaining > 0; i++)
             {
                 if (!slots[i].IsEmpty)
@@ -499,7 +464,6 @@ namespace AgriDabao3D
                 return false;
             EnsureSlots();
             int remaining = amount;
-            // Consume from selected hotbar slot first.
             if (selectedItem == item && IsHotbarSlot(selectedSlotIndex))
             {
                 InventorySlotData selectedSlot = slots[selectedSlotIndex];
@@ -528,17 +492,6 @@ namespace AgriDabao3D
             OnInventoryChanged?.Invoke();
             return true;
         }
-        /// <summary>
-        /// Throws away part or all of one slot's stack.
-        ///
-        /// Slot-specific on purpose, unlike ConsumeItem, which spends from
-        /// wherever it finds the item. Trashing is aimed at a particular pile the
-        /// player pointed at, and taking those from a different slot would empty
-        /// the wrong one in front of them.
-        ///
-        /// Tools are refused. They are the "Owned" entries the player cannot
-        /// re-buy in a stack, and a farm with no shovel cannot be dug.
-        /// </summary>
         public bool DiscardFromSlot(int slotIndex, int amount)
         {
             if (!IsValidSlot(slotIndex) || amount <= 0)
@@ -552,9 +505,6 @@ namespace AgriDabao3D
             if (IsTool(slot.itemType))
                 return false;
 
-            // Clamped rather than refused: the amount arrives from a text box,
-            // and asking for more than the pile holds most likely means "all of
-            // it" rather than a mistake worth an error.
             int take = Mathf.Min(amount, slot.amount);
             slot.amount -= take;
             if (slot.amount <= 0)
@@ -574,7 +524,6 @@ namespace AgriDabao3D
             InventorySlotData to = slots[toIndex];
             if (from == null || from.IsEmpty)
                 return;
-            // Merge same stackable item.
             if (!to.IsEmpty && to.itemType == from.itemType && !IsTool(from.itemType))
             {
                 int maxStack = GetMaxStack(from.itemType);
@@ -591,8 +540,6 @@ namespace AgriDabao3D
                 }
                 return;
             }
-            // Move to empty slot or swap with occupied slot.
-            // Preserve all data, including loaded sprayer liquid.
             InventorySlotData temporary =
                 new InventorySlotData();
             temporary.CopyFrom(to);
@@ -645,11 +592,6 @@ namespace AgriDabao3D
         }
 
 
-        /// <summary>
-        /// Sells every one of an item the player holds and returns how many went.
-        /// The price is per item in centavos; the payout is the total rounded to
-        /// whole pesos, because the wallet counts whole pesos.
-        /// </summary>
         public int SellAll(InventoryItemType item, int centavosEach)
         {
             if (item == InventoryItemType.None)
@@ -717,9 +659,6 @@ namespace AgriDabao3D
                         slots[i].Clear();
                         continue;
                     }
-                    // The five old seed items were replaced by planting materials
-                    // (banana seed by banana sucker, and so on). A farm saved with
-                    // them gets the replacement in the same slot and amount.
                     slots[i].itemType = PlantingMaterialCatalog.UpgradeLegacy(itemType);
                     slots[i].amount = Mathf.Max(0, source.amount);
                     slots[i].liquidMl = Mathf.Max(0, source.liquidMl);

@@ -5,14 +5,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Grades how well the player handled a typhoon or extreme drought.
-    ///
-    /// The Gemini key used to sit on this component and therefore shipped inside
-    /// the APK. The call now goes through the game's backend, which holds the key
-    /// and can switch the adviser off centrally. The evaluation prompt stays here
-    /// so it remains tunable in the Inspector.
-    /// </summary>
     public class ClimateResilienceGeminiClient : MonoBehaviour
     {
         [Header("Behavior")]
@@ -37,13 +29,8 @@ namespace AgriDabao3D
                 yield break;
             }
 
-            // Guidance and payload are kept in a single block, exactly as this
-            // client composed them before the call moved server-side.
             List<string> parts = new List<string>
             {
-                // Brevity is applied to the guidance rather than to the whole
-                // block, so it stays ahead of the payload and is never read as
-                // part of the JSON being evaluated.
                 AiResponseStyle.Apply(extraSystemGuidance) +
                 "\n\nEvaluate this climate resilience event JSON:\n" + payloadJson
             };

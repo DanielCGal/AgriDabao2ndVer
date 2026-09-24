@@ -7,17 +7,6 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// A board with a question and up to three answers, plus a way out.
-    ///
-    /// The Yes/No popup cannot ask "hole, bed or furrow?", which is what tapping
-    /// tilled ground with the shovel has to ask. This is the same board and the
-    /// same wooden planks as that popup, with the answers written on blank planks
-    /// the way the account screens do it, so it reads as part of the same set.
-    ///
-    /// It creates itself the first time it is needed, like the other runtime
-    /// panels, so the scene needs no wiring.
-    /// </summary>
     public class FarmChoicePopup : MonoBehaviour
     {
         public struct Choice
@@ -86,10 +75,6 @@ namespace AgriDabao3D
                 instance = null;
         }
 
-        /// <summary>
-        /// Shows the question with one plank per choice. More than three choices
-        /// are ignored; the Back button always closes without choosing.
-        /// </summary>
         public void Show(string message, IList<Choice> choices)
         {
             if (panel == null)
@@ -119,8 +104,6 @@ namespace AgriDabao3D
                 choiceHints[i].text = choice.Hint ?? string.Empty;
                 choiceActions.Add(choice.OnChoose);
 
-                // Plank, then its hint (up to two lines), then clear space above
-                // the Back button, whose top is 144 below the centre.
                 float x = startX + i * spacing;
                 ((RectTransform)choiceButtons[i].transform).anchoredPosition = new Vector2(x, 6f);
                 choiceHints[i].rectTransform.anchoredPosition = new Vector2(x, -78f);
@@ -249,8 +232,6 @@ namespace AgriDabao3D
                 choiceHints.Add(hint);
             }
 
-            // The shared Back art rather than No: nothing here is being refused,
-            // the player is only leaving without choosing.
             Sprite backArt = theme?.verifyBackButton;
             GameObject backGo = new GameObject("Back", typeof(RectTransform), typeof(Image), typeof(Button));
             backGo.transform.SetParent(panel.transform, false);

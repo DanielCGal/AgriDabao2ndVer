@@ -5,32 +5,12 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// In-farm pause menu. A round pause button in the top-left opens an overlay
-    /// showing the player's display name and chosen district, plus Settings and
-    /// Main Menu buttons. The farm keeps simulating in the background (no
-    /// timeScale change).
-    /// - Settings reuses the same <see cref="SettingsUIBuilder"/> as the Main Menu,
-    ///   so audio/render changes apply live to the running farm.
-    /// - Main Menu asks whether to save the farm first (Yes = Save Farm then leave,
-    ///   No = leave without saving, Cancel = stay).
-    /// Added at runtime in the TerrainPreview scene by BackendRuntimeBootstrap.
-    /// Art comes from the shared <see cref="UIThemeSprites"/> asset; every slot is
-    /// optional and falls back to the old flat-colour style.
-    /// </summary>
     public class PauseMenuBuilder : MonoBehaviour
     {
         private const string MainMenuScene = "MainMenu";
 
-        /// <summary>Size of the round corner buttons; shared with the chat toggle.</summary>
         public const float CornerButtonSize = 90f;
 
-        /// <summary>
-        /// The board art's leaves hang off its left edge, so the usable plank area
-        /// sits right of the sprite's centre. The board is shifted left by this much
-        /// and its content shifted right by the same amount, which lands the buttons
-        /// on the true screen centre while keeping them centred on the planks.
-        /// </summary>
         private const float PauseContentX = 75f;
 
         private static readonly Vector2 PauseButtonSize = new Vector2(280f, 76f);
@@ -72,8 +52,6 @@ namespace AgriDabao3D
         private void CreatePauseButton()
         {
             GameObject go = new GameObject("PauseButton", typeof(RectTransform), typeof(Image), typeof(Button));
-            // Built here rather than through HudIconButton.Create, so it has to
-            // register itself or the beginner guide cannot hide it.
             HudRegistry.RegisterIconButton(HudIconButton.SlotPause, go);
             go.transform.SetParent(canvas.transform, false);
 
@@ -119,14 +97,9 @@ namespace AgriDabao3D
 
             Sprite board = theme?.pauseBoard;
 
-            // The decorated board carries corner art (leaves, fruit), so the panel
-            // is sized to the sprite's own 1440x988 aspect and drawn Simple, not
-            // 9-sliced.
             Vector2 panelSize = board != null ? new Vector2(900f, 618f) : new Vector2(640f, 480f);
             GameObject panel = CreatePanel(root.transform, "PausePanel", panelSize, board);
 
-            // Shift the whole board left so its plank column lines up with the
-            // screen centre, where the buttons sit.
             if (board != null)
             {
                 panel.GetComponent<RectTransform>().anchoredPosition =
@@ -155,9 +128,6 @@ namespace AgriDabao3D
 
             if (board != null)
             {
-                // Rows sit inside the plank stack. The board's leaves overhang the
-                // left edge, so the whole column is nudged right to stay centred
-                // on the planks rather than on the sprite.
                 CreateButton(panel.transform, "Settings", new Vector2(PauseContentX, -230f), PauseButtonSize,
                     theme?.pauseSettingsButton, new Color(0.12f, 0.55f, 0.20f, 1f), OnSettingsPressed);
                 CreateButton(panel.transform, "Main Menu", new Vector2(PauseContentX, -330f), PauseButtonSize,
@@ -182,7 +152,6 @@ namespace AgriDabao3D
 
         private void BuildLeavePrompt(RectTransform parent)
         {
-            // Falls back to the shared login/settings board when no dedicated one is set.
             Sprite board = theme != null && theme.leavePromptBoard != null
                 ? theme.leavePromptBoard
                 : theme?.panelBoard;
@@ -191,8 +160,6 @@ namespace AgriDabao3D
             leavePrompt.transform.SetParent(parent, false);
             RectTransform rect = leavePrompt.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
-            // Sized to the board art's 1240x960 aspect, tall enough for the wrapped
-            // question plus all three buttons without crowding.
             rect.sizeDelta = board != null ? new Vector2(820f, 635f) : new Vector2(600f, 280f);
             rect.anchoredPosition = Vector2.zero;
 
@@ -213,7 +180,6 @@ namespace AgriDabao3D
             msgRect.anchorMin = new Vector2(0f, 1f);
             msgRect.anchorMax = new Vector2(1f, 1f);
             msgRect.pivot = new Vector2(0.5f, 1f);
-            // Narrow enough that the wrapped question stays between the two logs.
             msgRect.sizeDelta = new Vector2(board != null ? -320f : -40f, 150f);
             msgRect.anchoredPosition = new Vector2(0f, board != null ? -95f : -25f);
             message.text = "Save your farm before leaving to the Main Menu?";
@@ -301,11 +267,6 @@ namespace AgriDabao3D
             SceneManager.LoadScene(MainMenuScene);
         }
 
-        // ---------------- UI helpers ----------------
-
-        /// <summary>
-        /// The standard hover/press tint shared by every sprite-backed button.
-        /// </summary>
         internal static void ApplySpriteTint(Button button)
         {
             ColorBlock colors = button.colors;
@@ -334,7 +295,6 @@ namespace AgriDabao3D
 
             if (sprite != null)
             {
-                // The word is painted into the art, so no Text child is added.
                 image.sprite = sprite;
                 image.preserveAspect = true;
                 image.color = Color.white;

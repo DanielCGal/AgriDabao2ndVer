@@ -76,11 +76,6 @@ namespace AgriDabao3D
             };
         }
 
-        /// <summary>
-        /// The crop's usual planting material. Pineapple, mango and strawberry no
-        /// longer come from seed items - see PlantingMaterialCatalog for every
-        /// material a crop can be planted from.
-        /// </summary>
         public static InventoryItemType GetSeedItem(TropicalCropKind crop)
         {
             return PlantingMaterialCatalog.DefaultMaterialFor(CropClimateRules.GetFarmCropType(crop));
@@ -653,12 +648,5 @@ namespace AgriDabao3D
                     Mathf.RoundToInt(maxYield)
                 );
             }
-
-        // GetPestDamageMultiplier used to live here: a per-crop, per-pest damage
-        // table that nothing ever called. Per-crop pest tuning is owned by the
-        // PestDiseaseRule assets in DavaoPestDiseaseDatabase, which cover all
-        // thirteen crops and are what the simulation actually reads. Keeping a
-        // second, unused table invited the wrong answer to "where is corn's
-        // armyworm weakness applied?" - it is in the database, not in code.
     }
 }

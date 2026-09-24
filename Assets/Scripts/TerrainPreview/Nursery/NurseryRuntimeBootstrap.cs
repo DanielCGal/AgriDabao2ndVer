@@ -3,11 +3,6 @@ using UnityEngine.SceneManagement;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Creates the Seedling Tent's runtime systems in the farm scene, the same
-    /// way the climate-maintenance and farm-task systems are created, so the
-    /// scene needs no extra objects. Safe to call any number of times.
-    /// </summary>
     public static class NurseryRuntimeBootstrap
     {
         private const string RootName = "NurseryRuntime";
@@ -37,7 +32,6 @@ namespace AgriDabao3D
             if (root == null)
                 root = new GameObject(RootName);
 
-            // The nursery before its panel: the panel subscribes to it on Start.
             if (Object.FindFirstObjectByType<NurserySystem>() == null)
                 root.AddComponent<NurserySystem>();
 

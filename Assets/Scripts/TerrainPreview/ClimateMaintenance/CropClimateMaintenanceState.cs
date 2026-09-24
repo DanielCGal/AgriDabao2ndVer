@@ -15,15 +15,6 @@ namespace AgriDabao3D
         public string raisedBedPatchId;
         public float raisedBedRootOffset;
 
-        // One mulch prefab reused at three sizes. The pile reads correctly on a
-        // full-grown crop but buries a sprout completely, swallowing the tap that
-        // opens the crop information panel.
-        //
-        // These are MULTIPLIERS on the prefab's own scale, not absolute values.
-        // The prefab root sits at 1 with the mesh scaled up inside it, so writing
-        // an absolute number here would be multiplied by that mesh scale and
-        // produce an enormous pile. Full size therefore means "exactly what the
-        // prefab already was".
         private const float MulchScaleFull = 1f;
         private const float MulchScaleSprout = 0.4f;
         private const float MulchScalePineapple = 0.2f;
@@ -159,15 +150,6 @@ namespace AgriDabao3D
             return false;
         }
 
-        /// <summary>
-        /// Takes over ground the player prepared before planting.
-        ///
-        /// A raised bed built with the shovel is the same bed the Raised Bed Kit
-        /// makes - the same terrain lift under the same patch id - so the crop
-        /// records it exactly as the kit would: the drainage bonus, and a flag that
-        /// stops a kit being installed on top of it. A bed mulched before planting
-        /// counts as the crop's mulch.
-        /// </summary>
         public void AdoptPreparedGround(bool raisedBed, string bedPatchId, bool mulched, Terrain terrain)
         {
             if (crop == null && !CropRuntimeAdapter.TryCreate(gameObject, out crop))
@@ -181,9 +163,6 @@ namespace AgriDabao3D
                     : bedPatchId;
                 crop.AddDrainage(0.18f);
 
-                // Measured the way ApplyRaisedBedAndSnapCrop measures it - the root's
-                // height above the ground at the bed's peak - so a reload, which lifts
-                // the bed again on bare terrain, puts the crop back at this height.
                 if (terrain != null && terrain.terrainData != null)
                 {
                     Vector3 peak = TerrainModificationService.SnapToHeightmapVertex(
@@ -227,8 +206,6 @@ namespace AgriDabao3D
                 return null;
             }
 
-            // Spawn using the crop as the parent, but do not reuse the
-            // prefab root's saved scene position.
             GameObject visual = Instantiate(prefab, transform, false);
             visual.name = "ClimateMaintenance_" + action;
 
@@ -272,22 +249,11 @@ namespace AgriDabao3D
             return visual;
         }
 
-        /// <summary>
-        /// Mulch is a single prefab reused at five sizes rather than five separate
-        /// prefabs, so the pile can follow the crop through its growth stages
-        /// without ever being destroyed and respawned. Each size is chosen so the
-        /// crop stays visible and tappable above the pile.
-        /// </summary>
         public static float GetMulchScaleMultiplier(FarmCropType cropType, PlantVisualStage stage)
         {
-            // The planting material itself - a seedling, a runner, a sucker - is
-            // smaller than any sprout model, so it gets the smallest pile of all.
             if (stage == PlantVisualStage.Planted)
                 return MulchScaleTinySprout;
 
-            // Pineapple reuses one model for its sprout and second stage, and that
-            // model sits low enough that even the sprout size hides it. It stays
-            // small through both and only reaches full size on the adult prefab.
             if (cropType == FarmCropType.Pineapple)
             {
                 return stage == PlantVisualStage.Adult
@@ -295,9 +261,6 @@ namespace AgriDabao3D
                     : MulchScalePineapple;
             }
 
-            // Squash, strawberry and tomato stay low and spreading at every stage, so
-            // the full-size pile buries them even once grown. Their sprouts are
-            // barely taller than the pile itself and need smaller still.
             if (cropType == FarmCropType.Squash ||
                 cropType == FarmCropType.Strawberry ||
                 cropType == FarmCropType.Tomato)
@@ -322,8 +285,6 @@ namespace AgriDabao3D
                 growthVisuals = GetComponent<GrowthStageVisualController>();
             }
 
-            // A crop with no stage controller never swaps prefabs either, so the
-            // full-size pile remains correct for it.
             return growthVisuals != null
                 ? growthVisuals.GetTargetVisualStage()
                 : PlantVisualStage.Adult;
@@ -339,18 +300,12 @@ namespace AgriDabao3D
             PlantVisualStage stage = ResolveVisualStage();
             float multiplier = GetMulchScaleMultiplier(crop.CropType, stage);
 
-            // Re-centre before scaling so repeated calls cannot drift the pile off
-            // the crop. The caller re-seats it on the terrain afterwards.
             visual.transform.localPosition = Vector3.zero;
             visual.transform.localScale = mulchBaseScale * multiplier;
 
             mulchStageApplied = stage;
         }
 
-        /// <summary>
-        /// Keeps an installed mulch pile matched to the crop stage, so a sprout
-        /// growing into its second-stage prefab grows its mulch with it.
-        /// </summary>
         private void RefreshMulchScale()
         {
             if (mulchVisual == null || crop == null)
@@ -436,10 +391,6 @@ namespace AgriDabao3D
         {
             if (terrain == null || crop == null) return;
 
-            // Move the crop onto the vertex that will become the mound's peak before
-            // raising anything. The heightmap can only lift vertices, so the peak
-            // cannot land between them - without this the crop sits on the slope of
-            // its own bed rather than on top.
             Vector3 position = TerrainModificationService.SnapToHeightmapVertex(
                 terrain, crop.Transform.position);
 

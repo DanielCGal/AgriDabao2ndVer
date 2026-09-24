@@ -28,14 +28,6 @@ namespace AgriDabao3D
         public bool CanCollectReward => AllCompleted && !state.rewardClaimed;
         public bool CanSkipDay => AllCompleted;
 
-        /// <summary>
-        /// How many times the player has turned in for the night this session.
-        ///
-        /// A running count rather than a flag, because skipping immediately
-        /// generates the next day's tasks and that generation resets
-        /// <c>state.skipUsed</c> back to false. Anything polling the flag would
-        /// usually look a frame too late and find it already cleared.
-        /// </summary>
         public int DaySkipCount { get; private set; }
 
         private DailyTaskSystemSaveDto state = new DailyTaskSystemSaveDto();
@@ -136,17 +128,6 @@ namespace AgriDabao3D
                 tasks = new List<DailyTaskInstance>()
             };
 
-            // While the beginner guide is running, the day is pinned to the two
-            // jobs the guide actually walks the player through: dig a spot, then
-            // plant something. Antonio hands them the book and tells them the work
-            // is already done, so the tasks have to be ones he definitely made them
-            // do - a randomly drawn "plant a vegetable crop" or "water three crops"
-            // leaves the reward uncollectable and the tour stuck on that step with
-            // no way forward.
-            //
-            // Both kinds below match on the action alone, with no crop or item
-            // filter, so nothing about which district the farm is in or which seeds
-            // it was dealt can stop them completing.
             if (!TutorialState.Completed)
             {
                 state.tasks.Add(CreateInstance(CreateEmergencyDigTask()));
@@ -453,8 +434,6 @@ namespace AgriDabao3D
                 case DailyTaskKind.TillGround:
                     return HasInventoryItem("Shovel");
                 case DailyTaskKind.SowSeedlingBag:
-                    // Room in the tent, and enough to sow held today - a task
-                    // cannot count on a purchase the player may not make.
                     return PlantingAvailability.CountFreeBags() >= Mathf.Max(1, template.targetAmount) &&
                            PlantingAvailability.CountNurseryMaterialsHeld() >= Mathf.Max(1, template.targetAmount);
                 case DailyTaskKind.TransplantSeedling:
@@ -1152,8 +1131,6 @@ namespace AgriDabao3D
                 if (task.progressKeys == null)
                     task.progressKeys = new List<string>();
 
-                // A task saved before the planting materials may still name an
-                // old seed ("BananaSeed"); planting what replaced it has to count.
                 task.itemType = PlantingMaterialCatalog.UpgradeLegacyList(task.itemType);
                 EvaluateTaskFromState(task);
             }
@@ -1315,25 +1292,6 @@ namespace AgriDabao3D
             return token;
         }
 
-        /// <summary>
-        /// Whether the player can actually get hold of what the task needs today
-        /// - not merely whether they own one of the thing.
-        ///
-        /// The old check asked only "do you hold at least one", which was wrong
-        /// in a way that only showed up on multi-step tasks. A task to mulch
-        /// three crops passed on the strength of a single MulchBag, and the
-        /// player then had to buy two more; at 3 x P130 for the dearer sprays
-        /// that can cost more than the whole day's reward, so the objective was
-        /// set at a price the day could not pay for.
-        ///
-        /// So the quantity is now worked out properly and the shortfall is
-        /// priced against the money on hand. Holding at least one is still
-        /// required - that part is deliberately unchanged, because a task naming
-        /// an item the player has never seen reads as a puzzle rather than a
-        /// chore.
-        ///
-        /// Alternatives separated by "|" are satisfied if any one of them works.
-        /// </summary>
         private static bool CanObtainRequiredItems(DailyTaskTemplate template)
         {
             if (template == null || string.IsNullOrWhiteSpace(template.itemType))
@@ -1354,8 +1312,6 @@ namespace AgriDabao3D
                 if (held < 1)
                     continue;
 
-                // A tool is used rather than used up, so one covers the task
-                // however many crops it names. A consumable is spent per use.
                 int needed = PlayerInventory.IsTool(item)
                     ? 1
                     : Mathf.Max(1, template.targetAmount);
@@ -1364,9 +1320,8 @@ namespace AgriDabao3D
                     return true;
 
                 if (!ShopUIBuilder.SellsToPlayer(item))
-                    continue; // Not sold to this farm, so the shortfall cannot be closed at any price.
+                    continue;
 
-                // Priced the way the shop will charge it, rounding included.
                 long cost = ShopUIBuilder.CostFor(item, needed - held);
                 if (PlayerInventory.Instance.money >= cost)
                     return true;
@@ -1417,14 +1372,6 @@ namespace AgriDabao3D
                    PlayerInventory.Instance.HasItem(item, 1);
         }
 
-        /// <summary>
-        /// Whether the player can plant this many of a crop in the field today:
-        /// any of its materials that goes straight in, or a ready seedling in the
-        /// Seedling Tent, with ground for it ready or preparable. The old check only
-        /// counted items ending in "Seed", which missed suckers, runners, seednuts
-        /// and every tent seedling, and counted nursery seeds that cannot reach the
-        /// field before the day - and its task - ends.
-        /// </summary>
         private static bool CanPlant(
             string cropType,
             int requiredAmount = 1)

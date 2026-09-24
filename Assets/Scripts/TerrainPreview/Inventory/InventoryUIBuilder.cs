@@ -110,10 +110,6 @@ namespace AgriDabao3D
         private Text trashButtonLabel;
         private InventoryTrashUI trashUI;
 
-        /// <summary>
-        /// True while the backpack is in its trash state: slots are click-only,
-        /// dragging is off, and a tap asks whether to throw the pile away.
-        /// </summary>
         public bool IsTrashMode => trashMode;
         private void Start()
         {
@@ -148,7 +144,7 @@ namespace AgriDabao3D
                 CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+                scaler.matchWidthOrHeight = 1f;
             }
             if (canvas.GetComponent<GraphicRaycaster>() == null)
                 canvas.gameObject.AddComponent<GraphicRaycaster>();
@@ -158,7 +154,6 @@ namespace AgriDabao3D
             theme = UIThemeSprites.Instance;
             BuildMoneyUI();
 
-            // Straight after the money plank, which it lines up with.
             FpsCounterHud fpsCounter = showFpsCounter
                 ? FpsCounterHud.Create(canvas.transform, moneyPlankRect)
                 : null;
@@ -196,8 +191,6 @@ namespace AgriDabao3D
                 plankImage.preserveAspect = true;
                 plankImage.raycastTarget = false;
 
-                // The coins hang off the plank's left end, so the amount is printed
-                // on the right-hand portion only.
                 GameObject textGo = new GameObject("MoneyText", typeof(RectTransform), typeof(Text));
                 textGo.transform.SetParent(plankGo.transform, false);
 
@@ -206,8 +199,6 @@ namespace AgriDabao3D
                 textRect.pivot = new Vector2(0.5f, 0.5f);
                 textRect.sizeDelta = new Vector2(theme.moneyPlankSize.x * 0.46f,
                                                  theme.moneyPlankSize.y * 0.30f);
-                // Nudged left and down from (0.22, 0) to sit on the plank's centre;
-                // the previous offset pushed it high and toward the right end.
                 textRect.anchoredPosition = new Vector2(theme.moneyPlankSize.x * 0.18f,
                                                         -theme.moneyPlankSize.y * 0.06f);
 
@@ -219,11 +210,6 @@ namespace AgriDabao3D
                 moneyText.color = new Color(0.20f, 0.12f, 0.04f, 1f);
                 moneyText.raycastTarget = false;
                 moneyText.horizontalOverflow = HorizontalWrapMode.Overflow;
-                // The plank leaves 45 units for the text (150 * 0.30) at font 30 -
-                // 1.5x, which Playpen Sans clears by almost nothing and loses once
-                // the text setting scales the font past it. Horizontal was already
-                // freed here for long amounts; vertical needs the same or the
-                // balance silently renders as nothing.
                 moneyText.verticalOverflow = VerticalWrapMode.Overflow;
                 moneyText.text = "P0";
                 return;
@@ -257,7 +243,6 @@ namespace AgriDabao3D
             rootRect.sizeDelta = new Vector2(1220f, 150f);
             rootRect.anchoredPosition = new Vector2(0f, 25f);
 
-            // Wooden bar sits behind every slot, so it is created first.
             Sprite barArt = theme?.hotbarBar;
             if (barArt != null)
             {
@@ -307,8 +292,6 @@ namespace AgriDabao3D
 
             if (board != null)
             {
-                // The grid frame carries its own corner art, so it is drawn Simple
-                // at the sprite's own aspect rather than 9-sliced.
                 panelBg.sprite = board;
                 panelBg.color = Color.white;
 
@@ -321,8 +304,6 @@ namespace AgriDabao3D
                 panelBg.color = new Color(0f, 0f, 0f, 0.82f);
             }
 
-            // Every slot is laid out directly on the panel - the backpack is not
-            // scrollable, all 36 are visible at once.
             GameObject gridGo = new GameObject("BackpackGrid", typeof(RectTransform));
             gridGo.transform.SetParent(backpackPanel.transform, false);
             RectTransform contentRect = gridGo.GetComponent<RectTransform>();
@@ -335,9 +316,6 @@ namespace AgriDabao3D
 
             if (board != null)
             {
-                // Spread the slots evenly across the board's painted cell area so
-                // each one lands in the middle of a cell. Cell pitch comes from the
-                // grid size, which is Inspector-tunable to match the art exactly.
                 Vector2 gridSize = theme.backpackGridSize;
                 contentRect.sizeDelta = gridSize;
                 contentRect.anchoredPosition = theme.backpackGridOffset;
@@ -435,14 +413,6 @@ namespace AgriDabao3D
             SetBackpackOpen(false);
         }
 
-        /// <summary>
-        /// The Trash Item disc, in the backpack's bottom-left corner.
-        ///
-        /// It is the same wooden knob the Logout and Account buttons use, and it
-        /// swaps to the backpack's own X while trashing - so the one control both
-        /// enters the mode and leaves it, and the player is never left hunting for
-        /// the way back.
-        /// </summary>
         private void BuildTrashButton(RectTransform parent)
         {
             GameObject go = new GameObject("TrashItemButton",
@@ -469,7 +439,6 @@ namespace AgriDabao3D
             RectTransform textRect = textGo.GetComponent<RectTransform>();
             textRect.anchorMin = Vector2.zero;
             textRect.anchorMax = Vector2.one;
-            // Inset so two short words sit on the disc rather than over its rim.
             textRect.offsetMin = new Vector2(10f, 14f);
             textRect.offsetMax = new Vector2(-10f, -14f);
 
@@ -503,7 +472,6 @@ namespace AgriDabao3D
             Refresh();
         }
 
-        /// <summary>The disc wears the X while trashing, and its label the rest of the time.</summary>
         private void ApplyTrashButtonLook()
         {
             if (trashButtonImage == null)
@@ -524,14 +492,12 @@ namespace AgriDabao3D
 
             if (trashButtonLabel != null)
             {
-                // The X art has the letter painted in, so no word is written over it.
                 trashButtonLabel.text = trashMode
                     ? (theme?.backpackCloseButton != null ? string.Empty : "X")
                     : "Trash Item";
             }
         }
 
-        /// <summary>A slot tapped while trashing. Empty slots and tools are ignored.</summary>
         public void HandleTrashSlotClicked(int slotIndex)
         {
             if (PlayerInventory.Instance == null)
@@ -587,14 +553,6 @@ namespace AgriDabao3D
             countText.alignment = TextAnchor.MiddleCenter;
             countText.color = Color.white;
             countText.raycastTarget = false;
-            // These two rects are sized as a fraction of the slot, so they give the
-            // text a fixed 1.39x its own font size of vertical room. That was enough
-            // for the old font's ~1.15x line box but not for Playpen Sans, whose
-            // ascenders and descenders push it closer to 1.5x - and Unity's default
-            // Truncate does not clip a line that does not fit, it discards it, so
-            // the stack count silently disappeared instead of looking cramped.
-            // Overflow lets the glyph box exceed the rect, which for a centred
-            // number over an icon costs nothing visually.
             countText.verticalOverflow = VerticalWrapMode.Overflow;
             countText.horizontalOverflow = HorizontalWrapMode.Overflow;
             GameObject labelGo = new GameObject("LabelText", typeof(RectTransform), typeof(Text));
@@ -611,8 +569,6 @@ namespace AgriDabao3D
             labelText.alignment = TextAnchor.MiddleCenter;
             labelText.color = new Color(1f, 1f, 1f, 0.65f);
             labelText.raycastTarget = false;
-            // Same reasoning as the count above: a slot-number that vanishes is
-            // worse than one that overhangs its box by a pixel.
             labelText.verticalOverflow = VerticalWrapMode.Overflow;
             labelText.horizontalOverflow = HorizontalWrapMode.Overflow;
             labelText.text = slotIndex < PlayerInventory.HotbarSlotCount ? (slotIndex + 1).ToString() : "";
@@ -643,8 +599,6 @@ namespace AgriDabao3D
 
             if (basket != null)
             {
-                // The bar art already draws this cell, so the button itself is just
-                // the basket icon sitting in the locked seventh slot.
                 bg.color = new Color(1f, 1f, 1f, 0f);
 
                 GameObject iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
@@ -694,19 +648,6 @@ namespace AgriDabao3D
             return text;
         }
 
-        /// <summary>
-        /// Hides Trash Item for as long as the beginner guide is running.
-        ///
-        /// A player who empties the bag during the tour throws away the starting
-        /// seeds Antonio is about to ask them to plant, and the tour has no way to
-        /// hand them back - the run is simply stuck. Hiding the control is safer
-        /// than greying it out, because there is nothing useful to trash yet
-        /// anyway.
-        ///
-        /// Re-checked every time the backpack opens rather than once when it is
-        /// built: the tour finishes in the middle of a session, and the button has
-        /// to come back on its own when it does.
-        /// </summary>
         private void ApplyTutorialTrashGate()
         {
             if (trashButtonImage == null)
@@ -728,10 +669,6 @@ namespace AgriDabao3D
         {
             backpackOpen = open;
 
-            // Leaving the backpack always leaves the trash state with it, so
-            // reopening it is never a surprise: coming back to a bag that
-            // deletes what you tap, because of a mode set minutes ago, is how a
-            // player loses something they meant to keep.
             if (!open && trashMode)
                 SetTrashMode(false);
 
@@ -772,9 +709,6 @@ namespace AgriDabao3D
         }
         private void Refresh()
         {
-            // Also re-checked here, not only on open: Refresh runs on every
-            // inventory change, so if the tour finishes while the backpack is
-            // already open the button appears without waiting for a reopen.
             ApplyTutorialTrashGate();
 
             if (PlayerInventory.Instance == null)
@@ -785,8 +719,6 @@ namespace AgriDabao3D
                 UpdateSlotVisual(backpackSlots[i]);
             if (moneyText != null)
                 moneyText.text = $"P{PlayerInventory.Instance.money}";
-            // The basket art carries its own look, so the open/closed tint is only
-            // applied to the plain fallback button.
             if (backpackButton != null && backpackButton.background != null &&
                 (theme == null || theme.bagButton == null))
             {
@@ -841,9 +773,6 @@ namespace AgriDabao3D
                 }
             }
 
-            // While trashing, the things that cannot be trashed are faded out.
-            // Tapping a tool does nothing, and silently doing nothing reads as a
-            // broken button - greying them says why before it is pressed.
             if (slotUI.iconImage != null)
             {
                 bool untrashable = trashMode && PlayerInventory.IsTool(slot.itemType);
@@ -861,8 +790,6 @@ namespace AgriDabao3D
             bool selected = PlayerInventory.Instance.selectedSlotIndex == slotUI.slotIndex &&
                             PlayerInventory.Instance.IsHotbarSlot(slotUI.slotIndex);
 
-            // With the wooden art in place the cells are painted into the bar and
-            // the grid board, so a slot only tints itself when it is selected.
             bool themed = theme != null &&
                           (theme.hotbarBar != null || theme.backpackBoard != null);
 
@@ -886,10 +813,6 @@ namespace AgriDabao3D
             }
             slotUI.background.color = new Color(0f, 0f, 0f, 0.55f);
         }
-        /// <summary>
-        /// The icon for an item. Public so other screens (the trade panel) can draw
-        /// the same art without duplicating the whole sprite table.
-        /// </summary>
         public Sprite GetSpriteFor(InventoryItemType item) => GetSprite(item);
 
         private Sprite GetSprite(InventoryItemType item)

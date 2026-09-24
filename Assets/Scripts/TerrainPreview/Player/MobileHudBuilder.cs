@@ -7,25 +7,10 @@ namespace AgriDabao3D
 {
     public class MobileHudBuilder : MonoBehaviour
     {
-        /// <summary>
-        /// The scene's one active joystick/jump HUD. FirstPersonTerrainController
-        /// reads MoveInput/jumpPressed from a specific instance found via the
-        /// Inspector or FindFirstObjectByType, so a second, unwired copy left in
-        /// the scene would silently eat touch input without moving the player -
-        /// this guard makes any duplicate destroy itself instead.
-        /// </summary>
         public static MobileHudBuilder Instance { get; private set; }
 
         public Vector2 MoveInput { get; private set; }
 
-        /// <summary>
-        /// How many times jump has been pressed this session.
-        ///
-        /// Watchers such as the beginner guide need to know a jump happened
-        /// without stealing it: ConsumeJumpPressed clears the flag, so anything
-        /// polling that would swallow the input before the player controller saw
-        /// it and the player would never leave the ground.
-        /// </summary>
         public int JumpPressCount { get; private set; }
 
         private bool jumpPressed;
@@ -99,7 +84,7 @@ namespace AgriDabao3D
                 var scaler = canvasGo.GetComponent<CanvasScaler>();
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+                scaler.matchWidthOrHeight = 1f;
             }
 
             CreateJoystick();
@@ -176,7 +161,6 @@ namespace AgriDabao3D
             var image = go.GetComponent<Image>();
             if (jumpArt != null)
             {
-                // The word is painted into the art, so no Text child is added.
                 image.sprite = jumpArt;
                 image.preserveAspect = true;
                 image.color = Color.white;

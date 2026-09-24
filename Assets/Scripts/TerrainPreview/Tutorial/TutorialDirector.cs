@@ -7,20 +7,6 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Runs Antonio's beginner guide: the steps that hand a new player the game
-    /// one piece at a time instead of all at once.
-    ///
-    /// The whole tour is a flat list of beats. A beat is either something Antonio
-    /// says, something the game does silently (reveal a button, hand over an item),
-    /// or something the player has to do before the tour will continue. Walking one
-    /// list keeps the ordering readable next to the written script and means a step
-    /// can be moved by moving its lines, with no state machine to rewire.
-    ///
-    /// It creates itself in TerrainPreview like the other farm systems, so there is
-    /// no scene wiring, and it does nothing at all on a farm that has already been
-    /// through it.
-    /// </summary>
     public class TutorialDirector : MonoBehaviour
     {
         public static TutorialDirector Instance { get; private set; }
@@ -34,9 +20,6 @@ namespace AgriDabao3D
 
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            // Hand the HUD back to the game and forget the old farm's objects.
-            // Must not empty the registry outright - builders that register during
-            // Awake have already run by the time this fires.
             HudRegistry.ReleaseControl();
 
             if (scene.name == "TerrainPreview" &&
@@ -45,8 +28,6 @@ namespace AgriDabao3D
                 new GameObject("TutorialDirector").AddComponent<TutorialDirector>();
             }
         }
-
-        // ------------------------------------------------------------- the beats
 
         private abstract class Beat { }
 
@@ -57,7 +38,6 @@ namespace AgriDabao3D
             public AntonioExpression? Expression;
         }
 
-        /// <summary>Silent: reveals a button, hands over an item, flips a lock.</summary>
         private sealed class DoBeat : Beat
         {
             public Action Run;
@@ -69,7 +49,6 @@ namespace AgriDabao3D
             public Func<bool> IsSatisfied;
             public Action Cleanup;
 
-            /// <summary>Re-read while the gate is open, for a hint that follows what the player does.</summary>
             public bool LiveHint;
         }
 
@@ -83,8 +62,6 @@ namespace AgriDabao3D
         private readonly List<IDisposable> disposables = new List<IDisposable>();
 
         private const string Antonio = "Antonio";
-
-        // -------------------------------------------------------------- lifecycle
 
         private void Awake()
         {
@@ -110,19 +87,12 @@ namespace AgriDabao3D
 
         private IEnumerator Start()
         {
-            // A farm being loaded carries its tutorial flag inside the save, and
-            // that save is not applied until the terrain has finished generating -
-            // which is far later than this. Deciding now would read a default
-            // "not completed" and run the whole tour again on a farm that finished
-            // it long ago, on top of the player's real crops.
             float waitedUntil = Time.unscaledTime + 60f;
             while (FarmLoadContext.IsRestoring && Time.unscaledTime < waitedUntil)
                 yield return null;
 
             if (FarmLoadContext.IsRestoring)
             {
-                // The farm never finished loading. Whatever went wrong, replaying
-                // the tour over a half-restored farm would only make it worse.
                 Debug.LogWarning("[Tutorial] Farm still loading after 60s; skipping the beginner guide.");
                 yield break;
             }
@@ -130,33 +100,19 @@ namespace AgriDabao3D
             if (TutorialState.Completed)
                 yield break;
 
-            // Wait for the farm to finish building itself: the HUD registers its
-            // pieces during those builders' own Start, and hiding a button before
-            // it exists would do nothing.
             yield return null;
             yield return null;
 
             dialogue = gameObject.AddComponent<TutorialDialogueUI>();
 
-            // Hide the HUD before asking. If the player says yes the tour starts on
-            // a clean screen; if no, it all comes straight back. Asking first and
-            // hiding afterwards would flash the whole interface away in front of
-            // someone who just said they did not want a tutorial.
             TutorialState.Offered = true;
             HideEverything();
 
-            // A new farmer should not be looking at their land before the story
-            // says they have arrived. Black goes up first and only lifts once the
-            // player has answered.
             CreateBlackout();
 
             AskWhetherToRun();
         }
 
-        /// <summary>
-        /// Full-screen black over the freshly generated farm, so the world is not
-        /// on show before Antonio has arrived to introduce it.
-        /// </summary>
         private void CreateBlackout()
         {
             Canvas canvas = UnityEngine.Object.FindFirstObjectByType<Canvas>();
@@ -175,13 +131,11 @@ namespace AgriDabao3D
             blackout = go.GetComponent<Image>();
             blackout.color = Color.black;
 
-            // Swallows taps on anything underneath while it is up.
             blackout.raycastTarget = true;
 
             go.transform.SetAsLastSibling();
         }
 
-        /// <summary>Lifts the black over <paramref name="seconds"/>, then removes it.</summary>
         private IEnumerator FadeOutBlackout(float seconds)
         {
             if (blackout == null)
@@ -200,16 +154,10 @@ namespace AgriDabao3D
             blackout = null;
         }
 
-        /// <summary>
-        /// Offers the tour before it starts, using the same Yes/No plank as the
-        /// Save Farm confirmation so it looks like every other prompt in the game.
-        /// </summary>
         private void AskWhetherToRun()
         {
             FarmConfirmPopup popup = FarmConfirmPopup.Instance;
 
-            // No popup in the scene: run the guide rather than silently skipping
-            // it, since a new farm with no tour is the worse of the two failures.
             if (popup == null)
             {
                 Debug.LogWarning("[Tutorial] No FarmConfirmPopup found; starting the guide without asking.");
@@ -223,8 +171,6 @@ namespace AgriDabao3D
                 UIThemeSprites.Instance?.tutorialPromptLabel,
                 DeclineTour);
 
-            // Asked on top of the blackout, which was created after the popup was
-            // built and therefore sits above it by default.
             if (HudRegistry.TryGetPiece(HudPiece.ConfirmPopup, out GameObject popupGo))
                 popupGo.transform.SetAsLastSibling();
         }
@@ -236,9 +182,6 @@ namespace AgriDabao3D
 
         private IEnumerator RevealThenBeginTour()
         {
-            // The farm fades up on an empty screen, and only then does Antonio
-            // call out - the arrival reads as an arrival rather than as a dialogue
-            // box appearing over a world that was already there.
             yield return FadeOutBlackout(2.5f);
             yield return new WaitForSecondsRealtime(0.4f);
 
@@ -246,10 +189,6 @@ namespace AgriDabao3D
             Advance();
         }
 
-        /// <summary>
-        /// Player declined. Give them everything the tour would have handed over and
-        /// get out of the way - a farm with no shovel and no HUD is not a game.
-        /// </summary>
         private void DeclineTour()
         {
             Debug.Log("[Tutorial] Declined; granting the starting kit and restoring the HUD.");
@@ -264,8 +203,6 @@ namespace AgriDabao3D
             if (PlayerInventory.Instance != null)
                 PlayerInventory.Instance.AddMoney(500);
 
-            // Finish restores the whole HUD first, so the black lifts on a farm
-            // that is already fully dressed and ready to play.
             Finish();
             StartCoroutine(FadeOutBlackout(1.6f));
         }
@@ -286,12 +223,6 @@ namespace AgriDabao3D
             Advance();
         }
 
-        /// <summary>
-        /// Rewrites a live gate's instruction twice a second, so a player who has
-        /// gone off the expected path - dug the wrong kind of plot, filled theirs
-        /// back in - is told how to get back instead of reading an instruction
-        /// that no longer fits.
-        /// </summary>
         private void RefreshLiveHint()
         {
             if (!activeGate.LiveHint || dialogue == null || Time.unscaledTime < nextHintRefresh)
@@ -300,8 +231,6 @@ namespace AgriDabao3D
             nextHintRefresh = Time.unscaledTime + 0.5f;
             dialogue.SetObjectiveText(activeGate.Hint?.Invoke());
         }
-
-        // ------------------------------------------------------------- the walk
 
         private void Advance()
         {
@@ -338,7 +267,6 @@ namespace AgriDabao3D
         {
             dialogue.Hide();
 
-            // Everything that was held back while Antonio was talking.
             HudRegistry.EndTutorialControl();
             TutorialState.CropInspectionLocked = false;
 
@@ -349,26 +277,16 @@ namespace AgriDabao3D
 
             Debug.Log("[Tutorial] Beginner guide finished; saving.");
 
-            // SaveFarm is a coroutine, so it has to be started rather than called.
             if (FarmPersistenceManager.Instance != null)
                 StartCoroutine(FarmPersistenceManager.Instance.SaveFarm());
         }
 
-        // --------------------------------------------------------------- helpers
-
         private void HideEverything()
         {
-            // Hands visibility to the guide. Anything the builders register after
-            // this point arrives hidden too, which is what the joystick and the
-            // jump button needed - they were being built after the old one-shot
-            // hide had already run, so they stayed on screen through the whole tour.
             HudRegistry.BeginTutorialControl();
             TutorialState.CropInspectionLocked = true;
 
 
-            // Panels are not part of the reveal - their own buttons open them, and
-            // the guide only watches them. Leave them exactly as their builders
-            // left them so nothing about their behaviour changes.
             ShowPanelsAsBuilt();
         }
 
@@ -426,14 +344,11 @@ namespace AgriDabao3D
         private void WaitForAction(string actionType, string hint,
             Func<ClimateActionRecord, bool> extra = null)
         {
-            // Created up front so it is already listening when its step is reached -
-            // otherwise an action performed a moment early would be missed.
             TutorialGates.FarmAction gate = new TutorialGates.FarmAction(actionType, hint, extra);
             disposables.Add(gate);
             WaitFor(gate.IsSatisfied, hint, gate.Dispose);
         }
 
-        /// <summary>The same gate, with an instruction that is re-read while it waits.</summary>
         private void WaitForAction(string actionType, Func<string> liveHint,
             Func<ClimateActionRecord, bool> extra = null)
         {
@@ -459,13 +374,6 @@ namespace AgriDabao3D
                 ? "Davao"
                 : SelectedAreaState.SelectedDistrictName;
 
-        /// <summary>
-        /// What Antonio calls the player: the name they signed up with.
-        ///
-        /// AuthSession keeps the whole profile on CurrentUser, not just the token,
-        /// so the display name is already here. Falls back to "neighbour" if the
-        /// profile is missing, which fits how he talks anyway.
-        /// </summary>
         private static string PlayerName
         {
             get
@@ -478,18 +386,11 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// The tools the shop does not stock. Handed over at the end rather than at
-        /// the start so the hotbar stays empty while Antonio is filling it himself,
-        /// but before the player could ever need them - harvesting comes days later.
-        /// </summary>
         private static void GrantCompletionKit()
         {
             Grant(InventoryItemType.Machete, 1);
             Grant(InventoryItemType.FruitBag, 10);
         }
-
-        // ------------------------------------------------------------ the script
 
         private void BuildBeats()
         {
@@ -542,10 +443,6 @@ namespace AgriDabao3D
             Say("Look at you. Already moving like a farmer.", AntonioExpression.Hello);
         }
 
-        /// <summary>
-        /// The starting material this lesson plants: the first one dealt that goes
-        /// straight into the ground. The deal always includes one.
-        /// </summary>
         private static PlantingMaterialInfo LessonMaterial()
         {
             foreach (InventoryItemType item in TutorialState.StartingSeeds)
@@ -554,12 +451,10 @@ namespace AgriDabao3D
                     return info;
             }
 
-            // Only a hand-edited or very old deal lacks one; bananas grow everywhere.
             PlantingMaterialCatalog.TryGet(InventoryItemType.BananaSucker, out PlantingMaterialInfo fallback);
             return fallback;
         }
 
-        /// <summary>The starting material the Seedling Tent lesson sows, or null if none was dealt.</summary>
         private static PlantingMaterialInfo TentLessonMaterial()
         {
             foreach (InventoryItemType item in TutorialState.StartingSeeds)
@@ -596,12 +491,9 @@ namespace AgriDabao3D
                 foreach (InventoryItemType seed in TutorialState.StartingSeeds)
                     Grant(seed, DistrictCropPools.SeedsPerKind);
 
-                // Covered for a deal that somehow has nothing to plant straight away.
                 if (!lessonInDeal)
                     Grant(lesson.Item, 1);
 
-                // A strawberry runner goes in through mulch, and the mulch sacks
-                // only come out a few steps later.
                 if (lesson.NeedsMulchedBed)
                     Grant(InventoryItemType.MulchBag, 1);
             });
@@ -619,9 +511,6 @@ namespace AgriDabao3D
                 " needs a " + ground + ": tap the tilled soil with the shovel again and choose " +
                 choice + ".", AntonioExpression.Teaching);
 
-            // Only the kind of plot he asked for moves the lesson on. Any kind
-            // used to, and a player who picked another one was then told to
-            // plant into ground their material cannot go in.
             WaitForAction("DigPlantingSpot", () => GroundHint(lesson, choice, false),
                 record => string.Equals(record.itemType, lesson.Plot.ToString(), StringComparison.OrdinalIgnoreCase));
 
@@ -641,11 +530,6 @@ namespace AgriDabao3D
                 AntonioExpression.Surprise);
         }
 
-        /// <summary>
-        /// The next thing to do toward the lesson's ground, read from the plots on
-        /// the farm as they are now. <paramref name="planting"/> is true once the
-        /// ground should be ready and the material is what is being waited on.
-        /// </summary>
         private static string GroundHint(PlantingMaterialInfo lesson, string choice, bool planting)
         {
             bool tilled = false;
@@ -739,7 +623,6 @@ namespace AgriDabao3D
 
         private void Step5Inspect()
         {
-            // Inspection becomes available exactly when he introduces it.
             Do(() => TutorialState.CropInspectionLocked = false);
 
             Say("You can check on a crop any time. Tap the one you just planted.",

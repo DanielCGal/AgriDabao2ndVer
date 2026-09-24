@@ -12,22 +12,8 @@ namespace AgriDabao3D
         private Text statusText;
         private InputField amountInput;
         private RectTransform shopButtonsContent;
-        // Static so the daily-objective system can price an item without owning
-        // a shop panel. It is the only price list in the game, and it stays the
-        // only one: a task that asks the player to buy something has to work out
-        // the cost from the same numbers the shop will actually charge.
-        //
-        // Held in centavos. The seeds use the Davao City government prices, and
-        // corn has centavos in it; PesoPrice explains how a price in centavos
-        // becomes a charge in whole pesos.
         private static readonly Dictionary<InventoryItemType, int> seedPriceCentavos = new Dictionary<InventoryItemType, int>
         {
-            // Planting materials. The seeds keep the Davao City government prices.
-            // The five materials that replaced the old seed items keep the price
-            // the old seed had (pineapple sucker = the old pineapple seed, and so
-            // on), so a player's money buys what it bought before. The banana
-            // plantlet, the grafted mango seedling and the ready squash seedling
-            // are new, and priced above the material they skip ahead of.
             { InventoryItemType.CacaoSeed, PesoPrice.Centavos(25m) },
             { InventoryItemType.DurianSeed, PesoPrice.Centavos(60m) },
             { InventoryItemType.MangosteenSeed, PesoPrice.Centavos(75m) },
@@ -44,7 +30,6 @@ namespace AgriDabao3D
             { InventoryItemType.SquashSeed, PesoPrice.Centavos(3000m) },
             { InventoryItemType.SquashSeedling, PesoPrice.Centavos(3300m) },
             { InventoryItemType.CornSeed, PesoPrice.Centavos(388.89m) },
-            // Equipment / pest tools
             { InventoryItemType.AphidTrap, PesoPrice.Centavos(35m) },
             { InventoryItemType.SprayerPump, PesoPrice.Centavos(250m) },
             { InventoryItemType.InsecticideLiter, PesoPrice.Centavos(90m) },
@@ -56,7 +41,6 @@ namespace AgriDabao3D
             { InventoryItemType.FruitBag, PesoPrice.Centavos(25m) },
             { InventoryItemType.DrainageKit, PesoPrice.Centavos(150m) },
             { InventoryItemType.TermiteBaitStation, PesoPrice.Centavos(110m) },
-            // Climate mitigation and crop maintenance
             { InventoryItemType.MulchBag, PesoPrice.Centavos(25m) },
             { InventoryItemType.OrganicCompostBag, PesoPrice.Centavos(45m) },
             { InventoryItemType.PruningShears, PesoPrice.Centavos(180m) },
@@ -100,14 +84,13 @@ namespace AgriDabao3D
                 CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+                scaler.matchWidthOrHeight = 1f;
             }
             if (canvas.GetComponent<GraphicRaycaster>() == null)
                 canvas.gameObject.AddComponent<GraphicRaycaster>();
         }
         private void BuildShopButton()
         {
-            // Part of the shared round-icon row along the HUD's top-left edge.
             HudIconButton.Create(
                 canvas.transform,
                 "ShopButton",
@@ -130,7 +113,6 @@ namespace AgriDabao3D
 
             if (board != null)
             {
-                // Centred board layout: shelves on the left, preview on the right.
                 panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
                 panelRect.pivot = new Vector2(0.5f, 0.5f);
                 panelRect.sizeDelta = new Vector2(PanelWidth, PanelHeight);
@@ -165,12 +147,7 @@ namespace AgriDabao3D
                 RectTransform signRect = signGo.GetComponent<RectTransform>();
                 signRect.anchorMin = signRect.anchorMax = new Vector2(0.5f, 1f);
                 signRect.pivot = new Vector2(0.5f, 0.5f);
-                // ShopLabel.png is 1040x300 (3.47:1), so preserveAspect keeps it
-                // undistorted and this width sets the sign's overall size. Narrowed
-                // from 520 so the sign stops dominating the top of the board.
                 signRect.sizeDelta = new Vector2(440f, 150f);
-                // Lowered from +6 so the sign overlaps the board's top edge and
-                // reads as mounted on it rather than floating above it.
                 signRect.anchoredPosition = new Vector2(0f, -16f);
                 Image signImage = signGo.GetComponent<Image>();
                 signImage.sprite = theme.shopLabel;
@@ -189,12 +166,6 @@ namespace AgriDabao3D
                 BuildPreviewArea(theme);
                 BuildCheckDescriptionButton(theme);
                 descriptionBoard = DescriptionBoard.Create(shopPanel.transform, theme);
-                // Starts blank rather than carrying a standing "Select an item to
-                // buy." prompt. The row still exists so buy results and errors
-                // ("Not enough money", "Inventory is full") have somewhere to show.
-                // Back on the plank at the position it held before the Check
-                // Description button existed; the shelf and that button were lifted
-                // to make room rather than pushing this line off the board.
                 statusText = CreateLabel(shopPanel.transform, "", 20,
                     new Vector2(-230f, -640f + ContentLift), 520f, 44f);
                 FitStatusText(statusText);
@@ -212,8 +183,6 @@ namespace AgriDabao3D
             }
         }
 
-        // ---------------- Themed shelf layout ----------------
-
         private const int ShelfColumns = 4;
         private const int ShelfRows = 4;
         private int ShelfPageSize => ShelfColumns * ShelfRows;
@@ -228,23 +197,18 @@ namespace AgriDabao3D
         private GameObject nextPageButton;
         private InventoryUIBuilder cachedInventoryUI;
 
-        // ---------------- Item description board ----------------
-
         private DescriptionBoard descriptionBoard;
 
         private const float DescriptionBoardArtWidth = 1760f;
         private const float DescriptionLogEndsAtPx = 280f;
         private const float DescriptionLogResumesAtPx = 1458f;
 
-        /// <summary>Centre of the 4x4 shelf, in the panel's own coordinates.</summary>
         private const float ShelfCentreX = 160f + ShelfShiftX + 250f - PanelHalfWidth;
         private const float CheckButtonWidth = 320f;
         private const float CheckButtonHeight = 58f;
 
-        /// <summary>Every item the shop sells, in the order they appear on the shelf.</summary>
         private static readonly InventoryItemType[] ShopStock =
         {
-            // Planting materials, grouped by crop in PlantingMaterialCatalog order.
             InventoryItemType.CacaoSeed, InventoryItemType.DurianSeed,
             InventoryItemType.MangosteenSeed, InventoryItemType.PomeloSeed,
             InventoryItemType.BananaPlantlet, InventoryItemType.BananaSucker,
@@ -295,15 +259,9 @@ namespace AgriDabao3D
             shelfGrid = cells.GetComponent<RectTransform>();
             shelfGrid.anchorMin = shelfGrid.anchorMax = new Vector2(0.5f, 0.5f);
             shelfGrid.pivot = new Vector2(0.5f, 0.5f);
-            // Rows are spaced by sizeDelta.y / 4, so this has to match the painted
-            // compartments in ShopShelve.png. At the old 380 the spacing came out
-            // ~4px short per row, and the error accumulated downward until the
-            // bottom row straddled the shelf plank instead of sitting in the cell.
-            // 398 with a 3px drop matches the art across all four rows.
             shelfGrid.sizeDelta = new Vector2(430f, 398f);
             shelfGrid.anchoredPosition = new Vector2(0f, -3f);
 
-            // Paging arrows sit either side of the shelf; hidden when everything fits.
             prevPageButton = CreateIconButton(theme?.shopPrevPageButton, "<<",
                 new Vector2(0f, 1f), new Vector2(120f, 46f),
                 new Vector2(105f + ShelfShiftX, -345f + ContentLift),
@@ -314,39 +272,19 @@ namespace AgriDabao3D
                 () => ChangeShopPage(1));
         }
 
-        // ---- Board layout tuning ----
-        // ShopBoard.png is natively 1120x700; the extra width here stretches it.
-        // The shelf stays a fixed distance from the left edge and the preview a
-        // fixed distance from the right, so widening the board opens up the gap
-        // between them rather than moving either one.
         private const float PanelWidth = 1300f;
         private const float PanelHeight = 700f;
         private const float PanelHalfWidth = PanelWidth * 0.5f;
 
-        /// <summary>
-        /// Raises every control inside the board by this many pixels. The contents
-        /// were laid out bottom-heavy, leaving a band of bare wood along the top;
-        /// lifting them all by one shared value keeps their spacing intact while
-        /// centring the group. Increase to lift further, decrease to drop back.
-        /// </summary>
         private const float ContentLift = 50f;
 
-        /// <summary>
-        /// Shifts the shelf and its two paging arrows right as one group. At the
-        /// shelf's original X the prev arrow sat partly on the board's left rolled
-        /// log; this moves the group onto the flat plank area while preserving the
-        /// arrows' alignment against the shelf edges.
-        /// </summary>
         private const float ShelfShiftX = 80f;
 
-        // The preview frame and the Amount / Buy controls under it are all derived
-        // from these so the column stays aligned if the frame is moved or resized.
         private const float PreviewWidth = 300f;
         private const float PreviewHeight = 300f;
         private const float PreviewRightInset = 170f;
         private const float BuyWidth = 220f;
 
-        /// <summary>Centre of the preview frame, relative to the panel's centre.</summary>
         private const float PreviewCentreX =
             PanelHalfWidth - PreviewRightInset - PreviewWidth * 0.5f;
 
@@ -365,10 +303,6 @@ namespace AgriDabao3D
             if (theme?.shopPreviewFrame != null)
             {
                 frameImage.sprite = theme.shopPreviewFrame;
-                // ShopItemFrame.png carries no 9-slice border, so preserveAspect
-                // would lock it to its native 0.87:1 and ignore the wider box.
-                // Turning it off is what actually widens the frame; give the sprite
-                // a border in the Sprite Editor if the stretch ever reads too far.
                 frameImage.preserveAspect = false;
                 frameImage.color = Color.white;
             }
@@ -377,14 +311,11 @@ namespace AgriDabao3D
                 frameImage.color = new Color(0f, 0f, 0f, 0.35f);
             }
 
-            // Name plank across the top of the frame art.
             previewNameText = CreateLabel(frame.transform, "", 19, Vector2.zero, 270f, 44f);
             RectTransform nameRect = previewNameText.rectTransform;
             nameRect.anchorMin = nameRect.anchorMax = new Vector2(0.5f, 1f);
             nameRect.pivot = new Vector2(0.5f, 1f);
             nameRect.anchoredPosition = new Vector2(0f, -14f);
-            // Long names such as "Water Storage Tank Kit" overran the plank at a
-            // fixed size; best-fit shrinks only those that need it.
             previewNameText.resizeTextForBestFit = true;
             previewNameText.resizeTextMinSize = 12;
             previewNameText.resizeTextMaxSize = 19;
@@ -402,38 +333,21 @@ namespace AgriDabao3D
             previewIcon.raycastTarget = false;
             previewIcon.enabled = false;
 
-            // Price plank across the bottom.
             previewPriceText = CreateLabel(frame.transform, "", 20, Vector2.zero, 230f, 44f);
             RectTransform priceRect = previewPriceText.rectTransform;
             priceRect.anchorMin = priceRect.anchorMax = new Vector2(0.5f, 0f);
             priceRect.pivot = new Vector2(0.5f, 0f);
-            // Raised off the frame's bottom edge so the price sits on the plank art
-            // rather than below it.
             priceRect.anchoredPosition = new Vector2(0f, 46f);
             ApplyPlankTextStyle(previewPriceText);
 
-            // Amount and Buy form one column directly beneath the preview frame.
-            // These labels anchor to the panel's top-centre, so X is the offset from
-            // centre and Y is the drop from the top edge.
             CreateLabel(shopPanel.transform, "Amount:", 22,
                 new Vector2(PreviewCentreX, -462f + ContentLift), 200f, 40f);
             amountInput = CreateInputField(shopPanel.transform, "1",
                 new Vector2(PreviewCentreX, -508f + ContentLift), 240f, 48f);
 
-            // Digits only, and at most two of them.
-            //
-            // The field took any text before. Letters were not dangerous -
-            // ParseAmount falls back to 1 - but the fallback was silent, so a
-            // player who typed something odd got one seed and no explanation.
-            // Two characters also makes the 1-99 ceiling visible while typing,
-            // instead of quietly clamping a 500 down to 99 after the fact. On a
-            // phone IntegerNumber opens the number pad rather than the full
-            // keyboard, which is the same reason the sign-up date boxes use it.
             amountInput.contentType = InputField.ContentType.IntegerNumber;
             amountInput.characterLimit = 2;
 
-            // Buy anchors to the panel's top-right, so its X is converted from the
-            // shared centre line to keep it under the same column.
             CreateIconButton(theme?.shopBuyButton, "BUY",
                 new Vector2(1f, 1f), new Vector2(BuyWidth, 62f),
                 new Vector2(PreviewCentreX + BuyWidth * 0.5f - PanelHalfWidth,
@@ -441,12 +355,6 @@ namespace AgriDabao3D
                 OnBuySelectedPressed);
         }
 
-        /// <summary>
-        /// Styles a label that sits on the preview frame's wooden planks. The
-        /// previous dark brown was near-invisible against that art, so this uses a
-        /// light fill with a hard outline, which stays readable over both the plank
-        /// and the item icon behind it.
-        /// </summary>
         private static void ApplyPlankTextStyle(Text label)
         {
             if (label == null)
@@ -494,7 +402,6 @@ namespace AgriDabao3D
             return go;
         }
 
-        /// <summary>Draws one page of stock onto the 4x4 shelf.</summary>
         private void RefreshShelf()
         {
             if (shelfGrid == null)
@@ -506,7 +413,6 @@ namespace AgriDabao3D
             int pageCount = Mathf.CeilToInt(ShopStock.Length / (float)ShelfPageSize);
             shopPage = Mathf.Clamp(shopPage, 0, Mathf.Max(0, pageCount - 1));
 
-            // Arrows only appear when the stock actually needs more than one page.
             bool paged = pageCount > 1;
             if (prevPageButton != null) prevPageButton.SetActive(paged);
             if (nextPageButton != null) nextPageButton.SetActive(paged);
@@ -550,9 +456,6 @@ namespace AgriDabao3D
             Image image = cell.GetComponent<Image>();
             image.sprite = icon;
             image.preserveAspect = true;
-            // Selected stock is tinted; the shelf art already draws the cell itself.
-            // Seeds this farm's district does not grow stay on the shelf, greyed out,
-            // so they can still be picked and read about - they just cannot be bought.
             bool offered = DistrictCropPools.IsAvailableToPlayer(item);
             image.color = icon == null
                 ? new Color(1f, 1f, 1f, 0.15f)
@@ -583,18 +486,12 @@ namespace AgriDabao3D
             if (previewPriceText != null)
                 previewPriceText.text = PesoPrice.Label(GetSeedPriceCentavos(item));
 
-            // Opening is the Check Description button's job. Picking a different
-            // item while the board is already open refreshes it in place rather
-            // than making the player close and reopen it.
             if (descriptionBoard != null && descriptionBoard.IsOpen)
                 ShowDescriptionFor(item);
 
-            // No "Selected ..." line: the preview frame already names the item and
-            // shows its price, so the status row is left for buy results and errors.
             RefreshShelf();
         }
 
-        /// <summary>The button under the shelf that opens the description board.</summary>
         private void BuildCheckDescriptionButton(UIThemeSprites theme)
         {
             Button button = DescriptionBoard.CreateOpenButton(
@@ -619,7 +516,6 @@ namespace AgriDabao3D
             ShowDescriptionFor(selectedItem);
         }
 
-        /// <summary>Fills the shared board for one item and opens it.</summary>
         private void ShowDescriptionFor(InventoryItemType item)
         {
             if (descriptionBoard == null)
@@ -661,7 +557,6 @@ namespace AgriDabao3D
             TryBuySeed(selectedItem, FriendlyShopName(selectedItem));
         }
 
-        /// <summary>Reuses the backpack's icon table so the shop shows the same art.</summary>
         private Sprite ItemIcon(InventoryItemType item)
         {
             if (cachedInventoryUI == null)
@@ -720,8 +615,6 @@ namespace AgriDabao3D
             shopButtonsContent.sizeDelta = new Vector2(520f, 790f);
             scrollRect.viewport = viewportRect;
             scrollRect.content = shopButtonsContent;
-            // The same stock as the themed shelf, so both layouts sell the same
-            // things. This plain list only appears when the board art is missing.
             float y = -10f;
             float step = 62f;
             foreach (InventoryItemType item in ShopStock)
@@ -775,8 +668,6 @@ namespace AgriDabao3D
                     return;
                 }
             }
-            // Priced in centavos, paid in whole pesos: it is the total that gets
-            // rounded, never the price of each one.
             int totalCost = PesoPrice.TotalPesos(GetSeedPriceCentavos(seedType), amount);
             if (PlayerInventory.Instance.money < totalCost)
             {
@@ -806,48 +697,25 @@ namespace AgriDabao3D
         }
         private int GetSeedPriceCentavos(InventoryItemType seedType)
         {
-            // P999 rather than free for anything unlisted. A missing entry must
-            // never make an item free; StockedPriceCentavos below is the query that
-            // is allowed to answer "not sold", and only because nothing buys with it.
             int centavos = StockedPriceCentavos(seedType);
             return centavos > 0 ? centavos : PesoPrice.Centavos(999m);
         }
 
-        /// <summary>
-        /// What the shop charges for one of an item, in centavos, or 0 when it does
-        /// not stock it at all. Zero means the item cannot be bought at any price,
-        /// which is a different answer from "it is expensive" and has to stay
-        /// distinguishable.
-        /// </summary>
         public static int StockedPriceCentavos(InventoryItemType item)
         {
             return seedPriceCentavos.TryGetValue(item, out int centavos) ? centavos : 0;
         }
 
-        /// <summary>
-        /// What buying <paramref name="quantity"/> of an item costs, in whole pesos,
-        /// rounded exactly as the shop rounds it when it charges.
-        ///
-        /// Read by the daily objectives to decide whether a task is affordable
-        /// before offering it, so a task is never judged affordable by a peso the
-        /// shop then asks for. Check StockedPriceCentavos first when "not sold"
-        /// matters - this returns 0 for that too.
-        /// </summary>
         public static int CostFor(InventoryItemType item, int quantity)
         {
             return PesoPrice.TotalPesos(StockedPriceCentavos(item), quantity);
         }
 
-        /// <summary>
-        /// Whether the shop will sell the item to this farm: it is stocked, and if it
-        /// is a seed, the farm's district grows it.
-        /// </summary>
         public static bool SellsToPlayer(InventoryItemType item)
         {
             return StockedPriceCentavos(item) > 0 && DistrictCropPools.IsAvailableToPlayer(item);
         }
 
-        /// <summary>A dim grey that still lets the seed's art read, for stock this farm cannot buy.</summary>
         private static readonly Color UnavailableTint = new Color(0.42f, 0.42f, 0.42f, 0.8f);
         private static readonly Color UnavailableSelectedTint = new Color(0.62f, 0.66f, 0.62f, 0.9f);
         private int ParseAmount()
@@ -871,30 +739,16 @@ namespace AgriDabao3D
 
                 shopPanel.SetActive(open);
 
-                // Siblings on a canvas draw in hierarchy order, and the weather/time
-                // panel is built by a different script, so creation order alone
-                // decides who covers whom. Re-parenting to last on open keeps the
-                // shop above the HUD regardless of which script ran first.
                 if (open)
                     shopPanel.transform.SetAsLastSibling();
             }
 
-            // The description board is deliberately not restored with the rest of
-            // the panel: reopening the shop should show the shelf, not whatever
-            // was last read. It comes back on the next selection.
             if (open)
                 HideDescription();
 
-            // Redrawn on open so the shelf reflects the current page and selection.
             if (open && shelfGrid != null)
                 RefreshShelf();
         }
-        /// <summary>
-        /// Lets the status row shrink a long message to fit instead of cutting it off.
-        /// On the themed board the row is one line tall, and a result such as a
-        /// refused seed or a large purchase runs past one line - the second line was
-        /// simply never drawn.
-        /// </summary>
         private static void FitStatusText(Text text)
         {
             if (text == null)
@@ -970,15 +824,6 @@ namespace AgriDabao3D
             placeholder.alignment = TextAnchor.MiddleLeft;
             placeholder.color = new Color(0f, 0f, 0f, 0.35f);
             placeholder.text = defaultValue;
-            // A 48-tall field leaves 36 for its text after padding. Playpen Sans at
-            // font 22 needs about 32 of that, so raising the text size ran out of
-            // room - and Unity's default Truncate drops the line rather than
-            // clipping it, which made the field look like it was refusing input
-            // when it was actually accepting it and drawing nothing.
-            //
-            // Only the vertical mode is touched: InputField drives horizontal
-            // overflow itself to scroll a single line, so overriding that would
-            // break long values.
             placeholder.verticalOverflow = VerticalWrapMode.Overflow;
             GameObject textGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
             textGo.transform.SetParent(go.transform, false);

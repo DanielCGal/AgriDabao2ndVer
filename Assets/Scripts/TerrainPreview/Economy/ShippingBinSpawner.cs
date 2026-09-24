@@ -16,38 +16,22 @@ namespace AgriDabao3D
 
         private GameObject spawnedBin;
 
-        /// <summary>
-        /// Allows FarmPersistenceManager to capture the shipping-bin transform.
-        /// </summary>
         public GameObject SpawnedBin => spawnedBin;
 
         private void Start()
         {
-            /*
-             * For a new farm, create the bin normally near the player.
-             *
-             * For a returning farm, do not create it here. The saved
-             * position will be restored by FarmPersistenceManager.
-             */
             if (!FarmLoadContext.IsRestoring)
             {
                 Invoke(nameof(SpawnBinNearPlayer), 0.8f);
             }
         }
 
-        /// <summary>
-        /// Used when creating a new farm or loading an older save that
-        /// does not yet contain shipping-bin information.
-        /// </summary>
         public void SpawnBinNearPlayerNow()
         {
             CancelInvoke(nameof(SpawnBinNearPlayer));
             SpawnBinNearPlayer();
         }
 
-        /// <summary>
-        /// Recreates the shipping bin using its exact saved transform.
-        /// </summary>
         public GameObject RestoreBin(
             Vector3 savedPosition,
             Quaternion savedRotation)
@@ -76,7 +60,6 @@ namespace AgriDabao3D
 
             spawnedBin.name = "ShippingBin_Runtime";
 
-            // Ensure the save system can identify the spawned shipping bin.
             if (spawnedBin.GetComponent<ShippingBinSeller>() == null)
             {
                 spawnedBin.AddComponent<ShippingBinSeller>();

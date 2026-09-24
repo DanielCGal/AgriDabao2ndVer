@@ -51,29 +51,23 @@ namespace AgriDabao3D
         {
             switch (propertyName)
             {
-                // SoilGrids sand/silt/clay often come in tenths of percent
                 case "sand":
                 case "silt":
                 case "clay":
                     return Mathf.Clamp(rawValue / 10f, 0f, 100f);
 
-                // pH often comes in tenths
                 case "phh2o":
                     return Mathf.Clamp(rawValue / 10f, 3.5f, 9.5f);
 
-                // organic carbon: compress to a game-friendly range
                 case "soc":
                     return Mathf.Clamp(rawValue / 20f, 0f, 100f);
 
-                // coarse fragments volume: tenths of percent works well
                 case "cfvo":
                     return Mathf.Clamp(rawValue / 10f, 0f, 100f);
 
-                // bulk density: keep it around your existing gameplay thresholds
                 case "bdod":
                     return Mathf.Clamp(rawValue, 60f, 180f);
 
-                // nitrogen: compress to a readable gameplay range
                 case "nitrogen":
                     return Mathf.Clamp(rawValue / 10f, 0f, 100f);
 

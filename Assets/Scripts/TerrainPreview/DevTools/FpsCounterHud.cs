@@ -4,37 +4,12 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Frame rate readout for the device performance tests, in a small box to the
-    /// left of the money plank. A developer tool, so it is drawn plainly in the same
-    /// dark style as the Dev Tools panel rather than with the game's wooden art.
-    ///
-    /// One live number cannot answer what those tests ask. The requirement (NFR-01)
-    /// is an average of at least 30 frames per second over a continuous ten-minute
-    /// session, so the box shows the live rate, the average since measuring began,
-    /// the lowest one-second rate in that time - the stutters a player actually
-    /// notices - and how long it has been measuring. Tapping the box starts a new
-    /// measurement, so a run can begin from the same moment on every phone.
-    ///
-    /// Measuring waits until the farm has finished loading, because loading-screen
-    /// frames say nothing about gameplay, and a phone coming back from the
-    /// background does not count the time it was away as one enormous frame. The
-    /// game caps itself at 60 frames per second (MobilePerformanceBootstrap), so no
-    /// phone reads higher than that.
-    ///
-    /// The same figures are written to the device log once a minute, so a run can
-    /// also be read back with adb logcat rather than only from screenshots.
-    ///
-    /// Switched on and off with Show Fps Counter on the Inventory UI Builder in the
-    /// TerrainPreview scene. It is a testing aid; switch it off for release builds.
-    /// </summary>
     public class FpsCounterHud : MonoBehaviour, IPointerClickHandler
     {
         private const float RefreshSeconds = 0.5f;
         private const float WarmUpSeconds = 2f;
         private const float LogEverySeconds = 60f;
 
-        /// <summary>NFR-01's floor. The live rate turns red below it.</summary>
         private const float TargetFps = 30f;
 
         private static readonly Color TextColor = new Color(0.85f, 0.88f, 0.92f, 1f);
@@ -66,18 +41,14 @@ namespace AgriDabao3D
             rect.pivot = new Vector2(1f, 0.5f);
             rect.sizeDelta = new Vector2(260f, 70f);
 
-            // Level with the amount printed on the money plank, which sits a little
-            // below that plank's middle, and clear of the coins on its left end.
             rect.anchoredPosition = moneyPlank != null
                 ? new Vector2(moneyPlank.anchoredPosition.x - moneyPlank.sizeDelta.x - 12f,
                               moneyPlank.anchoredPosition.y - moneyPlank.sizeDelta.y * 0.56f)
                 : new Vector2(-400f, -70f);
 
-            // The Dev Tools panel's background.
             Image image = go.GetComponent<Image>();
             image.color = new Color(0f, 0f, 0f, 0.82f);
 
-            // The box is the button that restarts the measurement.
             image.raycastTarget = true;
 
             FpsCounterHud hud = go.AddComponent<FpsCounterHud>();
@@ -95,7 +66,6 @@ namespace AgriDabao3D
         {
             float dt = Time.unscaledDeltaTime;
 
-            // The first frame back from the background spans the whole time away.
             if (skipNextFrame)
             {
                 skipNextFrame = false;
@@ -190,10 +160,6 @@ namespace AgriDabao3D
                 : "Waiting for the farm";
         }
 
-        /// <summary>
-        /// Whether gameplay has started. No persistence manager means a scene opened
-        /// straight in the Editor, which has no farm load to wait for.
-        /// </summary>
         private static bool WorldReady()
         {
             return FarmPersistenceManager.Instance == null || FarmPersistenceManager.Instance.IsWorldReady;
@@ -241,8 +207,6 @@ namespace AgriDabao3D
             text.color = TextColor;
             text.raycastTarget = false;
 
-            // One line each, kept on screen at any text size instead of being dropped
-            // when the Text Size setting grows the font past its row.
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;
             return text;

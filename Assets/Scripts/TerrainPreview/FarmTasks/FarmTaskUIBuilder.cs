@@ -28,7 +28,6 @@ namespace AgriDabao3D
         private static readonly Color DisabledGrey =
             new Color(0.23f, 0.27f, 0.29f, 0.92f);
 
-        /// <summary>Ink colour for text printed on the book's paper pages.</summary>
         private static readonly Color PageInk =
             new Color(0.24f, 0.15f, 0.07f, 1f);
 
@@ -83,7 +82,6 @@ namespace AgriDabao3D
                 AIAdvisorTaskSystem.Instance.OnStateChanged -= Refresh;
         }
 
-        /// <summary>Opened and closed by the round Farm Objectives button.</summary>
         public void TogglePanel()
         {
             if (panel != null)
@@ -98,7 +96,6 @@ namespace AgriDabao3D
                     panel.transform.SetAsLastSibling();
                     Refresh();
 
-                    // Otherwise a message left scrolled down reopens part-read.
                     if (aiTaskScroll != null)
                         aiTaskScroll.verticalNormalizedPosition = 1f;
                 }
@@ -118,7 +115,6 @@ namespace AgriDabao3D
                 return;
             }
 
-            // The round button that opens this panel; the panel itself starts hidden.
             HudIconButton.Create(
                 canvas.transform,
                 "FarmObjectivesButton",
@@ -283,15 +279,9 @@ namespace AgriDabao3D
             checkTaskButton.onClick.AddListener(() =>
                 AIAdvisorTaskSystem.Instance?.CheckTask());
 
-            // Opened by the round Farm Objectives button, not shown by default.
             panel.SetActive(false);
         }
 
-        /// <summary>
-        /// The open-book layout: daily objectives on the left page, Antonio's task
-        /// on the right. Positions are fractions of the book so resizing
-        /// objectivesBookSize keeps everything on the paper.
-        /// </summary>
         private void BuildBook(Canvas canvas)
         {
             Vector2 size = theme.objectivesBookSize;
@@ -311,19 +301,12 @@ namespace AgriDabao3D
             bookImage.color = Color.white;
             bookImage.raycastTarget = true;
 
-            // Centre of each page. Pulled inward from 0.235 / 0.237: the paper's
-            // outer edges curve away, so at the old values the taped labels and the
-            // text columns overhung the left and right edges of the paper.
             float leftX = -size.x * 0.216f;
             float rightX = size.x * 0.2215f;
 
-            // The taped labels span the full page width; body text uses a narrower
-            // column so letters keep a margin instead of running to the paper edge.
             float pageW = size.x * 0.39f;
             float textW = size.x * 0.36f;
 
-            // Labels also sit lower than before - at the old Y their upper corners
-            // ran off the top of the paper.
             CreatePageLabel("DailyLabel", theme?.dailyObjectivesLabel, "Daily Objectives",
                 new Vector2(leftX, -size.y * 0.130f), new Vector2(pageW, size.y * 0.135f));
             CreatePageLabel("AntonioLabel", theme?.antonioObjectivesLabel, "Antonio Objectives!",
@@ -356,8 +339,6 @@ namespace AgriDabao3D
                 new Vector2(size.x * 0.185f, size.y * 0.10f),
                 () => DailyTaskSystem.Instance?.SkipToNextDayAtEight());
 
-            // Antonio's message varies in length because it is AI-generated, so it
-            // gets a scrolling block rather than a fixed label.
             aiTaskText = CreatePageScrollText(
                 "AITaskText", 19,
                 new Vector2(rightX, -size.y * 0.36f), new Vector2(textW, size.y * 0.30f));
@@ -422,15 +403,6 @@ namespace AgriDabao3D
             return text;
         }
 
-        /// <summary>
-        /// A page text block that scrolls only when it needs to.
-        ///
-        /// The text is clipped to <paramref name="size"/> by a mask, so a long
-        /// adviser message no longer spills down the paper. Because the scroll
-        /// movement is clamped, a message that already fits cannot be dragged at
-        /// all and behaves exactly like the plain label it replaces. No scrollbar
-        /// is attached, so nothing is ever drawn over the book art.
-        /// </summary>
         private Text CreatePageScrollText(string name, int fontSize,
             Vector2 anchoredPosition, Vector2 size)
         {
@@ -444,7 +416,6 @@ namespace AgriDabao3D
             scrollRect.sizeDelta = size;
             scrollRect.anchoredPosition = anchoredPosition;
 
-            // RectMask2D needs no Image of its own, so the paper stays visible.
             GameObject viewportGo = new GameObject(
                 "Viewport", typeof(RectTransform), typeof(RectMask2D));
             viewportGo.transform.SetParent(scrollGo.transform, false);
@@ -487,8 +458,6 @@ namespace AgriDabao3D
             scroll.content = content;
             scroll.horizontal = false;
             scroll.vertical = true;
-            // Clamped keeps short messages completely still - there is no rubber
-            // -band travel to reveal that a scroll view is there at all.
             scroll.movementType = ScrollRect.MovementType.Clamped;
             scroll.scrollSensitivity = 24f;
             scroll.inertia = true;
@@ -517,7 +486,6 @@ namespace AgriDabao3D
 
             if (art != null)
             {
-                // The word is painted into the taped-label art, so no Text child.
                 image.sprite = art;
                 image.preserveAspect = true;
                 image.color = Color.white;
@@ -642,9 +610,6 @@ namespace AgriDabao3D
                     aiTaskText.text = NoAdviserTaskMessage;
                 else
                     aiTaskText.text = ai.DisplayText;
-                // Antonio cannot be called out to inspect the farm while he is
-                // standing in front of the player running the beginner guide. The
-                // button lights up the moment he leaves.
                 SetButtonState(
                     giveTaskButton,
                     !ai.HasActiveTask && !ai.IsBusy && !TutorialState.IsRunning);
@@ -782,8 +747,6 @@ namespace AgriDabao3D
             if (image == null)
                 return;
 
-            // Painted buttons keep their art and just darken when unavailable;
-            // the plain fallback swaps green for grey as before.
             if (image.sprite != null)
             {
                 image.color = enabled
@@ -886,7 +849,7 @@ namespace AgriDabao3D
                 scaler = canvas.gameObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+            scaler.matchWidthOrHeight = 1f;
             if (canvas.GetComponent<GraphicRaycaster>() == null)
                 canvas.gameObject.AddComponent<GraphicRaycaster>();
             return canvas;

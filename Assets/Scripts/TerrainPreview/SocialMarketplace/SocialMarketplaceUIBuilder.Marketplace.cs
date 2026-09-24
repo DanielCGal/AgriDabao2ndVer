@@ -9,17 +9,11 @@ namespace AgriDabao3D
     {
         private void BuildMarketplacePanel()
         {
-            // Widened from 1180: the six-control top row needed about 980 units, but
-            // only ~920 sat between the logs, so the prev arrow and Close were pushed
-            // out onto them at either end.
             marketplacePanel = CreatePanel("PlayerMarketplacePanel", new Vector2(1400f, 800f));
             HudRegistry.RegisterPiece(HudPiece.MarketplacePanel, marketplacePanel);
-            // PlayerMarketplaceLabel.png is 1360x300 (4.53:1). At 680 it covered 58%
-            // of the board; this holds it near a third, like the other signs.
             CreatePanelTitle(marketplacePanel.transform, "PLAYER MARKETPLACE",
                 Theme?.marketplaceLabel, 480f, 150f, -13f);
 
-            // Row of controls sits inside the board's left/right log inset.
             CreateButton(marketplacePanel.transform, "<", new Vector2(0f, 1f),
                 new Vector2(80f, 50f), new Vector2(SocialBoardLogInset, -150f),
                 PreviousMarketplaceFilter, out _, art: Theme?.filterPrevButton);
@@ -55,17 +49,9 @@ namespace AgriDabao3D
 
         private void BuildSellPanel()
         {
-            // Widened and heightened from 800x640, where the plank was only +/-270
-            // wide: the quantity and price fields ran to exactly 270 and the buttons
-            // dropped to -280 against a plank floor of -250.
             sellPanel = CreatePanel("SellItemsPanel", new Vector2(1000f, 680f), 0.97f);
-            // SellItemsLabelMarketplace.png is 1120x300 (3.73:1). At 520 it filled
-            // 65% of the old board; 360 keeps it near a third like the other signs.
             CreatePanelTitle(sellPanel.transform, "SELL ITEMS", Theme?.sellItemsLabel, 360f, 150f, -12f);
 
-            // Five evenly spaced rows fill the plank from just under the sign down to
-            // the buttons, so the band of bare wood at the top is used. Row N starts
-            // at -(80 + N*94); each row is 50 tall, leaving a 44 gap between them.
             CreateButton(sellPanel.transform, "<", new Vector2(0f, 1f),
                 new Vector2(80f, 50f), new Vector2(SocialBoardLogInset, -80f), PreviousSellItem, out _,
                 art: Theme?.filterPrevButton);
@@ -95,8 +81,6 @@ namespace AgriDabao3D
                 new Vector2(420f, -412f), new Vector2(-SocialBoardLogInset, -362f), true);
             sellPriceInput.text = "100";
 
-            // Still present so errors and results have somewhere to appear, but the
-            // listing-fee formula block was dropped from the design.
             sellFeeText = CreateText(sellPanel.transform, "Fee", 19, TextAnchor.MiddleCenter,
                 new Vector2(0f, 1f), new Vector2(1f, 1f),
                 new Vector2(SocialBoardLogInset, -506f), new Vector2(-SocialBoardLogInset, -456f));
@@ -104,7 +88,6 @@ namespace AgriDabao3D
             sellQuantityInput.onValueChanged.AddListener(_ => RefreshSellSelection());
             sellPriceInput.onValueChanged.AddListener(_ => RefreshSellSelection());
 
-            // Raised from y=40, which put their lower edge past the plank floor.
             CreateButton(sellPanel.transform, "Create Listing", new Vector2(0.5f, 0f),
                 new Vector2(240f, 60f), new Vector2(-130f, 70f), OnCreateListingPressed, out _,
                 art: Theme?.createListingButton);
@@ -119,11 +102,6 @@ namespace AgriDabao3D
             sellPanel.SetActive(false);
         }
 
-        /// <summary>
-        /// "DanV bought your items!" - shown once per sale, driven by the
-        /// controller's unseen-sales poll. Sales are queued so two purchases in the
-        /// same tick do not overwrite each other.
-        /// </summary>
         private void BuildSaleNotificationPanel()
         {
             saleNotifyPanel = CreatePanel("MarketplaceSalePanel", new Vector2(720f, 560f), 0.98f,
@@ -142,7 +120,6 @@ namespace AgriDabao3D
             saleNotifyPanel.SetActive(false);
         }
 
-        /// <summary>Queues a sale so each notification is seen in turn.</summary>
         private void OnSaleNotified(MarketplaceSaleDto sale)
         {
             if (sale == null) return;
@@ -190,10 +167,6 @@ namespace AgriDabao3D
             StartCoroutine(RefreshMarketplace());
         }
 
-        /// <summary>
-        /// Moves through the filter list, where -1 is ALL ITEMS, passing over seeds
-        /// this farm's district does not grow - there is nothing to find under them.
-        /// </summary>
         private static int StepMarketplaceFilter(int index, int direction)
         {
             InventoryItemType[] items = SocialMarketplaceCatalog.TradableItems;
@@ -222,13 +195,6 @@ namespace AgriDabao3D
 
         private IEnumerator RefreshMarketplace()
         {
-            // Nothing from other players is shown until the tour is over.
-            //
-            // Selling was already blocked during the tutorial, so a board full of
-            // strangers' goods was a shop the player could only buy from - and
-            // buying there spends the starting money before Antonio has explained
-            // what it is for. Returning early also means no listings request is
-            // made at all, rather than fetching them and hiding them.
             if (TutorialState.IsRunning)
             {
                 ClearContent(marketplaceContent);
@@ -259,10 +225,6 @@ namespace AgriDabao3D
                 yield break;
             }
 
-            // Seeds this farm's district does not grow are left out before anything is
-            // drawn. The player's own listings stay, whatever they hold, because those
-            // still need their Cancel or Claim button. The server filters the same way;
-            // this also covers an older server that does not.
             listings.RemoveAll(listing =>
                 !listing.mine &&
                 System.Enum.TryParse(listing.itemType, out InventoryItemType listedItem) &&
@@ -286,7 +248,6 @@ namespace AgriDabao3D
                 string buttonLabel = captured.mine
                     ? (captured.status == "RETURN_PENDING" ? "Claim Return" : "Cancel")
                     : "Buy Seller Items";
-                // Own listing -> Cancel art; someone else's -> Buy art.
                 Sprite buttonArt = captured.mine
                     ? Theme?.cancelListingButton
                     : Theme?.buyListingButton;
@@ -310,10 +271,6 @@ namespace AgriDabao3D
 
         private void OpenSellPanel()
         {
-            // Listing an item writes the farm to the backend, and the beginner
-            // guide must be the only thing that saves during the tour - a save
-            // mid-tour would store a half-finished tutorial as this farm's
-            // permanent state. The button is greyed out too; this is the backstop.
             if (TutorialState.IsRunning)
                 return;
 
@@ -348,8 +305,6 @@ namespace AgriDabao3D
             sellItemText.text = SocialMarketplaceCatalog.FriendlyName(item);
             sellInventoryText.text = "Owned: " + owned + " | Base Value: " +
                                      PesoPrice.Label(SocialMarketplaceCatalog.GetBaseValueCentavos(item)) + " each";
-            // The formula breakdown was removed; the fee total is still shown so
-            // the player is not charged an unexplained amount.
             sellFeeText.text = "Listing fee: P" + fee;
         }
 
@@ -430,8 +385,6 @@ namespace AgriDabao3D
 
         private static string FriendlyItem(string itemType)
         {
-            // Any known item gets its proper name - including the old seed items a
-            // player on an older version may still list.
             return PlantingMaterialCatalog.TryParseItem(itemType, out InventoryItemType item)
                 ? SocialMarketplaceCatalog.FriendlyName(item)
                 : itemType;

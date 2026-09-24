@@ -5,18 +5,6 @@ using Object = UnityEngine.Object;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// The planting half of the farming system: preparing ground, planting the
-    /// sixteen planting materials, and transplanting seedlings from the Seedling
-    /// Tent.
-    ///
-    /// The route is decided by the planting material, not the crop
-    /// (<see cref="PlantingMaterialCatalog"/>). Every crop needs the same ground
-    /// steps whichever way it arrives: the shovel tills bare ground, and tapping
-    /// the tilled patch again turns it into a planting hole (tree crops, banana,
-    /// coconut), a raised bed (tomato, eggplant, squash, pineapple, strawberry) or
-    /// a furrow (corn). Strawberry also needs its bed covered with a Mulch Bag.
-    /// </summary>
     public partial class FarmingInteractionSystem
     {
         [Header("Prepared Ground Visuals")]
@@ -82,12 +70,6 @@ namespace AgriDabao3D
         private static float CurrentGameDay =>
             GameTimeSystem.Instance != null ? GameTimeSystem.Instance.TotalGameDays : 0f;
 
-        // ------------------------------------------------------------ tap routing
-
-        /// <summary>
-        /// Taps that belong to planting: the Seedling Tent, a transplant in
-        /// progress, and prepared ground. Returns true when the tap was used.
-        /// </summary>
         private bool TryHandlePlantingTap(RaycastHit hit, InventoryItemType selected)
         {
             if (hit.collider.GetComponentInParent<SeedlingTentInstance>() != null)
@@ -101,9 +83,6 @@ namespace AgriDabao3D
             NurserySystem nursery = NurserySystem.Instance;
             if (nursery != null && nursery.IsTransplanting && spot != null)
             {
-                // The shovel still turns tilled ground into a hole, bed or furrow
-                // while a seedling is being carried. Every tap used to go to the
-                // transplant, so the seedling had to be put back first.
                 if (selected == InventoryItemType.Shovel && spot.plotKind == PreparedPlotKind.Tilled)
                     return HandlePreparedGroundTap(spot, selected);
 
@@ -150,7 +129,6 @@ namespace AgriDabao3D
             return true;
         }
 
-        /// <summary>A planting material tapped on bare ground: say what to do instead.</summary>
         private bool ReportBareGroundPlanting(InventoryItemType selected)
         {
             InventoryItemType material = PlantingMaterialCatalog.UpgradeLegacy(selected);
@@ -210,14 +188,11 @@ namespace AgriDabao3D
             }
         }
 
-        // -------------------------------------------------------------- tilling
-
         private bool TryTillGround(RaycastHit hit)
         {
             Terrain terrain = terrainGenerator.targetTerrain;
             TerrainCollider terrainCollider = terrain != null ? terrain.GetComponent<TerrainCollider>() : null;
 
-            // The shovel only works the generated terrain.
             if (terrainCollider == null || hit.collider != terrainCollider)
                 return false;
 
@@ -230,8 +205,6 @@ namespace AgriDabao3D
             Vector3 groundPosition = hit.point;
             groundPosition.y = terrain.SampleHeight(groundPosition) + terrain.transform.position.y;
 
-            // The tap ray runs the length of the map, so without a reach limit the
-            // shovel works wherever the player happens to be looking.
             if (!IsWithinReach(groundPosition))
             {
                 ShowFarmingMessage("That ground is too far away. Move closer to till it.");
@@ -259,7 +232,6 @@ namespace AgriDabao3D
             Vector3 terrainNormal = GetTerrainNormal(terrain, groundPosition);
             DigSpot spot = CreatePreparedGround(groundPosition, PlayerFacingYaw(), terrainNormal);
 
-            // Soil is sampled now, while the ground is being worked.
             GetSoilForPlanting(groundPosition, out SoilSample soil, out string district);
             spot.Initialize(soil, district, groundPosition + Vector3.up * plantHeightOffset, terrainNormal);
             spot.plotKind = PreparedPlotKind.Tilled;
@@ -292,17 +264,12 @@ namespace AgriDabao3D
             return offset.sqrMagnitude < minDistanceFromSeedlingTent * minDistanceFromSeedlingTent;
         }
 
-        /// <summary>The direction the player is looking, flattened, so a furrow runs away from them.</summary>
         private float PlayerFacingYaw()
         {
             Transform view = playerCamera != null ? playerCamera.transform : null;
             return view != null ? view.eulerAngles.y : 0f;
         }
 
-        /// <summary>
-        /// The prepared-ground object itself: an invisible tap target carrying the
-        /// soil record, with the model for its current preparation as a child.
-        /// </summary>
         private DigSpot CreatePreparedGround(Vector3 groundPosition, float yaw, Vector3 terrainNormal)
         {
             GameObject root = new GameObject("PreparedGround_Runtime");
@@ -312,15 +279,12 @@ namespace AgriDabao3D
 
             DigSpot spot = root.AddComponent<DigSpot>();
 
-            // A trigger, so the player walks over prepared ground instead of into
-            // it; taps still find it because the tap ray includes triggers.
             BoxCollider target = root.AddComponent<BoxCollider>();
             target.isTrigger = true;
 
             return spot;
         }
 
-        /// <summary>Swaps in the model for the ground's current preparation and fits the tap target to it.</summary>
         private void ApplyPreparedGroundVisual(DigSpot spot, Terrain terrain)
         {
             if (spot == null)
@@ -398,11 +362,6 @@ namespace AgriDabao3D
             target.center = new Vector3(0f, size.y * 0.35f, 0f);
         }
 
-        /// <summary>
-        /// Removes everything on a visual that would make it act like something
-        /// else: a dug-spot component (which would steal taps from the real one),
-        /// colliders and physics.
-        /// </summary>
         private static void StripPlantingVisual(GameObject visual)
         {
             foreach (DigSpot copy in visual.GetComponentsInChildren<DigSpot>(true))
@@ -413,14 +372,10 @@ namespace AgriDabao3D
                 DestroyImmediate(collider);
         }
 
-        // --------------------------------------------------- hole / bed / furrow
-
         private void ShowPrepareChoice(DigSpot spot)
         {
             List<FarmChoicePopup.Choice> choices = new List<FarmChoicePopup.Choice>
             {
-                // Short enough for two lines under each plank; tapping the finished
-                // ground lists every crop it takes.
                 new FarmChoicePopup.Choice("Planting Hole",
                     "Fruit trees, banana, coconut",
                     () => PrepareGround(spot, PreparedPlotKind.Hole)),
@@ -437,7 +392,6 @@ namespace AgriDabao3D
 
         private void PrepareGround(DigSpot spot, PreparedPlotKind kind)
         {
-            // The popup waits for the player, so the ground may be gone or changed.
             if (spot == null || spot.plotKind != PreparedPlotKind.Tilled)
                 return;
 
@@ -464,9 +418,6 @@ namespace AgriDabao3D
                     return;
                 }
 
-                // The heightmap can only lift its own vertices, so the bed's peak is
-                // the vertex nearest the tilled patch; the patch moves onto it (by
-                // at most half a vertex spacing) so it sits on top of its own bed.
                 Vector3 peak = TerrainModificationService.SnapToHeightmapVertex(terrain, spot.transform.position);
                 if (string.IsNullOrWhiteSpace(spot.bedPatchId))
                     spot.bedPatchId = Guid.NewGuid().ToString("N");
@@ -564,13 +515,6 @@ namespace AgriDabao3D
             return true;
         }
 
-        // -------------------------------------------------------------- planting
-
-        /// <summary>
-        /// Why this material cannot go into this ground, or null when it can.
-        /// <paramref name="name"/> is what the player is holding, when that is not
-        /// the material itself - a seedling carried from the tent.
-        /// </summary>
         private static string CheckGroundFor(DigSpot spot, PlantingMaterialInfo info, string name = null)
         {
             if (!spot.IsPrepared)
@@ -667,12 +611,6 @@ namespace AgriDabao3D
             return true;
         }
 
-        /// <summary>
-        /// Plants into prepared ground and returns the new crop, or null when it
-        /// could not be planted (a message has already been shown). The material is
-        /// only taken once the crop exists, and the crop is removed again if taking
-        /// it fails, so nothing is lost or duplicated either way.
-        /// </summary>
         private GameObject PlantOnPreparedGround(
             DigSpot spot,
             PlantingMaterialInfo info,
@@ -711,7 +649,6 @@ namespace AgriDabao3D
             ApplyStartingAge(root, startingAgeDays);
             AdoptPreparedGround(root, spot);
 
-            // The prepared ground becomes the crop's; its model goes with it.
             spot.Consume();
 
             GrowthStageVisualController visuals = root.GetComponent<GrowthStageVisualController>();
@@ -727,15 +664,6 @@ namespace AgriDabao3D
             return root;
         }
 
-        /// <summary>
-        /// A last spacing check between crop bases, measured on the ground plane.
-        ///
-        /// Tilling already keeps new ground <see cref="minDistanceBetweenTrees"/>
-        /// away from every crop and every other patch, and every crop now starts on
-        /// such a patch. A raised bed then moves its patch onto the nearest
-        /// heightmap vertex - up to about two metres - so this allows for that
-        /// shift rather than refusing a bed the player was allowed to build.
-        /// </summary>
         private bool HasOtherCropNearby(GameObject newCrop)
         {
             Vector3 position = newCrop.transform.position;
@@ -793,10 +721,6 @@ namespace AgriDabao3D
             state.AdoptPreparedGround(raisedBed, spot.bedPatchId, spot.mulched, ActiveTerrain);
         }
 
-        /// <summary>
-        /// Builds a crop of the material's kind at the planting position. Returns
-        /// null (with a warning) when the crop's models are not assigned.
-        /// </summary>
         private GameObject CreateCrop(
             PlantingMaterialInfo info,
             Vector3 plantingPosition,
@@ -890,17 +814,11 @@ namespace AgriDabao3D
 
         private static bool TryGetTropicalKind(FarmCropType crop, out TropicalCropKind kind)
         {
-            // The two enums share their names for every crop except coconut and
-            // banana, which have classes of their own.
             return Enum.TryParse(crop.ToString(), out kind) &&
                    crop != FarmCropType.Coconut &&
                    crop != FarmCropType.Banana;
         }
 
-        /// <summary>
-        /// A crop's full set of stage models, plus the planting-material model it
-        /// shows for its first days in the field.
-        /// </summary>
         private PlantGrowthVisualSet CropVisualSet(FarmCropType crop, InventoryItemType material)
         {
             PlantGrowthVisualSet set;
@@ -934,10 +852,6 @@ namespace AgriDabao3D
             return set;
         }
 
-        /// <summary>
-        /// The model a crop shows for its first days in the field: the seednut,
-        /// sucker or runner itself, or the seedling as it looked in its bag.
-        /// </summary>
         public GameObject GetPlantedMaterialPrefab(FarmCropType crop, InventoryItemType material)
         {
             switch (material)
@@ -952,7 +866,6 @@ namespace AgriDabao3D
             return GetSeedlingPrefab(crop);
         }
 
-        /// <summary>The seedling model shown in a Seedling Tent bag, per crop.</summary>
         public GameObject GetSeedlingPrefab(FarmCropType crop)
         {
             switch (crop)
@@ -971,17 +884,10 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// How much of each planting-material model goes under the soil. Every one
-        /// of these models includes its roots, which make up the bottom quarter to
-        /// two-fifths of it, so they are sunk until the roots are hidden.
-        /// </summary>
         private static float GetPlantedBuryFraction(InventoryItemType material)
         {
             switch (material)
             {
-                // Roots and the lower half of the nut, leaving part of it showing
-                // as the notes describe.
                 case InventoryItemType.CoconutSeednut: return 0.42f;
                 case InventoryItemType.BananaSucker: return 0.2f;
                 case InventoryItemType.PineappleSucker: return 0.25f;
@@ -991,16 +897,12 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>Share of a seedling model's height taken up by its roots and seed.</summary>
         public const float SeedlingRootShare = 0.38f;
 
-        /// <summary>Restores a crop's planting-material look and protection after a farm load.</summary>
         private void RestorePlantingDetails(GameObject root, CropSaveDto save)
         {
             CropPersistenceMapper.RestoreProtection(root, save, fruitBagPrefab);
         }
-
-        // ------------------------------------------------------ saving and loading
 
         public List<PreparedPlotSaveDto> CapturePreparedGround()
         {
@@ -1008,8 +910,6 @@ namespace AgriDabao3D
 
             foreach (DigSpot spot in Object.FindObjectsByType<DigSpot>(FindObjectsSortMode.None))
             {
-                // Ground already planted is gone; ground being planted this very
-                // frame belongs to its crop.
                 if (spot == null || spot.occupied || spot.plotKind == PreparedPlotKind.None)
                     continue;
 
@@ -1052,8 +952,6 @@ namespace AgriDabao3D
                 if (normal.sqrMagnitude < 0.001f)
                     normal = Vector3.up;
 
-                // The heightmap is rebuilt bare on every load, so the ground is
-                // sampled afresh rather than trusting the saved height.
                 if (terrain != null && terrain.terrainData != null)
                     position.y = terrain.SampleHeight(position) + terrain.transform.position.y;
 

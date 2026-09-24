@@ -333,10 +333,6 @@ namespace AgriDabao3D
             save.fieldPlantedGameDay = fieldPlantedGameDay;
         }
 
-        /// <summary>
-        /// The saved material, with an old seed name turned into the material that
-        /// replaced it. Empty for a crop saved before materials were recorded.
-        /// </summary>
         private static string RestoredMaterial(CropSaveDto save)
         {
             return string.IsNullOrWhiteSpace(save.plantingMaterial)
@@ -354,11 +350,6 @@ namespace AgriDabao3D
             save.hasDrainageImprovement = protection.hasDrainageImprovement;
         }
 
-        /// <summary>
-        /// Puts back fruit bag and drainage kit protection. The drainage bonus
-        /// itself is already inside the saved drainage figure, so it is not added
-        /// a second time; only the flag that stops a second kit returns.
-        /// </summary>
         public static void RestoreProtection(GameObject cropObject, CropSaveDto save, GameObject fruitBagPrefab)
         {
             if (cropObject == null || save == null ||

@@ -32,8 +32,6 @@ namespace AgriDabao3D
 
             bool saving = FarmPersistenceManager.Instance.IsSaving;
 
-            // Null once the painted icon is in use - the label only exists on the
-            // plain fallback button, but the button must still lock while saving.
             if (saveText != null)
                 saveText.text = saving ? "Saving..." : "Save Farm";
 
@@ -47,7 +45,6 @@ namespace AgriDabao3D
             if (canvas == null)
                 return;
 
-            // Part of the shared round-icon row along the HUD's top-left edge.
             saveButton = HudIconButton.Create(
                 canvas.transform,
                 "SaveFarmButton",

@@ -8,10 +8,6 @@ namespace AgriDabao3D
         SecondStage,
         Adult,
 
-        // Appended so saved or serialized stage numbers keep their meaning.
-        // The planting material itself - a seednut, a sucker, a runner, or the
-        // seedling that came out of the Seedling Tent - shown for the first few
-        // days after it goes into the ground.
         Planted
     }
 
@@ -73,7 +69,6 @@ namespace AgriDabao3D
 
     public class GrowthStageVisualController : MonoBehaviour
     {
-        /// <summary>How long, in game days, the planting material stays on show after planting.</summary>
         public const float PlantedVisualDays = 3f;
 
         [Header("Visual Prefabs")]
@@ -110,9 +105,6 @@ namespace AgriDabao3D
             {
                 if (targetStage == PlantVisualStage.Planted)
                 {
-                    // The ground can move under a planted seedling - a raised bed
-                    // is built under it, or it is restored before the terrain is
-                    // lifted - so it is re-seated rather than pinned to an offset.
                     if (Time.time >= nextGroundCheckTime)
                     {
                         nextGroundCheckTime = Time.time + 2f;
@@ -190,11 +182,6 @@ namespace AgriDabao3D
             return PlantVisualStage.Sprout;
         }
 
-        /// <summary>
-        /// Whether the crop is still in its first days in the field, and has a
-        /// planting-material model to show for them. Crops planted before this
-        /// existed carry no field-planting day and go straight to their stages.
-        /// </summary>
         private bool ShowsPlantedMaterial(float fieldPlantedGameDay)
         {
             if (visuals == null || visuals.plantedPrefab == null || fieldPlantedGameDay < 0f)
@@ -229,10 +216,6 @@ namespace AgriDabao3D
 
             if (stage == PlantVisualStage.Planted)
             {
-                // The model keeps its collider on purpose: crop spacing is measured
-                // against the crops' solid colliders (the tap capsule is a trigger
-                // and ignored), so without one a crop just planted could have
-                // another planted right on top of it.
                 SeatPlantedVisual();
                 nextGroundCheckTime = Time.time + 2f;
             }
@@ -240,15 +223,6 @@ namespace AgriDabao3D
             DistanceCullable.Attach(currentVisual);
         }
 
-        /// <summary>
-        /// Rests the planted model on the soil under the crop.
-        ///
-        /// The stage models are placed with hand-tuned height offsets, because
-        /// every crop root sits some way above or below the ground (the scene's
-        /// planting height plus a per-crop offset). The planting-material models
-        /// have no tuned offset, so they are measured and seated instead, then
-        /// sunk by the set's bury fraction.
-        /// </summary>
         private void SeatPlantedVisual()
         {
             if (currentVisual == null || !TryGetGroundY(out float groundY))
@@ -267,16 +241,6 @@ namespace AgriDabao3D
             currentVisual.transform.position += Vector3.up * (target - bounds.min.y);
         }
 
-        /// <summary>
-        /// Keeps the crop's finger-sized tap target standing on the soil.
-        ///
-        /// The target is a capsule on the crop root, and the root sits wherever
-        /// the planting height put it - several metres above the ground for most
-        /// crops in the farm scene. Centred on the root, the capsule floated over
-        /// young plants, so a seedling could only be tapped by aiming at thin air
-        /// above it. It is measured from the ground under the crop instead, and
-        /// re-measured if that ground moves.
-        /// </summary>
         private void KeepTapTargetOnGround()
         {
             CapsuleCollider tapTarget = GetComponent<CapsuleCollider>();

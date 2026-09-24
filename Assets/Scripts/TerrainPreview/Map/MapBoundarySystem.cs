@@ -5,25 +5,11 @@ using UnityEngine.SceneManagement;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Builds an invisible collision wall around the whole terrain edge (so the
-    /// player can't walk off into the void) plus a soft transparent fog curtain
-    /// just outside each edge (to hide the void and the hard terrain edge).
-    ///
-    /// Self-contained: it auto-creates itself in the TerrainPreview scene, waits
-    /// for the runtime-generated terrain, then sizes everything to it.
-    ///
-    /// It deliberately does NOT touch RenderSettings.fog - that global fog is
-    /// owned by <see cref="WeatherVisualController"/> for weather effects.
-    /// </summary>
     public class MapBoundarySystem : MonoBehaviour
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
         {
-            // -= then += so we never double-subscribe if the domain isn't reloaded.
-            // sceneLoaded fires for the initial scene too, so this also covers
-            // pressing Play directly inside TerrainPreview in the editor.
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -91,11 +77,6 @@ namespace AgriDabao3D
             fogMaterial.color = new Color(tint.r, tint.g, tint.b, fogOpacity);
         }
 
-        /// <summary>
-        /// Mirrors GameTimeSystem.UpdateSun()'s day/night curve (0 = full night,
-        /// 1 = full midday) so the fog tint stays in sync with the existing
-        /// sun-intensity transition, without modifying GameTimeSystem itself.
-        /// </summary>
         private static float GetDaylightAmount01()
         {
             if (GameTimeSystem.Instance == null)
@@ -168,11 +149,9 @@ namespace AgriDabao3D
             float wallCenterY = (bottomY + topY) * 0.5f;
             float wallHeight = topY - bottomY;
 
-            // Extend length so adjacent walls overlap at the corners (no gaps).
             float lengthX = (maxX - minX) + wallThickness * 2f;
             float lengthZ = (maxZ - minZ) + wallThickness * 2f;
 
-            // North / South run along X.
             CreateWall("BoundaryWall_North",
                 new Vector3(centerX, wallCenterY, maxZ - wallInset),
                 new Vector3(lengthX, wallHeight, wallThickness));
@@ -181,7 +160,6 @@ namespace AgriDabao3D
                 new Vector3(centerX, wallCenterY, minZ + wallInset),
                 new Vector3(lengthX, wallHeight, wallThickness));
 
-            // East / West run along Z.
             CreateWall("BoundaryWall_East",
                 new Vector3(maxX - wallInset, wallCenterY, centerZ),
                 new Vector3(wallThickness, wallHeight, lengthZ));
@@ -215,16 +193,12 @@ namespace AgriDabao3D
 
             fogMaterial = CreateFogMaterial();
 
-            // No usable shader: skip the fog entirely rather than spawning panels
-            // with a null material, which would render as magenta boxes.
             if (fogMaterial == null)
                 return;
 
-            // Panels overlap the corners so the ring is seamless.
             float lengthX = (maxX - minX) + fogOutsideOffset * 2f;
             float lengthZ = (maxZ - minZ) + fogOutsideOffset * 2f;
 
-            // North / South panels lie in the XY plane (identity rotation).
             CreateFogPanel("EdgeFog_North", fogMaterial,
                 new Vector3(centerX, fogCenterY, maxZ + fogOutsideOffset),
                 Quaternion.identity, lengthX, fogHeight);
@@ -233,7 +207,6 @@ namespace AgriDabao3D
                 new Vector3(centerX, fogCenterY, minZ - fogOutsideOffset),
                 Quaternion.identity, lengthX, fogHeight);
 
-            // East / West panels rotate 90 deg so their width runs along Z.
             Quaternion sideRotation = Quaternion.Euler(0f, 90f, 0f);
 
             CreateFogPanel("EdgeFog_East", fogMaterial,
@@ -255,7 +228,6 @@ namespace AgriDabao3D
             panel.transform.SetPositionAndRotation(center, rotation);
             panel.transform.localScale = new Vector3(width, height, 1f);
 
-            // Visual only - no physics interference with placement/interaction rays.
             Collider panelCollider = panel.GetComponent<Collider>();
             if (panelCollider != null)
                 Destroy(panelCollider);
@@ -270,14 +242,9 @@ namespace AgriDabao3D
 
         private Material CreateFogMaterial()
         {
-            // An asset assigned in the Inspector is preferred: Shader.Find only sees
-            // shaders that survived build stripping, and nothing references these by
-            // asset, so on a device build they can all come back null.
             if (fogMaterialAsset != null)
                 return new Material(fogMaterialAsset);
 
-            // Sprites/Default is an unlit, transparent, double-sided (Cull Off)
-            // shader that renders reliably in URP and the built-in pipeline.
             Shader shader = Shader.Find("Sprites/Default");
             if (shader == null)
                 shader = Shader.Find("Universal Render Pipeline/Unlit");
@@ -293,7 +260,6 @@ namespace AgriDabao3D
                 return null;
             }
 
-            // Initial color; Update() overrides this every frame based on time of day.
             Color initialTint = Color.Lerp(nightFogColor, dayFogColor, GetDaylightAmount01());
 
             Material material = new Material(shader)
@@ -318,9 +284,8 @@ namespace AgriDabao3D
 
             for (int y = 0; y < height; y++)
             {
-                float v = y / (float)(height - 1); // 0 = bottom, 1 = top
+                float v = y / (float)(height - 1);
 
-                // Fully dense from the bottom up to fogDensePortion, then fade to 0.
                 float alpha = v <= fogDensePortion
                     ? 1f
                     : 1f - Mathf.SmoothStep(fogDensePortion, 1f, v);

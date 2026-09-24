@@ -44,7 +44,6 @@ namespace AgriDabao3D
                 return;
             }
 
-            // In trash mode a tap means "throw this away", not "equip this".
             if (owner.IsTrashMode)
             {
                 owner.HandleTrashSlotClicked(slotIndex);
@@ -61,16 +60,11 @@ namespace AgriDabao3D
             if (isBackpackButton || owner == null || PlayerInventory.Instance == null)
                 return;
 
-            // Dragging is off while trashing. Picking a stack up and dropping it
-            // somewhere would only be a way to move an item the player has just
-            // said they want rid of, and the drag ghost sitting under the
-            // confirmation board looks like a bug.
             if (owner.IsTrashMode)
                 return;
 
             InventorySlotData slot = PlayerInventory.Instance.GetSlot(slotIndex);
 
-            // Empty backpack slots should allow scrolling instead of dragging an item.
             if ((slot == null || slot.IsEmpty) &&
                 owner.IsBackpackOpen &&
                 owner.BackpackScrollRect != null)

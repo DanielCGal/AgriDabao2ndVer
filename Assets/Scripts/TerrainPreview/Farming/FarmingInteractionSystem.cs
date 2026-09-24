@@ -3,8 +3,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    // Split across files: preparing ground, planting and transplanting live in
-    // FarmingInteractionSystem.Planting.cs.
     public partial class FarmingInteractionSystem : MonoBehaviour
     {
         [Header("References")]
@@ -83,8 +81,6 @@ namespace AgriDabao3D
         public Vector3 shadeNetPlacementOffset = Vector3.zero;
         public Vector3 windbreakPlacementOffset = Vector3.zero;
         public Vector3 greenhousePlacementOffset = Vector3.zero;
-        // Starting point for the canal: sunk slightly so it reads as dug into the
-        // ground rather than resting on it. Tune X/Z in the Inspector to slide it.
         public Vector3 drainageCanalPlacementOffset = new Vector3(0f, -0.25f, 0f);
 
         [Header("Optional Crop Protection Visuals")]
@@ -181,11 +177,6 @@ namespace AgriDabao3D
         public float infectedPlantRemovalThreshold = 60f;
 
         [Header("Selling")]
-        // Shipping bin prices in pesos, from the Davao City government price list.
-        // Floats so centavos can be typed in (a coconut is 16.89); PesoPrice rounds
-        // each sale's total to whole pesos. Renamed from the old whole-peso fields
-        // on purpose: the old prices saved in the scene are left behind instead of
-        // quietly overriding these.
         public float coconutSellPesos = 16.89f;
         public float bananaSellPesos = 51f;
         public float durianSellPesos = 150f;
@@ -255,16 +246,8 @@ namespace AgriDabao3D
         public float coconutSpawnRadius = 2f;
         public float tropicalIndividualSpawnRadius = 2.2f;
 
-        /// <summary>Cached player transform used to measure interaction reach.</summary>
         private Transform playerReference;
 
-        /// <summary>
-        /// Raised once a tap has planted a seed, watered a crop or cut a harvest,
-        /// with "Planting", "Watering" or "Harvesting". Nothing in the game needs
-        /// it: the screen timer listens so the device tests can time these actions
-        /// (NFR-02). It is raised inside the tap's own frame, after the action and
-        /// its crop information have been applied.
-        /// </summary>
         public static event System.Action<string> FarmActionApplied;
 
         private static void ReportFarmAction(string action)
@@ -275,7 +258,6 @@ namespace AgriDabao3D
             }
             catch (System.Exception e)
             {
-                // A listener is a testing aid and must never undo the action.
                 Debug.LogException(e);
             }
         }
@@ -300,9 +282,6 @@ namespace AgriDabao3D
 
             InventoryItemType selected = PlayerInventory.Instance.selectedItem;
 
-            // The Seedling Tent, a transplant in progress, and prepared ground.
-            // Prepared ground stays where it was dug, so every action on it is
-            // reach-checked there, or the player could plant from across the farm.
             if (TryHandlePlantingTap(hit, selected))
                 return true;
 
@@ -311,8 +290,6 @@ namespace AgriDabao3D
             {
                 if (selected == InventoryItemType.None)
                 {
-                    // Cleaning removes the trap, so it needs reach. Inspecting it
-                    // below does not.
                     if (!IsWithinReach(clickedTrap.transform.position))
                         return ReportOutOfReach();
 
@@ -399,9 +376,6 @@ namespace AgriDabao3D
                     clickedTree.GetComponent
                         <PestDiseaseAffectedCrop>();
 
-                // Tending the crop needs reach; reading its status does not. Reach is
-                // measured to the trunk rather than the tap point, so tapping high in
-                // a mature canopy still counts as standing next to the tree.
                 if (IsWithinReach(clickedTree.transform.position))
                 {
                     if (TryHandleNonSprayCropMitigation(
@@ -524,8 +498,6 @@ namespace AgriDabao3D
             if (ReportBareGroundPlanting(selected))
                 return true;
 
-            // Traps are placed on the ground the player tapped, so reach is measured
-            // to that point.
             if (selected == InventoryItemType.AphidTrap)
             {
                 return IsWithinReach(hit.point)
@@ -606,10 +578,6 @@ namespace AgriDabao3D
             if (cropRoot == null)
                 return true;
 
-            // Said out loud rather than swallowed. A crop only gains its pest
-            // component once something infects it, so using one of these on a
-            // healthy plant used to consume the tap and report nothing at all -
-            // indistinguishable from the item being broken.
             if (disease == null)
             {
                 ShowFarmingMessage(
@@ -699,10 +667,6 @@ namespace AgriDabao3D
             if (cropRoot == null)
                 return true;
 
-            // Said out loud rather than swallowed. A crop only gains its pest
-            // component once something infects it, so using one of these on a
-            // healthy plant used to consume the tap and report nothing at all -
-            // indistinguishable from the item being broken.
             if (disease == null)
             {
                 ShowFarmingMessage(
@@ -780,7 +744,6 @@ namespace AgriDabao3D
                 cropRoot == null ||
                 !disease.HasAnyPestOrDisease())
             {
-                // Returning false allows normal harvesting.
                 return false;
             }
 
@@ -850,8 +813,6 @@ namespace AgriDabao3D
 
             if (removed <= 0.01f)
             {
-                // No active condition accepts sanitation.
-                // Allow normal Machete harvesting instead.
                 return false;
             }
 
@@ -1033,8 +994,6 @@ namespace AgriDabao3D
             instance.displayName = displayName;
             instance.mitigation = mitigation;
 
-            // Default values are only applied when the prefab
-            // does not already contain the component.
             if (componentWasAdded)
             {
                 if (mitigation ==
@@ -1177,38 +1136,11 @@ namespace AgriDabao3D
             return false;
         }
 
-        /// <summary>
-        /// True when <paramref name="position"/> is close enough to the player to act on.
-        ///
-        /// Measured from the player rather than the camera so the limit still means
-        /// "within reach of where I am standing" when the view is detached, as it is
-        /// under the free camera. Distance is full 3D on purpose: standing on a ridge
-        /// should not let the player reach the valley floor below.
-        ///
-        /// Callers pass the position of the thing being acted on - a crop's root, a
-        /// trap, the patch of ground - rather than the raycast hit point. Tapping the
-        /// canopy of a mature coconut hits several metres above its base, which would
-        /// otherwise read as out of reach while the player stands against the trunk.
-        /// </summary>
         public bool IsWithinReach(Vector3 position)
         {
             if (maxInteractDistance <= 0f)
                 return true;
 
-            // Measured on the ground plane, deliberately ignoring height.
-            //
-            // Several crops are planted with a vertical offset so their art sits
-            // correctly: squash, strawberry and pineapple are sunk 4.5m, corn,
-            // eggplant and tomato 2m, while pomelo and mangosteen are raised 2m.
-            // Those offsets move the transform this distance is measured to, so a
-            // 3D check spent most of the budget on height the player cannot close -
-            // a squash root 4.5m below a player standing ~1m above ground is
-            // already 5.5m away and could never be watered or maintained, however
-            // close they walked. Crops with no offset worked, which is why it
-            // failed on some plants and not others.
-            //
-            // The player walks on terrain and cannot fly, so horizontal separation
-            // is the only distance they are able to act on.
             Vector3 player = GetPlayerPosition();
             float dx = player.x - position.x;
             float dz = player.z - position.z;
@@ -1216,11 +1148,6 @@ namespace AgriDabao3D
             return (dx * dx + dz * dz) <= maxInteractDistance * maxInteractDistance;
         }
 
-        /// <summary>
-        /// Items that do something to a crop when tapped on it, as opposed to items
-        /// that only bring up its status. Used to decide whether an out-of-reach tap
-        /// deserves a "too far" message or should just show the crop's information.
-        /// </summary>
         private static bool IsCropActionItem(InventoryItemType item)
         {
             return item == InventoryItemType.WateringCan ||
@@ -1230,21 +1157,12 @@ namespace AgriDabao3D
                    item == InventoryItemType.DrainageKit;
         }
 
-        /// <summary>
-        /// Reports that the target is out of reach. Returns true so the tap counts as
-        /// handled: the player gets told why nothing happened instead of the action
-        /// silently falling through to soil inspection.
-        /// </summary>
         public bool ReportOutOfReach()
         {
             ShowFarmingMessage("That is too far away. Move closer.");
             return true;
         }
 
-        /// <summary>
-        /// The player's world position, falling back to the camera when no player
-        /// controller is present (the terrain preview scene runs without one).
-        /// </summary>
         private Vector3 GetPlayerPosition()
         {
             if (playerReference == null)
@@ -1274,8 +1192,6 @@ namespace AgriDabao3D
                     Object.FindFirstObjectByType<SoilAwareTerrainGenerator>();
             }
 
-            // Goes through the panel so the readout is revealed - it now starts
-            // hidden and only appears when there is something to report.
             if (soilAwareTerrain != null)
             {
                 soilAwareTerrain.ShowMessage(message);
@@ -1385,10 +1301,6 @@ namespace AgriDabao3D
 
         private bool HasNearbyCrop(Vector3 spawnPos)
         {
-            // Triggers are ignored so the tap-target capsule added by
-            // EnsureCropTapTarget does not count as part of the plant here. Spacing is
-            // still measured against the crops' own mesh colliders, exactly as before
-            // that capsule existed, so planting distances are unchanged.
             Collider[] nearby = Physics.OverlapSphere(
                 spawnPos,
                 minDistanceBetweenTrees,
@@ -1863,8 +1775,6 @@ namespace AgriDabao3D
 
             GameObject root;
 
-            // What the crop was planted from decides the model it shows for its
-            // first days in the field. None for a crop saved before that existed.
             InventoryItemType savedMaterial =
                 PlantingMaterialCatalog.TryParseItem(save.plantingMaterial, out InventoryItemType parsedMaterial)
                     ? PlantingMaterialCatalog.UpgradeLegacy(parsedMaterial)
@@ -2144,16 +2054,6 @@ namespace AgriDabao3D
                 go.AddComponent<PestDiseaseAffectedCrop>();
         }
 
-        /// <summary>
-        /// Rests a prefab's lowest point on the terrain.
-        ///
-        /// <paramref name="buryFraction"/> then sinks it by that share of its own
-        /// measured height - 0 leaves it sitting on the surface, 0.8 buries all but
-        /// the top fifth. It is expressed as a fraction rather than in metres because
-        /// these prefabs carry large scales (the termite station is 30x), so the same
-        /// metre value means something different for each one, whereas a fraction
-        /// reads the object's real size and works for any of them.
-        /// </summary>
         private void SnapObjectBottomToTerrain(GameObject go, Terrain terrain, float yOffset,
             float buryFraction = 0f)
         {
@@ -2246,21 +2146,6 @@ namespace AgriDabao3D
             EnsureCropTapTarget(root);
         }
 
-        /// <summary>
-        /// Gives a crop a finger-sized tap target that does not shrink with its stage.
-        ///
-        /// Each stage prefab carries a collider auto-fitted to its mesh, and a seedling
-        /// mesh is tiny - the tomato sprout's box works out to roughly four centimetres
-        /// across once its scale is applied. That is far smaller than a fingertip, so
-        /// young plants were nearly impossible to tap on a phone even though the game
-        /// registered the hit correctly whenever it happened to land.
-        ///
-        /// The capsule lives on the crop root rather than on the visual, so it survives
-        /// the prefab swap at every stage and a plant is equally tappable as a seedling
-        /// and as a full-grown tree. It is a trigger: its job is to be found by the
-        /// interaction ray, not to block the player walking - which the tiny mesh
-        /// colliders never did either, so movement is unchanged.
-        /// </summary>
         private void EnsureCropTapTarget(GameObject root)
         {
             if (root == null || cropTapRadius <= 0f || cropTapHeight <= 0f)
@@ -2271,15 +2156,10 @@ namespace AgriDabao3D
                 tapTarget = root.AddComponent<CapsuleCollider>();
 
             tapTarget.isTrigger = true;
-            tapTarget.direction = 1; // Y axis, matching how a plant stands.
+            tapTarget.direction = 1;
             tapTarget.radius = cropTapRadius;
             tapTarget.height = cropTapHeight;
 
-            // Stand the capsule on the soil, not on the crop root. The root is
-            // where the planting height puts it - several metres above the ground
-            // for most crops in the farm scene - and a capsule centred there
-            // floated over young plants. The growth visual controller keeps it on
-            // the ground from here on, including after a raised bed lifts it.
             Terrain terrain = TemporaryTerrainGenerator.ResolveActiveTerrain();
             float localGround = terrain != null && terrain.terrainData != null
                 ? terrain.SampleHeight(root.transform.position) + terrain.transform.position.y - root.transform.position.y

@@ -8,9 +8,6 @@ namespace AgriDabao3D
     public class FarmPersistenceManager : MonoBehaviour
     {
         public static FarmPersistenceManager Instance { get; private set; }
-        // 4: the planting system - the Seedling Tent and its bags, prepared ground,
-        // and each crop's planting material and protection. Version-3 farms load
-        // unchanged; they simply start with an empty tent and no prepared ground.
         public const int CurrentSchemaVersion = 4;
         public const string CurrentGeneratorVersion = "davao-terrain-v1";
         [Header("Scene References")]
@@ -58,20 +55,9 @@ namespace AgriDabao3D
             }
             else LastStatus = "Farm ready. Use Save Farm when you want to store it.";
         }
-        /// <param name="allowDuringTutorial">
-        /// Set by the marketplace and trade flows, which must sync the farm before
-        /// the server will validate an offer against it. Refusing those saves left
-        /// the trade session unprepared, and because the failure only surfaced as a
-        /// status string the player just saw items refusing to go into the box.
-        /// </param>
         public IEnumerator SaveFarm(bool initialSave = false, bool allowDuringTutorial = false)
         {
             if (IsSaving || !IsWorldReady) yield break;
-            // Step 14 has the player open the save panel to look at it, and
-            // Antonio says he will handle the saving himself before he goes - which
-            // he does, from Finish(), after clearing this flag. A save landing
-            // mid-tour would also write a half-finished tutorial as the farm's
-            // permanent state.
             if (TutorialState.IsRunning && !allowDuringTutorial)
             {
                 LastStatus = "Antonio will save the farm for you before he leaves.";
@@ -164,9 +150,6 @@ namespace AgriDabao3D
         private void RestoreGameplayState(FarmSnapshotDto snapshot)
         {
             if (snapshot == null) return;
-            // Restored first: PlayerInventory and the tutorial director both read
-            // this while coming up, and a farm saved before the tutorial existed
-            // must be marked complete before either of them looks.
             TutorialState.Restore(snapshot.tutorial);
             ResolveReferences();
             ClimateMaintenanceRuntimeBootstrap.EnsureInstalled();
@@ -208,8 +191,6 @@ namespace AgriDabao3D
                 }
             }
             if (!shippingBinWasRestored && shippingBinSpawner != null) shippingBinSpawner.SpawnBinNearPlayerNow();
-            // Prepared ground after the crops: a crop on a raised bed lifts its own
-            // bed on load, and an unplanted bed lifts its ground here.
             if (farmingSystem != null) farmingSystem.RestorePreparedGround(snapshot.preparedPlots);
             if (NurserySystem.Instance != null) NurserySystem.Instance.RestoreSaveData(snapshot.nursery);
             if (ClimateEventTracker.Instance != null) ClimateEventTracker.Instance.RestoreSaveData(snapshot.climateEvent);

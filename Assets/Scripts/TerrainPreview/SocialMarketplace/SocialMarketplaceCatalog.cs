@@ -6,8 +6,6 @@ namespace AgriDabao3D
 {
     public static class SocialMarketplaceCatalog
     {
-        // Must match TRADABLE_ITEMS in the backend's EconomyJsonService, minus the
-        // five old seed items the server still accepts from older game versions.
         public static readonly InventoryItemType[] TradableItems =
         {
             InventoryItemType.CoconutSeednut, InventoryItemType.Coconut,
@@ -34,8 +32,6 @@ namespace AgriDabao3D
             InventoryItemType.DrainageKit,
             InventoryItemType.TermiteBaitStation,
 
-            // Weather/climate mitigation consumables and kits.
-            // PruningShears remains excluded because it is an owned/reusable tool.
             InventoryItemType.MulchBag,
             InventoryItemType.OrganicCompostBag,
             InventoryItemType.SupportStakeKit,
@@ -49,13 +45,6 @@ namespace AgriDabao3D
             InventoryItemType.DrainageCanalKit
         };
 
-        /// <summary>
-        /// Every item whose count is merged back from the server after a sale or a
-        /// trade: the tradable items, plus the five old seed items. A trade with a
-        /// player still on an older version can hand one of those over; merged in
-        /// here, it becomes its new material as the backpack loads it, instead of
-        /// being silently dropped and then overwritten by the next save.
-        /// </summary>
         public static readonly InventoryItemType[] MergeItems = BuildMergeItems();
 
         private static InventoryItemType[] BuildMergeItems()
@@ -69,10 +58,6 @@ namespace AgriDabao3D
             return items.ToArray();
         }
 
-        // Per item, in centavos. Seeds mirror the shop's Davao City prices and
-        // produce mirrors the shipping bin; the rest keep the NPC shop prices.
-        // The server holds the same table (EconomyJsonService.buildBaseValues) and
-        // the two must agree, or the listing fee shown is not the fee charged.
         private static readonly Dictionary<InventoryItemType, int> BaseValues =
             new Dictionary<InventoryItemType, int>
             {
@@ -92,7 +77,6 @@ namespace AgriDabao3D
                 { InventoryItemType.SquashSeed, PesoPrice.Centavos(3000m) },
                 { InventoryItemType.SquashSeedling, PesoPrice.Centavos(3300m) },
                 { InventoryItemType.CornSeed, PesoPrice.Centavos(388.89m) },
-                // The old seed items, still valued as the server values them.
                 { InventoryItemType.PineappleSeed, PesoPrice.Centavos(10m) },
                 { InventoryItemType.BananaSeed, PesoPrice.Centavos(15m) },
                 { InventoryItemType.CoconutSeed, PesoPrice.Centavos(15m) },
@@ -122,7 +106,6 @@ namespace AgriDabao3D
                 { InventoryItemType.DrainageKit, PesoPrice.Centavos(150m) },
                 { InventoryItemType.TermiteBaitStation, PesoPrice.Centavos(110m) },
 
-                // Match the existing NPC shop prices.
                 { InventoryItemType.MulchBag, PesoPrice.Centavos(25m) },
                 { InventoryItemType.OrganicCompostBag, PesoPrice.Centavos(45m) },
                 { InventoryItemType.SupportStakeKit, PesoPrice.Centavos(60m) },
@@ -141,17 +124,11 @@ namespace AgriDabao3D
             return Array.IndexOf(TradableItems, item) >= 0;
         }
 
-        /// <summary>An item's marketplace base value, per item, in centavos.</summary>
         public static int GetBaseValueCentavos(InventoryItemType item)
         {
             return BaseValues.TryGetValue(item, out int centavos) ? centavos : 100;
         }
 
-        /// <summary>
-        /// The listing fee: the items' base value in whole pesos, plus the asking
-        /// price. The base value total is rounded exactly as the server rounds it,
-        /// so the fee shown here is the fee the server charges.
-        /// </summary>
         public static int CalculateListingFee(InventoryItemType item, int quantity, int askingPrice)
         {
             long result = (long)PesoPrice.TotalPesos(GetBaseValueCentavos(item), Mathf.Max(0, quantity))
@@ -161,8 +138,6 @@ namespace AgriDabao3D
 
         public static string FriendlyName(InventoryItemType item)
         {
-            // Planting materials carry their own names ("Grafted Mango Seedling"),
-            // which the camel-case split below would get wrong.
             if (PlantingMaterialCatalog.TryGet(item, out PlantingMaterialInfo material))
                 return material.Name;
 

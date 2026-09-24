@@ -21,14 +21,8 @@ namespace AgriDabao3D
         [Min(0f)]
         public float storedResource;
 
-        /// <summary>
-        /// The structure whose readout was last shown, so the developer tools can
-        /// act on "the one you just clicked" rather than needing a picker of their
-        /// own. Mirrors how the crop editor follows the inspected crop.
-        /// </summary>
         public static ClimateMitigationWorldObject LastInspected { get; set; }
 
-        /// <summary>Developer tools only: top the tank up without waiting for rain.</summary>
         public void DevFillResource()
         {
             storedResource = resourceCapacity;
@@ -48,11 +42,6 @@ namespace AgriDabao3D
         private float pendingGameDays;
         private Terrain terrain;
 
-        /// <summary>
-        /// Every structure currently standing, kept by the structures themselves.
-        /// Crops ask "is there shade over me?" every frame, and searching the scene
-        /// for that on every crop every frame would be far too slow on a phone.
-        /// </summary>
         private static readonly List<ClimateMitigationWorldObject> Active =
             new List<ClimateMitigationWorldObject>();
 
@@ -74,10 +63,6 @@ namespace AgriDabao3D
             Active.Remove(this);
         }
 
-        /// <summary>
-        /// Whether a Shade Net or a Greenhouse covers this point. Young cacao
-        /// needs one of them overhead.
-        /// </summary>
         public static bool IsShadeOver(Vector3 position)
         {
             for (int i = Active.Count - 1; i >= 0; i--)
@@ -593,8 +578,6 @@ namespace AgriDabao3D
 
         public string GetInspectionText()
         {
-            // Each part on its own line. They used to be joined with nothing in
-            // between, so the board read "GreenhouseRadius: 10.0 m".
             string resource =
                 mitigationType == ClimateWorldMitigationType.WaterStorageTank
                     ? "\nWater: " + storedResource.ToString("F0") +

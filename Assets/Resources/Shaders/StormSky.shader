@@ -1,6 +1,3 @@
-// The overcast sky WeatherVisualController fades in over the normal sky during
-// rain and typhoons. It lives in Resources and is loaded by name, so it ships in
-// builds without being assigned to anything.
 Shader "AgriDabao/StormSky"
 {
     Properties
@@ -12,9 +9,6 @@ Shader "AgriDabao/StormSky"
 
     SubShader
     {
-        // URP draws the skybox between the opaque and transparent queues. One
-        // step into the transparent range puts this after the sky and before
-        // everything else transparent, so rain still falls in front of it.
         Tags
         {
             "Queue" = "Transparent-499"
@@ -23,8 +17,6 @@ Shader "AgriDabao/StormSky"
             "PreviewType" = "Sphere"
         }
 
-        // Seen from inside, so the inner faces are the ones drawn. It never writes
-        // depth, and anything nearer - terrain, crops - hides it as usual.
         Cull Front
         ZWrite Off
         ZTest LEqual
@@ -60,7 +52,6 @@ Shader "AgriDabao/StormSky"
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 o.pos = UnityObjectToClipPos(v.vertex);
-                // The dome is never rotated, so its own up is the world's up.
                 o.height = normalize(v.vertex.xyz).y;
                 return o;
             }

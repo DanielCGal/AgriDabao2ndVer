@@ -17,7 +17,6 @@ namespace AgriDabao3D
         public event Action NotificationStateChanged;
         public event Action<TradeViewDto> ActiveTradeChanged;
 
-        /// <summary>Raised when one of this player's listings has been bought.</summary>
         public event Action<MarketplaceSaleDto> SaleNotified;
 
         [Header("Polling")]
@@ -58,16 +57,12 @@ namespace AgriDabao3D
 
         private void OnApplicationPause(bool paused)
         {
-            // Coming back from the background is the likeliest moment to discover a
-            // takeover: heartbeats stopped while paused, which is exactly what lets
-            // another device claim the account.
             if (!paused && isActiveAndEnabled)
                 StartCoroutine(Api.Heartbeat(onBusy: SessionTakeover.Raise));
         }
 
         private void OnApplicationQuit()
         {
-            // The backend also treats a player as offline after 45 seconds without a heartbeat.
             if (isActiveAndEnabled)
                 StartCoroutine(Api.MarkOffline());
         }
@@ -86,24 +81,12 @@ namespace AgriDabao3D
 
                     if (takenOver != null)
                     {
-                        // Another device holds the account. Leave the farm rather
-                        // than play on beside it: this device can no longer save,
-                        // so every minute spent here is a minute thrown away.
                         SessionTakeover.Raise(takenOver);
                         yield break;
                     }
 
                     if (signedOut != null)
                     {
-                        // The account's password was changed somewhere else, which
-                        // ends every session it had. Same reasoning as above - this
-                        // device cannot save any more - but permanent, so the saved
-                        // login goes with it and the player lands on the sign-in form.
-                        //
-                        // The wording is ours, not the server's: a rejected token
-                        // comes back as a bare 401 with the reason in a header the
-                        // client does not read, so quoting it would put "HTTP/1.1
-                        // 401 Unauthorized" on a wooden plank in front of a player.
                         Debug.LogWarning("[Session] Heartbeat refused: " + signedOut);
                         SessionTakeover.RaiseSignedOut(
                             "You have been signed out. This account's password may have been " +
@@ -131,8 +114,6 @@ namespace AgriDabao3D
                     yield return RefreshAdminCommands();
                 }
 
-                // A live trade needs quick updates; the rest of the time poll
-                // slowly so the radio is not woken every few seconds on mobile.
                 yield return new WaitForSecondsRealtime(
                     ActiveTrade != null ? activeTradeIntervalSeconds : notificationIntervalSeconds);
             }
@@ -156,11 +137,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// Looks for listings of this player's that someone bought while they were
-        /// elsewhere, raises one notification each, and refreshes the wallet so the
-        /// sale money is visible immediately rather than after the next reload.
-        /// </summary>
         public IEnumerator RefreshUnseenSales()
         {
             List<MarketplaceSaleDto> sales = null;
@@ -176,31 +152,12 @@ namespace AgriDabao3D
 
                 SaleNotified?.Invoke(sale);
 
-                // Acknowledged only after the event is raised, so a failure here
-                // means the player sees it again rather than never seeing it.
                 yield return Api.AcknowledgeSale(sale.listingId, () => { }, _ => { });
             }
 
-            // Merged, not copied: the sale only added money on the server, and a
-            // straight copy of the server's backpack also undid everything the seller
-            // had harvested, bought or used since their last save.
             yield return MergeServerEconomy();
         }
 
-        /// <summary>
-        /// Applies anything a developer has sent this player - a weather event,
-        /// an outbreak, or money.
-        ///
-        /// Applied here on the client rather than written into the stored farm on
-        /// the server, because while a farm is being played this game holds the
-        /// authoritative copy of it: a change made to the saved snapshot would be
-        /// overwritten by this client's next save. The weather and pest systems
-        /// are client-side simulations in any case, so there is nothing on the
-        /// server that could start a typhoon.
-        ///
-        /// Errors are swallowed. The endpoint is a developer convenience and a
-        /// failed poll must never interrupt someone's game.
-        /// </summary>
         public IEnumerator RefreshAdminCommands()
         {
             if (AuthSession.Instance == null || !AuthSession.Instance.IsAuthenticated)
@@ -212,11 +169,6 @@ namespace AgriDabao3D
                 value => commands = value,
                 message => error = message);
 
-            // Logged rather than swallowed. This used to fail silently, which
-            // meant a command that never arrived left no trace anywhere - no way
-            // to tell a refused request from an empty queue from a build that
-            // predates this code. The poll still never interrupts play; it just
-            // says so in the console now.
             if (error != null)
             {
                 Debug.LogWarning("[Admin] Could not collect commands: " + error);
@@ -243,9 +195,6 @@ namespace AgriDabao3D
                     int granted = command.amount.GetValueOrDefault();
                     if (PlayerInventory.Instance != null && granted > 0)
                     {
-                        // AddMoney raises OnInventoryChanged, which is what the
-                        // money plank listens to - so the wallet updates on screen
-                        // without anything here having to touch the HUD.
                         PlayerInventory.Instance.AddMoney(granted);
                         Debug.Log("[Admin] Received P" + granted + " from a developer.");
                     }
@@ -291,9 +240,6 @@ namespace AgriDabao3D
                     break;
 
                 default:
-                    // A newer server sending a command this build predates. Ignored
-                    // rather than logged as an error: it is already marked delivered,
-                    // so it will not come back and nothing is stuck.
                     Debug.LogWarning("[Admin] Ignored unknown command " + command.commandType + ".");
                     break;
             }
@@ -305,25 +251,11 @@ namespace AgriDabao3D
             bool requestFailed = false;
             yield return Api.GetActiveTrade(value => trade = value, _ => requestFailed = true);
 
-            // A poll that never reached the server is not the same as "there is no
-            // trade" - both used to leave `trade` null. Since the trade screen now
-            // closes itself when the session disappears, treating a dropped packet
-            // as a vanished trade would eject a player mid-negotiation. Keep the
-            // last known state and try again on the next tick instead.
             if (requestFailed)
                 yield break;
 
             TradeViewDto previous = ActiveTrade;
 
-            // The player who confirms FIRST gets a response that is not yet
-            // COMPLETED, so ConfirmTrade's own refresh never runs for them - the
-            // server carries out the exchange when the OTHER player confirms. This
-            // poll is how they find out, but /api/trades/active only reports PENDING
-            // and ACTIVE trades, so the finished trade never came back here as
-            // COMPLETED: it simply stopped being listed. Their backpack stayed as it
-            // was, and every save they made was refused as a revision conflict,
-            // until reopening the trade screen happened to merge the server's copy
-            // in. So when an open trade drops out of the list, ask how it ended.
             if (trade == null && previous != null && IsOpen(previous))
             {
                 TradeViewDto ended = null;
@@ -331,17 +263,11 @@ namespace AgriDabao3D
 
                 bool completed = ended != null && ended.status == "COMPLETED";
 
-                // An unknown ending - a server without that call, or a dropped
-                // request - is merged as well. The merge only applies what changed
-                // on the server, so after a cancelled trade it changes nothing.
                 if (completed || ended == null)
                     yield return MergeServerEconomy();
 
                 if (completed)
                 {
-                    // Raised before the trade is cleared below, so the trade board
-                    // shows the success message and closes itself, exactly as it
-                    // does for the player who confirmed last.
                     ActiveTrade = ended;
                     ActiveTradeChanged?.Invoke(ended);
                     previous = ended;
@@ -350,7 +276,6 @@ namespace AgriDabao3D
 
             bool changed = HasTradeChanged(previous, trade);
 
-            // For a server that does list a trade as COMPLETED here.
             bool justCompleted =
                 trade != null &&
                 trade.status == "COMPLETED" &&
@@ -358,8 +283,6 @@ namespace AgriDabao3D
 
             ActiveTrade = trade;
 
-            // Merged before the board is told, so it never reports an updated
-            // backpack that has not been updated yet.
             if (justCompleted)
                 yield return MergeServerEconomy();
 
@@ -372,24 +295,8 @@ namespace AgriDabao3D
             return trade.status == "PENDING" || trade.status == "ACTIVE";
         }
 
-        /// <summary>
-        /// Set while the server holds a change to this player's farm - a finished
-        /// trade, a sold listing - that has not reached the backpack yet. Retried on
-        /// every poll until it does, because the change only announces itself once:
-        /// a trade that finished while the connection dropped would otherwise never
-        /// be brought in, and every save would keep being refused.
-        /// </summary>
         private bool serverEconomyMergePending;
 
-        /// <summary>
-        /// Brings a change the server made to this player's saved farm into the farm
-        /// being played.
-        ///
-        /// Merged rather than copied over. The server's copy is only as new as the
-        /// player's last save, so replacing the backpack with it threw away whatever
-        /// they had harvested, bought or used since. The merge adds only what the
-        /// server changed on top of what is in the backpack now.
-        /// </summary>
         private IEnumerator MergeServerEconomy()
         {
             serverEconomyMergePending = true;
@@ -412,7 +319,6 @@ namespace AgriDabao3D
 
             if (refreshed == null || refreshed.snapshot == null)
             {
-                // Nothing was replaced, so the next poll can simply try again.
                 Debug.LogWarning("[Economy] Could not fetch the server farm to merge: " + refreshError);
                 yield break;
             }
@@ -428,10 +334,6 @@ namespace AgriDabao3D
             }
             else
             {
-                // The farm revision has already moved on to the server's, so leaving
-                // the backpack as it is would let the next save write the old items
-                // back over the exchange. The server's copy wins instead, at the cost
-                // of anything unsaved in the backpack.
                 Debug.LogWarning("[Economy] " + mergeError +
                                  " Using the server's backpack instead.");
                 PlayerInventory.Instance.RestoreSaveData(refreshed.snapshot.inventory);
@@ -440,12 +342,6 @@ namespace AgriDabao3D
             serverEconomyMergePending = false;
         }
 
-        /// <summary>
-        /// True when anything the trade UI displays differs, including the offer
-        /// contents. Comparing only status/agreed/confirmed meant a player editing
-        /// their money or items produced no event, so the other side's panel never
-        /// redrew until it was closed and reopened.
-        /// </summary>
         private static bool HasTradeChanged(TradeViewDto a, TradeViewDto b)
         {
             if (a == null && b == null)
@@ -774,16 +670,6 @@ namespace AgriDabao3D
                 value => SetTrade(value, onSuccess), onError);
         }
 
-        /// <summary>
-        /// Pushes an offer without first re-saving the whole farm.
-        ///
-        /// The server validates offers against the SAVED farm, so a save has to
-        /// happen at least once - but only once, via <see cref="PrepareTradeSession"/>
-        /// when the trade opens. Inventory cannot change while the player is sitting
-        /// in the trade screen, so repeating a full farm save on every drag would
-        /// just make the UI crawl. The exchange itself is re-validated server-side
-        /// at confirm time regardless.
-        /// </summary>
         public IEnumerator UpdateTradeOfferLive(string tradeId, UpdateTradeOfferRequestDto request,
             Action<TradeViewDto> onSuccess, Action<string> onError)
         {
@@ -791,10 +677,6 @@ namespace AgriDabao3D
                 value => SetTrade(value, onSuccess), onError);
         }
 
-        /// <summary>
-        /// Saves the farm once so the server's copy matches local inventory before
-        /// live offer edits begin.
-        /// </summary>
         public IEnumerator PrepareTradeSession(Action onReady, Action<string> onError)
         {
             yield return SaveBeforeEconomy(onReady, onError);
@@ -837,9 +719,6 @@ namespace AgriDabao3D
 
             SetTrade(result, null);
 
-            // The same merge the other player gets from the poll. A failure is not
-            // reported as a failed trade - the exchange has already happened on the
-            // server - it is retried on the next poll instead.
             if (result.status == "COMPLETED")
                 yield return MergeServerEconomy();
 

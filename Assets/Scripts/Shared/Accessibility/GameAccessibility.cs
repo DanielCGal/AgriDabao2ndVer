@@ -7,39 +7,13 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Makes the game readable by Android accessibility services (TalkBack,
-    /// Accessibility Scanner).
-    ///
-    /// Unity draws the whole game - the 3D farm and every wooden UI panel - into
-    /// one Android SurfaceView. Android's accessibility framework therefore sees a
-    /// single opaque view and nothing inside it, which is why Accessibility Scanner
-    /// reports the same two findings on every screen:
-    ///
-    ///   * "Item label"      - the SurfaceView carries no contentDescription.
-    ///   * "Unexposed Text"  - the SurfaceView publishes none of its contents.
-    ///
-    /// This component answers both. It sets a contentDescription on the Unity view,
-    /// and it publishes an <see cref="AccessibilityHierarchy"/> describing each
-    /// on-screen control, which is Unity's supported route for exposing in-game UI
-    /// to a screen reader.
-    ///
-    /// Nothing here moves, resizes or restyles any UI. It only reads the existing
-    /// canvases and reports what is already on screen.
-    /// </summary>
     public class GameAccessibility : MonoBehaviour
     {
-        /// <summary>Announced for the Unity surface itself.</summary>
         public const string SurfaceLabel =
             "AgriDabao 3D. A farming simulation game set in Davao City.";
 
         private const string RuntimeObjectName = "AgriDabao_Accessibility";
 
-        /// <summary>
-        /// How often the published hierarchy is rebuilt. The UI is constructed at
-        /// runtime and panels open and close constantly, so a poll is simpler and
-        /// more reliable than trying to hook every builder.
-        /// </summary>
         private const float RefreshInterval = 0.75f;
 
         private AccessibilityHierarchy hierarchy;
@@ -47,9 +21,6 @@ namespace AgriDabao3D
         private int lastSignature;
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-        // Held in a field, not a local: runOnUiThread runs the callback after
-        // ApplySurfaceLabel has already returned, so a local would be eligible for
-        // collection before the callback touches it.
         private AndroidJavaObject androidActivity;
 #endif
 
@@ -81,7 +52,6 @@ namespace AgriDabao3D
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            // A scene swap replaces every canvas, so never trust the cached signature.
             lastSignature = 0;
             Rebuild();
         }
@@ -93,8 +63,6 @@ namespace AgriDabao3D
 
             nextRefreshTime = Time.unscaledTime + RefreshInterval;
 
-            // Only pay for a rebuild when the set of visible controls actually
-            // changed - opening a panel, closing one, switching scene.
             int signature = BuildSignature();
             if (signature == lastSignature)
                 return;
@@ -103,9 +71,6 @@ namespace AgriDabao3D
             Rebuild();
         }
 
-        // ------------------------------------------------------------- hierarchy
-
-        /// <summary>One announceable control, gathered before the reading-order sort.</summary>
         private struct Entry
         {
             public string label;
@@ -134,8 +99,6 @@ namespace AgriDabao3D
                 Collect(canvas, canvas.transform, entries);
             }
 
-            // Screen readers walk nodes in order, so present them the way a person
-            // reads the screen: top to bottom, then left to right.
             entries.Sort((a, b) =>
             {
                 int byRow = b.screen.y.CompareTo(a.screen.y);
@@ -151,8 +114,6 @@ namespace AgriDabao3D
                 node.role = entry.role;
                 node.hint = entry.hint;
 
-                // frameGetter keeps the reported rectangle correct as panels move,
-                // without having to rebuild the whole hierarchy.
                 RectTransform rect = entry.rect;
                 Canvas canvas = entry.canvas;
                 node.frameGetter = () => ScreenFrameOf(rect, canvas);
@@ -186,8 +147,6 @@ namespace AgriDabao3D
                         });
                     }
 
-                    // A described control's own children (its icon, its caption) are
-                    // part of that control, not separate things to announce.
                     continue;
                 }
 
@@ -195,9 +154,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// Decides whether a GameObject is worth announcing, and what to call it.
-        /// </summary>
         private static bool TryDescribe(GameObject go, out string label,
             out AccessibilityRole role, out string hint)
         {
@@ -255,11 +211,6 @@ namespace AgriDabao3D
             return false;
         }
 
-        /// <summary>
-        /// A control's caption if it has one. Most buttons in this game carry their
-        /// word inside the painted art and have no Text child at all, so the object
-        /// name is the fallback - which is why the builders' names matter here.
-        /// </summary>
         private static string LabelForControl(GameObject go)
         {
             Text caption = go.GetComponentInChildren<Text>(false);
@@ -275,9 +226,6 @@ namespace AgriDabao3D
             return placeholder != null ? Clean(placeholder.text) : string.Empty;
         }
 
-        // ------------------------------------------------------------- utilities
-
-        /// <summary>Turns "Button_SellItems" / "SaveFarmButton" into "Sell Items".</summary>
         private static string Humanize(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw))
@@ -285,7 +233,6 @@ namespace AgriDabao3D
 
             string value = raw;
 
-            // Drop the decoration the builders add to object names.
             if (value.StartsWith("Button_"))
                 value = value.Substring("Button_".Length);
             value = value.Replace("_Runtime", string.Empty)
@@ -299,7 +246,6 @@ namespace AgriDabao3D
             for (int i = 0; i < value.Length; i++)
             {
                 char c = value[i];
-                // Split camelCase so "SellItems" reads as two words.
                 if (i > 0 && char.IsUpper(c) && !char.IsUpper(value[i - 1]) && value[i - 1] != ' ')
                     builder.Append(' ');
                 builder.Append(c);
@@ -315,10 +261,6 @@ namespace AgriDabao3D
                 : value.Replace('\n', ' ').Replace("  ", " ").Trim();
         }
 
-        /// <summary>
-        /// The node rectangle in the top-left-origin screen space that accessibility
-        /// services expect; Unity's own screen coordinates start bottom-left.
-        /// </summary>
         private static Rect ScreenFrameOf(RectTransform rect, Canvas canvas)
         {
             if (rect == null)
@@ -342,10 +284,6 @@ namespace AgriDabao3D
             return new Rect(x, y, width, height);
         }
 
-        /// <summary>
-        /// A cheap fingerprint of what is currently visible, so Update can skip the
-        /// walk when nothing has opened or closed.
-        /// </summary>
         private int BuildSignature()
         {
             unchecked
@@ -367,12 +305,6 @@ namespace AgriDabao3D
             }
         }
 
-        // --------------------------------------------------------------- Android
-
-        /// <summary>
-        /// Gives the Unity SurfaceView a contentDescription. This is the "Item label"
-        /// finding: without it a screen reader announces the whole app as unlabelled.
-        /// </summary>
         private void ApplySurfaceLabel()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -405,11 +337,6 @@ namespace AgriDabao3D
         }
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-        /// <summary>
-        /// Walks the activity's view tree and describes the Unity surface. The tree is
-        /// only a few levels deep - decor, content frame, the Unity view - so the
-        /// depth cap is generous rather than restrictive.
-        /// </summary>
         private static void LabelViews(AndroidJavaObject view, int depth)
         {
             if (view == null || depth > 6)
@@ -422,13 +349,10 @@ namespace AgriDabao3D
                     (name.Contains("SurfaceView") || name.Contains("UnityPlayer")))
                 {
                     view.Call("setContentDescription", SurfaceLabel);
-                    // IMPORTANT_FOR_ACCESSIBILITY_YES - without this the surface can be
-                    // skipped entirely by accessibility services.
                     view.Call("setImportantForAccessibility", 1);
                 }
             }
 
-            // Recurse only into ViewGroups.
             int count;
             try
             {
@@ -436,7 +360,7 @@ namespace AgriDabao3D
             }
             catch (System.Exception)
             {
-                return; // not a ViewGroup
+                return;
             }
 
             for (int i = 0; i < count; i++)

@@ -2,13 +2,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Farm-scene audio driver. Crossfades day/night background music at the
-    /// day/night boundary and crossfades weather ambience when the weather
-    /// changes, using <see cref="GameAudioManager"/>. Additive only - it reads
-    /// the existing clock and weather state and never changes gameplay.
-    /// Add this to a GameObject in the TerrainPreview scene and assign the clips.
-    /// </summary>
     public class FarmAudioController : MonoBehaviour
     {
         [Header("Day / Night Music")]
@@ -29,7 +22,6 @@ namespace AgriDabao3D
 
         private void Start()
         {
-            // All Awakes have run by Start, so the weather singleton exists.
             if (WeatherSystem.Instance != null)
             {
                 WeatherSystem.Instance.OnWeatherChanged += HandleWeatherChanged;
@@ -45,9 +37,6 @@ namespace AgriDabao3D
             if (subscribed && WeatherSystem.Instance != null)
                 WeatherSystem.Instance.OnWeatherChanged -= HandleWeatherChanged;
 
-            // This controller is the only thing that turns weather ambience on,
-            // so it must turn it back off when the farm scene unloads - otherwise
-            // it keeps looping forever on the persistent GameAudioManager.
             if (GameAudioManager.HasInstance)
                 GameAudioManager.Instance.PlayAmbience(null);
         }

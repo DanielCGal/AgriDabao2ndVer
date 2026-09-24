@@ -46,19 +46,10 @@ namespace AgriDabao3D
         private float lastPinchDistance;
         private bool pinching;
 
-        // The view a district opened at, captured by FocusNormalizedPoint. Zooming
-        // toward a point moves the content as well as scaling it, so without an
-        // anchor to measure against, zooming in on one corner and back out on
-        // another leaves the map somewhere it never started - the floor returns the
-        // right scale but not the right place.
         private bool hasFocusAnchor;
         private float focusZoom;
         private Vector2 focusPosition;
 
-        // A district switch travels to the next framing instead of cutting to it.
-        // While that is running the focus anchor is dropped, because the anchor
-        // holds the view at the district it was set for and would drag the glide
-        // backwards; it is re-armed on the last frame at the district arrived at.
         private bool gliding;
         private float glideElapsed;
         private float glideDuration;
@@ -67,7 +58,6 @@ namespace AgriDabao3D
         private Vector2 glideFromPosition;
         private Vector2 glideToPosition;
 
-        /// <summary>True while the view is travelling to a new district.</summary>
         public bool IsGliding => gliding;
 
         private void Awake()
@@ -86,8 +76,6 @@ namespace AgriDabao3D
 
         public void OnScroll(PointerEventData eventData)
         {
-            // Input is ignored mid-glide rather than cancelling it: a wheel notch
-            // during the travel would fight the tween for the same two values.
             if (gliding || !allowUserZoom || viewport == null || content == null)
                 return;
 
@@ -101,8 +89,6 @@ namespace AgriDabao3D
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            // A second finger joining a drag is the start of a pinch, which Update
-            // handles. It must not take the drag over.
             if (draggingMap && eventData.pointerId != dragPointerId)
                 return;
 
@@ -111,15 +97,6 @@ namespace AgriDabao3D
             if (gliding || pinching || !allowUserPan || viewport == null || content == null)
                 return;
 
-            // Every button pans, including the left one. It used to be kept for the
-            // selection box, but that was never needed: the event system hands a
-            // drag to whichever object it started on, and the box is its own drag
-            // handler drawn over the map. A drag that starts on the box moves the
-            // box; one that starts on bare map moves the map.
-            //
-            // Measured from where the press began rather than where the drag
-            // threshold was crossed, so the map stays under the finger instead of
-            // lagging behind it by the threshold distance.
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 viewport,
                 eventData.pressPosition,
@@ -150,16 +127,11 @@ namespace AgriDabao3D
             Vector2 delta = localPoint - lastDragLocalPoint;
             lastDragLocalPoint = localPoint;
 
-            // Tracked but not applied while a pinch or a glide owns the view, so the
-            // map does not leap by the whole distance moved when either one ends.
             if (gliding || pinching)
                 return;
 
             content.anchoredPosition += delta;
 
-            // This is what keeps the drag inside the district: the same clamp that
-            // stops zooming out past the district's framing also stops a drag from
-            // carrying the view past it.
             ClampContentToViewport();
         }
 
@@ -282,9 +254,6 @@ namespace AgriDabao3D
                 pos.x = Mathf.Clamp(pos.x, -maxX, maxX);
             }
 
-            // The map has to cover the strip the player can actually see the map
-            // through, not the whole screen. With both insets at zero that is the
-            // whole screen and this behaves exactly as it did before.
             float requiredHeight = Mathf.Max(120f, viewportHeight - clampInsetTop - clampInsetBottom);
             float requiredCentreY = (clampInsetBottom - clampInsetTop) * 0.5f;
 
@@ -298,21 +267,6 @@ namespace AgriDabao3D
                 pos.y = Mathf.Clamp(pos.y, requiredCentreY - maxY, requiredCentreY + maxY);
             }
 
-            // Hold the view inside the region the district opened showing.
-            //
-            // At the focus zoom the viewport framed a rectangle of the map; at any
-            // higher zoom it frames a smaller one, and the rule here is simply that
-            // the smaller rectangle must stay inside the original. Writing the
-            // viewport centre in content-local units as c = -pos / scale, that reads
-            //
-            //     |c - c0|  <=  (V / 2) * (1 / focusZoom - 1 / scale)
-            //
-            // which rearranges into the position clamp below with k = scale/focusZoom.
-            // The allowance is exactly zero at k = 1, so the map is not merely
-            // nudged back toward the district framing as it zooms out - it arrives
-            // at precisely the position it started from, from any path in or out.
-            // Above the floor the allowance opens up smoothly, so zooming in still
-            // travels toward whatever the player pointed at.
             if (hasFocusAnchor && focusZoom > 0.0001f)
             {
                 float k = scale / focusZoom;
@@ -343,24 +297,15 @@ namespace AgriDabao3D
             content.localScale = Vector3.one;
             content.anchoredPosition = Vector2.zero;
 
-            // No district is framed any more, so nothing to hold the view to, and
-            // a glide still in flight would immediately undo this.
             hasFocusAnchor = false;
             gliding = false;
         }
 
-        /// <summary>
-        /// Zooms to <paramref name="zoom"/> and pans so the given normalized content
-        /// point (0..1, origin bottom-left) sits at the centre of the viewport.
-        /// The result is clamped to the viewport just like interactive panning.
-        /// </summary>
         public void FocusNormalizedPoint(Vector2 uv, float zoom)
         {
             if (content == null || viewport == null)
                 return;
 
-            // Dropped before positioning: the previous district's anchor would
-            // otherwise clamp this one's framing back toward the old view.
             hasFocusAnchor = false;
 
             float z = Mathf.Clamp(zoom, minZoom, maxZoom);
@@ -378,21 +323,11 @@ namespace AgriDabao3D
 
             ClampContentToViewport();
 
-            // Recorded after the clamp, not before. A district near the edge of the
-            // map cannot actually be centred - the clamp slides it back so the map
-            // still covers the viewport - and the anchor has to be the view the
-            // player really sees, or zooming out would return them to a framing that
-            // was never on screen.
             focusZoom = z;
             focusPosition = content.anchoredPosition;
             hasFocusAnchor = true;
         }
 
-        /// <summary>
-        /// The same framing as <see cref="FocusNormalizedPoint"/>, but travelled to
-        /// over <paramref name="seconds"/> instead of jumped to, so stepping through
-        /// districts reads as the map moving rather than as a cut.
-        /// </summary>
         public void GlideToNormalizedPoint(Vector2 uv, float zoom, float seconds)
         {
             if (content == null || viewport == null)
@@ -407,10 +342,6 @@ namespace AgriDabao3D
             float fromZoom = content.localScale.x;
             Vector2 fromPosition = content.anchoredPosition;
 
-            // The destination is worked out by actually going there and reading the
-            // result back, because where the map ends up is decided by the viewport
-            // clamp - a district near an edge cannot be centred - and that clamp
-            // only ever runs against the live transform.
             FocusNormalizedPoint(uv, zoom);
             glideToZoom = focusZoom;
             glideToPosition = focusPosition;
@@ -426,10 +357,6 @@ namespace AgriDabao3D
             hasFocusAnchor = false;
         }
 
-        /// <summary>
-        /// True when the player has zoomed in or dragged away from the view the
-        /// current district opened at.
-        /// </summary>
         public bool IsAwayFromFocus
         {
             get
@@ -442,10 +369,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// Travels back to the view the current district opened at, from wherever
-        /// the player has zoomed or dragged to.
-        /// </summary>
         public void GlideBackToFocus(float seconds)
         {
             if (!hasFocusAnchor || content == null)
@@ -466,11 +389,9 @@ namespace AgriDabao3D
             glideDuration = seconds;
             gliding = true;
 
-            // Re-armed on the glide's last frame, at these same values.
             hasFocusAnchor = false;
         }
 
-        /// <summary>Stops a glide where it stands. Nothing happens if none is running.</summary>
         public void CancelGlide()
         {
             gliding = false;
@@ -490,8 +411,6 @@ namespace AgriDabao3D
             glideElapsed += Time.unscaledDeltaTime;
             float t = glideDuration <= 0f ? 1f : Mathf.Clamp01(glideElapsed / glideDuration);
 
-            // Smoothstep, so the map pulls away and settles instead of starting and
-            // stopping at full speed.
             float eased = t * t * (3f - 2f * t);
 
             float zoom = Mathf.Lerp(glideFromZoom, glideToZoom, eased);

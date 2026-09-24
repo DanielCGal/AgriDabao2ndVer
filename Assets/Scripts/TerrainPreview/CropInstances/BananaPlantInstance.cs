@@ -66,38 +66,16 @@ namespace AgriDabao3D
         private bool initialized;
         private BananaStage lastLoggedStage;
 
-        /// <summary>Banana's own storm and drought ratings, on the tropical catalogue's 0-14 scale.</summary>
-        // Banana is the most typhoon-prone crop on the farm, and 13 puts it above
-        // every catalogued crop - past mangosteen and strawberry at 12. That is
-        // not an arbitrary nudge: blow-down is the defining typhoon loss in
-        // Philippine banana growing, because the plant carries huge leaves on a
-        // water-filled pseudostem over shallow roots, so it catches the wind like
-        // a sail and snaps rather than bending.
-        //
-        // It used to be 6 - the same as coconut, which survives the same storm.
-        // A game about climate adaptation in Davao cannot tell a player those two
-        // choices carry equal risk, because banana is exactly the crop a Davao
-        // farmer stands to lose.
         private const float TyphoonStressPerDay = 13f;
 
-        /// <summary>
-        /// Shallow roots and a heavy, constant water demand, so a dry spell bites
-        /// sooner than it does on the tree crops - but not as hard as on cacao or
-        /// mangosteen, which sit at 13 and 14.
-        /// </summary>
         private const float DroughtStressPerDay = 9f;
 
-        /// <summary>Bounds of the moisture band <see cref="GetWaterScore"/> treats as ideal.</summary>
         private const float IdealMoistureMin = 0.60f;
         private const float IdealMoistureMax = 0.90f;
 
-        /// <summary>See TropicalCropPlantInstance for the reasoning behind both constants.</summary>
         private const float WeatherStressFullScalePerDay = 40f;
         private const float ExternalEffectTimeConstantDays = 2f;
 
-        // Baselines this simulation owns; the gap between these and the public
-        // fields is what the pest system, mitigation structures and player actions
-        // contributed since the previous tick.
         private float simulatedStress;
         private float simulatedHealth;
         private bool simulationBaselineReady;
@@ -116,7 +94,7 @@ namespace AgriDabao3D
             plantedGameDay = GameTimeSystem.Instance != null ? GameTimeSystem.Instance.TotalGameDays : 0f;
             lastWateredGameDay = plantedGameDay;
 
-            nextProductionGameDay = plantedGameDay + 96f; // first fruiting around 96 days
+            nextProductionGameDay = plantedGameDay + 96f;
 
             health = 52f + soilSuitability * 28f;
             averageHealth = health;
@@ -140,12 +118,6 @@ namespace AgriDabao3D
             initialized = true;
         }
 
-        /// <summary>
-        /// Makes a freshly planted crop the age it already reached before the
-        /// field - a plantlet's days hardening in the Seedling Tent. The first
-        /// harvest moves by the same amount, so the schedule stays measured from
-        /// the plant's true age.
-        /// </summary>
         public void ApplyStartingAge(float ageDays)
         {
             if (ageDays <= 0f)
@@ -178,8 +150,6 @@ namespace AgriDabao3D
             BananaStage previousStage = stage;
             stage = GetStage(GetAgeYears());
 
-            // Adopt whatever the fields currently hold on the first tick, covering
-            // a fresh planting, a restored farm, and the dev tools.
             if (!simulationBaselineReady)
             {
                 simulatedStress = stress;
@@ -191,7 +161,7 @@ namespace AgriDabao3D
             float externalHealth = health - simulatedHealth;
 
             float dryRate = Mathf.Lerp(0.055f, 0.105f, 1f - drainage);
-            dryRate *= 1.20f; // banana dries faster
+            dryRate *= 1.20f;
 
             if (stage == BananaStage.Seedling) dryRate *= 1.15f;
             if (stage == BananaStage.Old) dryRate *= 1.05f;
@@ -233,10 +203,6 @@ namespace AgriDabao3D
                 + (weatherMoistureAdd * deltaGameDays)
             );
 
-            // Weather stress per game day. Not scaled by deltaGameDays - it feeds
-            // the stress target below, which the smoothing converges on. Adding it
-            // after the smoothing, as this used to, let the pull back to target
-            // erase it every tick.
             float weatherStressPerDay = 0f;
 
             if (WeatherSystem.Instance != null)
@@ -250,12 +216,6 @@ namespace AgriDabao3D
                 {
                     weatherStressPerDay += TyphoonStressPerDay;
 
-                    // The same curve coconut and the eleven catalogued crops use.
-                    // Banana used to take a flat -8 applied further down instead,
-                    // which happened to equal what this produces at its new
-                    // constant - but it was a separate number that ignored the
-                    // constant entirely, so retuning the stress above would have
-                    // silently left the health damage behind.
                     directHealthPenalty += Mathf.Lerp(2f, 8f, TyphoonStressPerDay / 12f);
                 }
 
@@ -266,9 +226,6 @@ namespace AgriDabao3D
                 }
             }
 
-            // Waterlogging against banana's own moisture ceiling. This used to come
-            // from a shared fixed 0.85 threshold inside the weather system, which
-            // fired while banana was still inside the band it treats as ideal.
             bool waterlogged =
                 moisture > IdealMoistureMax + 0.06f &&
                 drainage < 0.55f;
@@ -309,8 +266,6 @@ namespace AgriDabao3D
                 directHealthPenalty -
                 temperatureHealthPenalty;
 
-            // Smooth this simulation's own baselines toward their targets, fade
-            // what other systems contributed, then publish the sum.
             simulatedHealth = Mathf.Clamp(
                 Mathf.MoveTowards(simulatedHealth, targetHealth, 24f * deltaGameDays),
                 0f, 100f
@@ -331,8 +286,6 @@ namespace AgriDabao3D
             float avgBlend = 1f - Mathf.Exp(-deltaGameDays * 0.40f);
             averageHealth = Mathf.Lerp(averageHealth, health, avgBlend);
 
-            // Re-read the stage after simulating, matching coconut and the tropical
-            // crops. Without this the transition was never reported for banana.
             stage = GetStage(GetAgeYears());
 
             if (stage != previousStage)
@@ -562,19 +515,6 @@ namespace AgriDabao3D
             );
         }
 
-        /// <summary>
-        /// Developer tools only: force this crop's stress to a value and move its
-        /// own baseline with it.
-        ///
-        /// Writing <c>stress</c> alone would not hold. Each simulation step
-        /// recovers whatever another system wrote as
-        /// <c>externalStress = stress - simulatedStress</c> and then fades it with a
-        /// two-day time constant, so a directly assigned number decays back toward
-        /// whatever the soil dictates - which is right for a mulch bag and wrong
-        /// for a deliberate test setup. Moving the baseline too leaves no external
-        /// offset to fade, so the value stays until the simulation itself drifts
-        /// it.
-        /// </summary>
         public void DevSetStressBaseline(float value)
         {
             stress = Mathf.Clamp(value, 0f, 100f);
@@ -621,7 +561,6 @@ namespace AgriDabao3D
             plantedGameDay = currentDay - targetAgeDays - 1f;
             stage = GetStage(GetAgeYears());
 
-            // A forced stage has to show that stage, not the planting material.
             fieldPlantedGameDay = -1f;
 
             GrowthStageVisualController visuals = GetComponent<GrowthStageVisualController>();

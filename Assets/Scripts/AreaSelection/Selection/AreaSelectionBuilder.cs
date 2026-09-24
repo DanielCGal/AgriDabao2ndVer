@@ -10,22 +10,6 @@ using UnityEngine.Video;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Picking where the farm will be, in two steps.
-    ///
-    /// STEP ONE - the district. Only the district being looked at is tinted on the
-    /// map, and the camera travels to it as the player steps through with the
-    /// arrows. There is no selection box yet: choosing a district and choosing a
-    /// plot inside it are different questions, and asking both at once was what
-    /// left beta testers unsure which district they were even looking at.
-    ///
-    /// STEP TWO - the area. Pressing Next locks the district in and swaps the map
-    /// to that district's barangays, drawn green where farming is allowed and red
-    /// where it is not. The box appears, Generate replaces Next, and Generate
-    /// checks the box against the district's agricultural area spot picture. Being
-    /// inside a production district is no longer enough on its own - a barangay
-    /// inside one can still be off limits, and the red areas are where.
-    /// </summary>
     public class AreaSelectionBuilder : MonoBehaviour
     {
         [Header("Sprites")]
@@ -72,8 +56,6 @@ namespace AgriDabao3D
         public float mouseWheelZoomSpeed = 0.18f;
         public float pinchZoomSpeed = 0.008f;
 
-        // Replaces lockMapView under a new name on purpose: the scene saved that one
-        // as on, and carrying it across would keep dragging switched off.
         [Tooltip("Let the player drag the map inside the frame. The drag is held to the " +
                  "view each district opens at - at that zoom there is nowhere further to " +
                  "go, and after zooming in the player can move around inside it but " +
@@ -150,7 +132,6 @@ namespace AgriDabao3D
 
         private const string RootName = "AreaSelection_Runtime";
 
-        /// <summary>Which of the two questions the screen is asking right now.</summary>
         private enum SelectionPhase
         {
             District,
@@ -196,7 +177,6 @@ namespace AgriDabao3D
         private bool areaTutorialShown;
         private Vector2 lastScreenSize;
 
-        // The map zoom the box's grab area was last sized for; -1 forces a resize.
         private float appliedGrabZoom = -1f;
 
         private void Awake()
@@ -233,9 +213,6 @@ namespace AgriDabao3D
 #endif
             }
 
-            // Built under the canvas rather than under the screen's own root, so it
-            // sits above everything on it; cleared here for the same reason the root
-            // is, so building the screen twice does not stack two tutorials.
             var oldTutorial = GameObject.Find(TutorialRootName);
             if (oldTutorial != null)
             {
@@ -273,8 +250,6 @@ namespace AgriDabao3D
             CreateCheckDescriptionButton(viewportRect);
             CreatePopup(viewportRect);
 
-            // Built last so it is the newest sibling and already draws over the
-            // map and the selector; Show also re-raises it each time.
             districtBoard = DescriptionBoard.Create(viewportRect, theme);
 
             lastScreenSize = new Vector2(Screen.width, Screen.height);
@@ -285,10 +260,6 @@ namespace AgriDabao3D
             ApplyPhase(SelectionPhase.District);
             RefreshDistrictChrome();
 
-            // Sized and framed once here and again from the coroutine below. The
-            // map's height is worked out from the canvas width, and if that is
-            // still zero on this frame the map would be a zero-height strip until
-            // the coroutine catches it - a blank screen for the first frame or two.
             Canvas.ForceUpdateCanvases();
             LayoutMap();
             FocusCurrentDistrict(instant: true);
@@ -305,12 +276,6 @@ namespace AgriDabao3D
                 OfferTutorial();
         }
 
-        /// <summary>
-        /// The map's height depends on the canvas width, which is not known until
-        /// the layout has run, so the very first framing waits for it. Later
-        /// district switches do not - by then the sizes are settled, and waiting
-        /// would put a two frame stutter at the start of every glide.
-        /// </summary>
         private IEnumerator LayoutThenFrameFirstDistrict()
         {
             yield return null;
@@ -323,9 +288,6 @@ namespace AgriDabao3D
 
             FocusCurrentDistrict(instant: true);
 
-            // The remaining districts are decoded one per frame while the player is
-            // still reading the first screen, so pressing >> never waits on a
-            // picture being read for the first time.
             for (int i = 0; i < DistrictCount(); i++)
             {
                 DistrictMapArt art = districtArt[i];
@@ -340,8 +302,6 @@ namespace AgriDabao3D
 
         private void OnDestroy()
         {
-            // The decoded area spot maps are only of use on this screen, and the
-            // cache is static, so it would otherwise follow the player into the farm.
             DistrictAreaSpot.ClearCache();
         }
 
@@ -358,10 +318,6 @@ namespace AgriDabao3D
             FocusCurrentDistrict(instant: true);
         }
 
-        // ------------------------------------------------------------------
-        // District art
-        // ------------------------------------------------------------------
-
         private static DistrictMapArt[] BuildPlaceholderArt()
         {
             string[] order = DavaoDistrictService.ProductiveDistrictOrder;
@@ -373,16 +329,6 @@ namespace AgriDabao3D
             return rows;
         }
 
-        /// <summary>
-        /// Keeps the art list usable no matter what state the Inspector is in: a
-        /// list that has never been filled in gets every production district as
-        /// empty rows, a row added by hand gets a name so it is not a blank entry in
-        /// the selector, and a district the game knows but this list does not is
-        /// added at the end. Without that last step a district added in code would
-        /// be missing from the selector while the shop and the seed pools already
-        /// name it. Its row starts empty, and the screen refuses to generate on it
-        /// until the three pictures are dropped in.
-        /// </summary>
         private void EnsureDistrictArt()
         {
             if (districtArt == null || districtArt.Length == 0)
@@ -451,11 +397,6 @@ namespace AgriDabao3D
             WarnAboutMismatchedArt();
         }
 
-        /// <summary>
-        /// Every picture is stretched over the same rectangle, so one exported at a
-        /// different shape would put its barangays somewhere the satellite does not
-        /// agree with. Cheaper to say so here than to hunt it as a visual bug.
-        /// </summary>
         private void WarnAboutMismatchedArt()
         {
             float baseAspect = SpriteAspect(davaoMapSprite);
@@ -523,10 +464,6 @@ namespace AgriDabao3D
             return art == null || art.districtName == null ? "" : art.districtName.Trim();
         }
 
-        // ------------------------------------------------------------------
-        // Scene plumbing
-        // ------------------------------------------------------------------
-
         private Canvas EnsureCanvas()
         {
             var canvas = Object.FindFirstObjectByType<Canvas>();
@@ -537,7 +474,7 @@ namespace AgriDabao3D
 
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+                scaler.matchWidthOrHeight = 1f;
 
                 if (canvas.GetComponent<GraphicRaycaster>() == null)
                     canvas.gameObject.AddComponent<GraphicRaycaster>();
@@ -552,7 +489,7 @@ namespace AgriDabao3D
             var canvasScaler = canvasGo.GetComponent<CanvasScaler>();
             canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             canvasScaler.referenceResolution = new Vector2(1920, 1080);
-            canvasScaler.matchWidthOrHeight = 1f; // landscape: scale by height
+            canvasScaler.matchWidthOrHeight = 1f;
 
             return canvas;
         }
@@ -563,19 +500,6 @@ namespace AgriDabao3D
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
         }
 
-        // ------------------------------------------------------------------
-        // The map
-        // ------------------------------------------------------------------
-
-        /// <summary>
-        /// The same picture as the map, drawn behind it at the size it would have if
-        /// it were not zoomed at all, and dimmed.
-        ///
-        /// It only shows where the framed map does not reach, which happens when a
-        /// district has been pulled back to get clear of the UI. A flat panel there
-        /// reads as a hole in the screen; the same view dimmed reads as the map
-        /// carrying on past the edge of what is in focus, which is what it is.
-        /// </summary>
         private void CreateBackdrop(RectTransform parent)
         {
             var go = new GameObject("MapBackdrop", typeof(RectTransform), typeof(Image));
@@ -613,15 +537,6 @@ namespace AgriDabao3D
             image.raycastTarget = false;
         }
 
-        /// <summary>
-        /// The wooden frame and the window it holds.
-        ///
-        /// The window is what the map is now seen through, so it - not the whole
-        /// screen - is what the district framing measures against, and it is masked
-        /// so a zoomed map is cut off at the frame rather than spilling across the
-        /// screen. The frame itself is drawn after the window so its inner edge
-        /// laps over the map, the way a real frame sits on a photograph.
-        /// </summary>
         private void CreateFrameGroup(RectTransform parent)
         {
             var groupGo = new GameObject("MapFrameGroup", typeof(RectTransform));
@@ -650,14 +565,10 @@ namespace AgriDabao3D
             mapFrameImage = frameGo.GetComponent<Image>();
             mapFrameImage.sprite = frame;
 
-            // Stretched rather than kept to its own proportions - the art is a
-            // landscape frame and the map is upright, which is the warp the frame
-            // was asked to take.
             mapFrameImage.preserveAspect = false;
             mapFrameImage.raycastTarget = false;
         }
 
-        /// <summary>How far the frame art insets its opening, as a fraction of its size.</summary>
         private Vector2 FrameInset()
         {
             if (mapFrameImage == null || theme == null)
@@ -674,11 +585,6 @@ namespace AgriDabao3D
             var map = CreateImage("DavaoMap", parent, davaoMapSprite);
             var rect = map.rectTransform;
 
-            // Pinned to the left and right edges of the screen and centred
-            // vertically, with the height worked out from the picture's own shape
-            // in LayoutMap. The map used to be stretched to the screen on both
-            // axes, which squashed it; now it keeps its proportions and is simply
-            // taller than the screen, which is what the view scrolls through.
             rect.anchorMin = new Vector2(0f, 0.5f);
             rect.anchorMax = new Vector2(1f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
@@ -689,10 +595,6 @@ namespace AgriDabao3D
             map.preserveAspect = false;
             map.raycastTarget = true;
 
-            // The per-district picture rides on the map as a child, so zooming and
-            // panning move the two together and the barangays stay where the
-            // satellite puts them. It never takes clicks - the box and the map's own
-            // zoom handler are underneath it.
             var overlay = CreateImage("DistrictHighlight", rect, null);
             Stretch(overlay.rectTransform);
             overlay.preserveAspect = false;
@@ -708,26 +610,12 @@ namespace AgriDabao3D
             zoomPan.mouseWheelZoomSpeed = mouseWheelZoomSpeed;
             zoomPan.pinchZoomSpeed = pinchZoomSpeed;
 
-            // Both are held to the district. FocusCurrentDistrict raises the zoom floor
-            // to the district's own framing and records that view as the anchor, and
-            // the controller keeps every later view - zoomed or dragged - inside it.
-            // So zooming out stops where the district opened, and a drag can explore
-            // a zoomed-in district without ever reaching the one next door.
             zoomPan.allowUserPan = allowMapDragging;
             zoomPan.allowUserZoom = true;
 
             return rect;
         }
 
-        /// <summary>
-        /// Gives the map its true shape at the current screen width. Called once the
-        /// canvas has laid out, and again whenever the window changes size.
-        /// </summary>
-        /// <summary>
-        /// Hangs the framed picture in the gap the UI leaves and sizes the map to
-        /// the opening, so that at zoom 1 the whole of Davao sits in the frame and
-        /// zooming in frames one district of it.
-        /// </summary>
         private void LayoutMap()
         {
             if (mapRect == null || viewportRect == null || mapWindowRect == null)
@@ -742,18 +630,12 @@ namespace AgriDabao3D
             if (aspect <= 0f)
                 return;
 
-            // The picture hangs in the strip between the hint plank and the button
-            // row, centred on that strip rather than on the screen - the two bands
-            // are not the same height.
             float clearHeight = Mathf.Max(160f, screenHeight - uiTopMargin - uiBottomMargin);
             float clearCentreY = (uiBottomMargin - uiTopMargin) * 0.5f;
 
             float openingHeight = clearHeight * mapFrameScale;
             float openingWidth = openingHeight / aspect;
 
-            // The frame is bigger than its opening by however much of the art is
-            // rail, so the opening lands exactly on the strip and the woodwork
-            // reaches out past it, behind the plank and the sign.
             Vector2 inset = FrameInset();
             float frameWidth = openingWidth / Mathf.Max(0.1f, 1f - inset.x * 2f);
             float frameHeight = openingHeight / Mathf.Max(0.1f, 1f - inset.y * 2f);
@@ -766,12 +648,8 @@ namespace AgriDabao3D
 
             mapWindowRect.sizeDelta = new Vector2(openingWidth, openingHeight);
 
-            // Width comes from the window through the stretched anchors; the height
-            // is the map's own shape, which makes it exactly fill the opening.
             mapRect.sizeDelta = new Vector2(0f, openingWidth * aspect);
 
-            // The dimmed copy is the screen background now, so it covers the screen
-            // rather than the opening.
             if (backdropRect != null)
                 backdropRect.sizeDelta = new Vector2(screenWidth, screenWidth * aspect);
 
@@ -800,14 +678,8 @@ namespace AgriDabao3D
                 }
             }
 
-            // Nothing assigned yet: fall back to the shape the Davao maps are drawn
-            // at, so the screen still looks right while the art is being made.
             return 2950f / 2500f;
         }
-
-        // ------------------------------------------------------------------
-        // The selection box
-        // ------------------------------------------------------------------
 
         private RectTransform CreateSelectionBox(RectTransform parent)
         {
@@ -827,8 +699,6 @@ namespace AgriDabao3D
             Sprite frame = theme?.selectionBoxFrame;
             if (frame != null)
             {
-                // The frame art already reads as a border, so the plain outline
-                // used by the flat-colour fallback is switched off.
                 image.sprite = frame;
                 image.type = Image.Type.Sliced;
                 image.color = Color.white;
@@ -856,12 +726,6 @@ namespace AgriDabao3D
             return rect;
         }
 
-        /// <summary>
-        /// Keeps the box the same slice of the map at any screen size. The size is
-        /// a fraction of the picture, not of the screen, so the patch of Davao it
-        /// covers - and therefore the coordinates handed to the terrain generator -
-        /// does not change when the window does.
-        /// </summary>
         private void LayoutSelectionBox()
         {
             if (mapRect == null || selectionRect == null)
@@ -877,20 +741,6 @@ namespace AgriDabao3D
             UpdateSelectionGrabArea();
         }
 
-        /// <summary>
-        /// Sizes the area the selection box can be grabbed by.
-        ///
-        /// It used to be padded out to at least 140 units with 56 more on every side,
-        /// which suited the old full-screen map where the box could not be zoomed.
-        /// But the padding lives on the box, and the box lives on the zoomed map, so
-        /// zooming in multiplied it - at four times zoom the grab area was around 600
-        /// units across, and a drag meant for the map kept picking up the box.
-        ///
-        /// Now the grab area is the box as drawn. The optional minimum is worked out
-        /// in screen units and converted back into the box's own units at the current
-        /// zoom, so it stays the same size on screen however far in the player goes,
-        /// and stops mattering entirely once the box itself is bigger.
-        /// </summary>
         private void UpdateSelectionGrabArea()
         {
             if (selectionImage == null || selectionRect == null || mapRect == null)
@@ -906,7 +756,6 @@ namespace AgriDabao3D
             float padX = Mathf.Max(0f, (minLocal - selectionRect.rect.width) * 0.5f);
             float padY = Mathf.Max(0f, (minLocal - selectionRect.rect.height) * 0.5f);
 
-            // Negative padding grows the raycast area; zero leaves it exactly the box.
             selectionImage.raycastPadding = new Vector4(-padX, -padY, -padX, -padY);
         }
 
@@ -929,10 +778,6 @@ namespace AgriDabao3D
             selectionRect.anchoredPosition = new Vector2(x, y);
         }
 
-        // ------------------------------------------------------------------
-        // Buttons
-        // ------------------------------------------------------------------
-
         private void CreateGenerateButton(RectTransform parent)
         {
             var button = CreateThemedButton(
@@ -945,9 +790,6 @@ namespace AgriDabao3D
 
         private void CreateConfirmDistrictButton(RectTransform parent)
         {
-            // Deliberately the same corner as Generate. The two are never on screen
-            // together - one asks for a district, the other for a plot inside it -
-            // so the player presses the same place twice to go forward.
             var button = CreateThemedButton(
                 "ConfirmDistrictButton", parent, "Enter", theme?.districtNextButton, new Vector2(300f, 95f));
 
@@ -998,10 +840,6 @@ namespace AgriDabao3D
             next.onClick.AddListener(OnNextDistrict);
             nextDistrictButtonGo = next.gameObject;
 
-            // A painted sign per district when the art is present, otherwise the
-            // original plain text label. Both are built once any sign exists, so a
-            // district whose own sign has not been painted yet still shows its name
-            // instead of an empty slot. RefreshDistrictChrome picks which one shows.
             if (theme != null && HasAnyDistrictSign())
             {
                 var signGo = new GameObject("DistrictSign", typeof(RectTransform), typeof(Image));
@@ -1056,11 +894,6 @@ namespace AgriDabao3D
                 parent, theme, "CHECK DESCRIPTION", new Vector2(320f, 58f),
                 OnCheckDescriptionPressed);
 
-            // Under the district sign. The sign is drawn 130 tall centred at
-            // y=150, so its painted edge stops around y=85; Back and Generate sit
-            // out at the screen corners, which leaves the middle of this strip
-            // free. It stays available after the district is locked in, because
-            // what it describes - the district - has not changed.
             RectTransform rect = button.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
             rect.pivot = new Vector2(0.5f, 0.5f);
@@ -1079,10 +912,6 @@ namespace AgriDabao3D
 
             districtBoard.Show(district, body);
         }
-
-        // ------------------------------------------------------------------
-        // Phases
-        // ------------------------------------------------------------------
 
         private void ApplyPhase(SelectionPhase newPhase)
         {
@@ -1111,12 +940,8 @@ namespace AgriDabao3D
 
             districtOverlayImage.sprite = sprite;
 
-            // Hidden rather than left as a blank white rectangle over the map when
-            // a district's picture has not been drawn yet.
             districtOverlayImage.enabled = sprite != null;
 
-            // The dimmed copy follows whatever the map is showing, so the two never
-            // disagree about which district is highlighted.
             if (backdropImage != null)
             {
                 backdropImage.sprite = sprite != null ? sprite : davaoMapSprite;
@@ -1131,9 +956,6 @@ namespace AgriDabao3D
 
             string district = DisplayName(CurrentDistrictName());
 
-            // The button's wording is painted into its art, so this names the same
-            // word the player is looking at. Change both together if that art is
-            // ever replaced.
             infoText.text = phase == SelectionPhase.District
                 ? "Choose your district, then press ENTER to pick an area inside it"
                 : "Drag the box inside " + district + ", then press Generate";
@@ -1147,9 +969,6 @@ namespace AgriDabao3D
             if (districtSignImage != null)
             {
                 districtSignImage.sprite = sign;
-                // Hide the slot entirely if this one district's sign is missing,
-                // rather than showing a blank white box. The text label takes its
-                // place.
                 districtSignImage.enabled = sign != null;
             }
 
@@ -1195,15 +1014,9 @@ namespace AgriDabao3D
 
             ApplyPhase(SelectionPhase.Area);
 
-            // Picking an area starts from the district's own framing. Had the player
-            // zoomed in to look around first, the barangay map would open partly
-            // hidden, and the box - placed at the middle of the district - could land
-            // outside the part they are looking at.
             if (zoomPan != null && zoomPan.IsAwayFromFocus)
                 zoomPan.GlideBackToFocus(districtGlideSeconds);
 
-            // The box starts in the middle of the district rather than wherever it
-            // was left, so it is always somewhere the player can see it.
             if (TryGetDistrictFrame(CurrentDistrictName(), out _, out Vector2 center))
                 MoveBoxToNormalizedCenter(center);
             else
@@ -1214,9 +1027,6 @@ namespace AgriDabao3D
 
         public void OnBackPressed()
         {
-            // Back steps out of the area, then out of the screen. Without this the
-            // only way to change a district after pressing Next would be to leave
-            // for the main menu and come in again.
             if (phase == SelectionPhase.Area)
             {
                 ApplyPhase(SelectionPhase.District);
@@ -1225,10 +1035,6 @@ namespace AgriDabao3D
 
             SceneManager.LoadScene(backSceneName);
         }
-
-        // ------------------------------------------------------------------
-        // Framing
-        // ------------------------------------------------------------------
 
         private bool TryGetDistrictFrame(string districtName, out Rect bounds, out Vector2 center)
         {
@@ -1242,9 +1048,6 @@ namespace AgriDabao3D
             if (art == null)
                 return false;
 
-            // The district's extent is read off the spot picture: green and red
-            // together are exactly the barangays that belong to it, which is a
-            // tighter and more honest frame than any hand-entered rectangle.
             return DistrictAreaSpot.TryGetFootprint(art.agriculturalAreaSpot, out bounds, out center);
         }
 
@@ -1257,33 +1060,18 @@ namespace AgriDabao3D
 
             if (!TryGetDistrictFrame(districtName, out Rect bounds, out Vector2 center))
             {
-                // No art to aim at: show the whole map rather than guessing.
                 bounds = new Rect(0f, 0f, 1f, 1f);
                 center = new Vector2(0.5f, 0.5f);
             }
 
             float fitZoom = ComputeFitZoom(bounds);
 
-            // Nothing covers the opening, so the map simply has to fill it and the
-            // district simply has to sit in the middle of it. The offsets that used
-            // to dodge the plank and the sign belong to the frame's placement now.
             zoomPan.clampInsetTop = 0f;
             zoomPan.clampInsetBottom = 0f;
             zoomPan.focusViewportOffset = Vector2.zero;
 
-            // The district's own framing becomes the zoom-out limit, so the player
-            // can move in closer but never back out past the view this district
-            // opened at. Set before focusing, since both focus calls clamp the zoom
-            // they are given to this same range.
             zoomPan.minZoom = fitZoom;
 
-            // The camera aims at the middle of the district's extent rather than at
-            // its centre of mass. A district shaped like Paquibato - wide at one end,
-            // tapering at the other - has a centroid well off the middle of its
-            // outline, and aiming there pushes the far end back under the UI even
-            // though the whole thing would have fitted. The selection box still
-            // starts at the centroid, which is somewhere solidly inside the district
-            // rather than possibly in a notch of its bounding box.
             Vector2 framingPoint = bounds.center;
 
             if (instant || districtGlideSeconds <= 0.02f)
@@ -1294,11 +1082,6 @@ namespace AgriDabao3D
             MoveBoxToNormalizedCenter(center);
         }
 
-        /// <summary>
-        /// The zoom to frame a district at, measured against the frame's opening -
-        /// the map is only seen through that, so the screen and the UI on it no
-        /// longer come into this at all.
-        /// </summary>
         private float ComputeFitZoom(Rect bounds)
         {
             float viewWidth = mapWindowRect.rect.width;
@@ -1316,24 +1099,14 @@ namespace AgriDabao3D
                 districtFillFraction * viewWidth / districtWidth,
                 districtFillFraction * viewHeight / districtHeight);
 
-            // The zoom this district just fits the opening at, with a little to
-            // spare so it does not sit flush against the frame.
             float needed = Mathf.Min(
                 viewHeight * 0.96f / districtHeight,
                 viewWidth * 0.96f / districtWidth);
 
-            // The map fills the opening at zoom 1, so that is normally the floor and
-            // no gap can open inside the frame. A district larger than the opening -
-            // only possible if the frame is scaled down hard - is allowed to pull
-            // back just far enough to be seen whole.
             float floor = needed >= 1f ? 1f : Mathf.Max(minimumDistrictZoom, needed);
 
             return Mathf.Clamp(fit, floor, maxZoom);
         }
-
-        // ------------------------------------------------------------------
-        // Tutorial
-        // ------------------------------------------------------------------
 
         private void BuildTutorial(Transform canvasTransform)
         {
@@ -1343,9 +1116,6 @@ namespace AgriDabao3D
             tutorialLayer = layerGo.GetComponent<RectTransform>();
             Stretch(tutorialLayer);
 
-            // Only needed behind the question. The question's plank takes clicks on
-            // itself, but ENTER, << and >> are still showing around it and would
-            // otherwise work straight through it.
             tutorialPromptBlocker = new GameObject("PromptBlocker", typeof(RectTransform), typeof(Image));
             tutorialPromptBlocker.transform.SetParent(tutorialLayer, false);
             Stretch(tutorialPromptBlocker.GetComponent<RectTransform>());
@@ -1358,12 +1128,6 @@ namespace AgriDabao3D
             tutorialBoard = TutorialSlideBoard.Create(tutorialLayer, theme);
         }
 
-        /// <summary>
-        /// Asks whether to run the tutorial, with the very same prompt the farm uses
-        /// when it asks about its own. The farm builds that popup in its scene and
-        /// this screen has none, so one is made here - the same class, which is what
-        /// keeps the two questions looking identical.
-        /// </summary>
         private void OfferTutorial()
         {
             FarmConfirmPopup popup = FarmConfirmPopup.Instance;
@@ -1373,7 +1137,6 @@ namespace AgriDabao3D
             if (popup == null || tutorialLayer == null)
                 return;
 
-            // Layer first, then the popup, so the popup lands above the blocker.
             tutorialLayer.SetAsLastSibling();
             tutorialPromptBlocker.SetActive(true);
 
@@ -1406,11 +1169,6 @@ namespace AgriDabao3D
                 tutorialPromptBlocker.SetActive(false);
         }
 
-        /// <summary>
-        /// The second half of the tutorial, the first time a district is locked in.
-        /// Once only per visit, so stepping back out and pressing ENTER again does not
-        /// make the player read it twice.
-        /// </summary>
         private void ShowAreaTutorialIfDue()
         {
             if (!tutorialAccepted || areaTutorialShown || tutorialBoard == null)
@@ -1421,10 +1179,6 @@ namespace AgriDabao3D
             tutorialBoard.Show(SlidesOrDefault(areaTutorialSlides, DefaultAreaTutorialSlides), null);
         }
 
-        /// <summary>
-        /// The Inspector list, or the built-in pages if someone has emptied it, so
-        /// a Yes never opens onto nothing.
-        /// </summary>
         private static TutorialSlide[] SlidesOrDefault(TutorialSlide[] slides, System.Func<TutorialSlide[]> fallback)
         {
             return slides != null && slides.Length > 0 ? slides : fallback();
@@ -1464,10 +1218,6 @@ namespace AgriDabao3D
                     "specific area in Davao city Soil and Terrain.")
             };
         }
-
-        // ------------------------------------------------------------------
-        // Generate
-        // ------------------------------------------------------------------
 
         public void OnGeneratePressed()
         {
@@ -1515,16 +1265,10 @@ namespace AgriDabao3D
             SceneManager.LoadScene(terrainPreviewSceneName);
         }
 
-        // ------------------------------------------------------------------
-        // Text, popup and small helpers
-        // ------------------------------------------------------------------
-
         private void CreateInfoText(RectTransform parent)
         {
             Sprite plank = theme?.infoPlank;
 
-            // With art, the hint sits on a wooden plank; without it, the text
-            // floats on its own exactly as before.
             Transform textParent = parent;
 
             if (plank != null)
@@ -1540,8 +1284,6 @@ namespace AgriDabao3D
 
                 var plankImage = plankGo.GetComponent<Image>();
                 plankImage.sprite = plank;
-                // Sliced so the notched ends keep their shape while the middle
-                // stretches to fit the longest district name.
                 plankImage.type = Image.Type.Sliced;
                 plankImage.raycastTarget = false;
 
@@ -1555,7 +1297,6 @@ namespace AgriDabao3D
 
             if (plank != null)
             {
-                // Fill the plank, inset so the words stay off the wooden edges.
                 Stretch(rect);
                 rect.offsetMin = new Vector2(70f, 22f);
                 rect.offsetMax = new Vector2(-70f, -22f);
@@ -1605,7 +1346,6 @@ namespace AgriDabao3D
             }
             else
             {
-                // Unchanged fallback, so the warning still reads before the art exists.
                 bg.color = new Color(0f, 0f, 0f, 0.80f);
             }
 
@@ -1615,8 +1355,6 @@ namespace AgriDabao3D
             var textRect = textGo.GetComponent<RectTransform>();
             Stretch(textRect);
 
-            // Inset off the plank's painted edges when themed; the flat box needs
-            // only a small margin.
             float padX = board != null ? size.x * 0.12f : 20f;
             float padY = board != null ? size.y * 0.24f : 20f;
             textRect.offsetMin = new Vector2(padX, padY);
@@ -1627,7 +1365,6 @@ namespace AgriDabao3D
             popupText.fontSize = 28;
             popupText.fontStyle = FontStyle.Bold;
             popupText.alignment = TextAnchor.MiddleCenter;
-            // Dark ink on wood, white on the flat fallback.
             popupText.color = board != null ? Color.black : Color.white;
             popupText.text = "";
 
@@ -1644,9 +1381,6 @@ namespace AgriDabao3D
 
             CancelInvoke(nameof(HidePopup));
 
-            // The non-agricultural warning is twice the length of the old one, and
-            // 2.6 seconds is not enough to read it, so longer messages stay up
-            // longer instead of every player having to trigger it twice.
             float seconds = Mathf.Clamp(1.6f + message.Length * 0.035f, 2.6f, 6f);
             Invoke(nameof(HidePopup), seconds);
         }
@@ -1666,11 +1400,6 @@ namespace AgriDabao3D
             return image;
         }
 
-        /// <summary>
-        /// A button that uses its painted sprite when one is set (the wording is
-        /// in the art, so no Text child is added), and otherwise falls back to
-        /// the original dark box with a text label.
-        /// </summary>
         private Button CreateThemedButton(
             string objectName, RectTransform parent, string label, Sprite sprite, Vector2 size)
         {

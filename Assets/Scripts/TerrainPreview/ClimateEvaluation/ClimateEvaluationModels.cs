@@ -25,14 +25,12 @@ namespace AgriDabao3D
         public bool recommendedForEvent;
         public float effectivenessScore;
         public string details;
-        // Shared task/evaluation metadata. Old saves deserialize with safe defaults.
         public int quantity;
         public int moneyDelta;
         public string conditionType;
         public float beforeSeverity;
         public float afterSeverity;
         public string taskSource;
-        // "Direct" for instrumented interactions, "Observer" for state-derived actions.
         public string recordOrigin;
     }
     [Serializable]

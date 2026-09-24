@@ -63,10 +63,6 @@ namespace AgriDabao3D
                 GetComponent<TropicalCropPlantInstance>();
         }
 
-        // =========================================================
-        // CROP INFORMATION
-        // =========================================================
-
         public FarmCropType CropType
         {
             get
@@ -266,10 +262,6 @@ namespace AgriDabao3D
                 return CropDevelopmentStage.Any;
             }
         }
-
-        // =========================================================
-        // ACTIVE CONDITION MANAGEMENT
-        // =========================================================
 
         public ActivePestDisease GetCondition(
             PestDiseaseType type)
@@ -507,10 +499,6 @@ namespace AgriDabao3D
             return totalRemoved;
         }
 
-        // =========================================================
-        // CONDITION SIMULATION
-        // =========================================================
-
         public void SimulateDisease(float deltaGameDays)
         {
             if (deltaGameDays <= 0f ||
@@ -683,11 +671,6 @@ namespace AgriDabao3D
                 );
             }
         }
-
-        // =========================================================
-        // OLD API COMPATIBILITY
-        // Keeps AphidTrap, sprayer and adviser compiling.
-        // =========================================================
 
         public float aphidsPercent
         {
@@ -875,10 +858,6 @@ namespace AgriDabao3D
             return removed;
         }
 
-        // =========================================================
-        // INSPECTION
-        // =========================================================
-
         public bool HasAnyPestOrDisease()
         {
             if (activeConditions == null)
@@ -946,14 +925,6 @@ namespace AgriDabao3D
             return builder.ToString().TrimEnd();
         }
 
-        /// <summary>
-        /// The pest block for a crop, whether or not it has ever been infected.
-        ///
-        /// A crop only gains this component once something takes hold, so this
-        /// used to return nothing at all for a healthy plant and the readout
-        /// simply had no pest line. "None" is a useful answer; a missing line
-        /// reads as the game forgetting to tell you.
-        /// </summary>
         public static string GetInspectionTextFor(
             GameObject cropObject)
         {

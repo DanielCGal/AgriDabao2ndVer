@@ -3,15 +3,6 @@ using UnityEngine;
 
 namespace AgriDabao3D.EditorTools
 {
-    /// <summary>
-    /// Draws each row of the Area Selection Builder district list with the
-    /// district's own name on the header, and a count of how many of its three
-    /// pictures are still empty.
-    ///
-    /// Without this the rows read "Element 0" to "Element 5", which makes it easy
-    /// to drop one district's art into another district's row - a mistake that
-    /// does not fail, it just shows the wrong map.
-    /// </summary>
     [CustomPropertyDrawer(typeof(DistrictMapArt))]
     public class DistrictMapArtDrawer : PropertyDrawer
     {
@@ -89,7 +80,6 @@ namespace AgriDabao3D.EditorTools
             if (!property.isExpanded)
                 return line;
 
-            // Header plus the name field plus the three sprite slots.
             return (line + pad) * (SlotNames.Length + 2);
         }
     }

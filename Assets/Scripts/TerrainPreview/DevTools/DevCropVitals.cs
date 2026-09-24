@@ -2,37 +2,12 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Reads and writes one crop's live readings, for the developer tools only.
-    ///
-    /// Three unrelated classes grow crops - coconut, banana and everything else -
-    /// and none of them share a base type, so every caller that wants to touch a
-    /// crop generically has to branch across all three. This puts that branch in
-    /// one place.
-    ///
-    /// Only five of the ten readings are editable, and the split is not arbitrary:
-    ///
-    ///   Drainage, Fertility and Soil Suitability are sampled from the soil once
-    ///   in Initialize() and never resampled, so writing them holds for good.
-    ///
-    ///   Water and Stress are simulated every step, so writing them sets a
-    ///   starting point rather than a permanent value - the simulation will drift
-    ///   both back toward what the soil and weather dictate. Stress goes through
-    ///   DevSetStressBaseline so that it at least does not spring straight back
-    ///   from the external-effect channel.
-    ///
-    ///   Health, Avg Health, Tree Stage and Crop Name are left alone. Health is
-    ///   computed from the other five, so forcing it would be overwritten within a
-    ///   step or two and would only mislead.
-    /// </summary>
     public static class DevCropVitals
     {
         public struct Vitals
         {
             public string cropName;
-            /// <summary>0-100.</summary>
             public float stress;
-            /// <summary>0-1, shown to the player as a percentage.</summary>
             public float water;
             public float drainage;
             public float fertility;

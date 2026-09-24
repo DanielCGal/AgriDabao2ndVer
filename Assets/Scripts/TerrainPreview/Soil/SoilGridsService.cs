@@ -23,7 +23,6 @@ namespace AgriDabao3D
             {
                 Debug.LogWarning("SoilGrids request failed: " + req.error);
 
-                // fallback fake sample so your prototype still works
                 onDone?.Invoke(new SoilSample
                 {
                     sand = 45f,
@@ -43,8 +42,6 @@ namespace AgriDabao3D
             Debug.Log($"SoilGrids success for lat={lat}, lon={lon}");
             Debug.Log("SoilGrids raw JSON received.");
 
-            // You should parse this with Newtonsoft Json package in Unity.
-            // Package Manager -> Add package -> Newtonsoft Json
             SoilSample sample = SoilGridsJsonParser.Parse(json);
 
             if (sample != null)

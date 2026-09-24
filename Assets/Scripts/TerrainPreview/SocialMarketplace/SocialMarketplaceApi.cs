@@ -10,26 +10,6 @@ namespace AgriDabao3D
     {
         private string Token => AuthSession.Instance != null ? AuthSession.Instance.AccessToken : null;
 
-        /// <summary>
-        /// Refreshes this device's claim on the account while the farm is open.
-        ///
-        /// The device id is required, not optional: the server reads a heartbeat
-        /// with no device as coming from a build that predates device tracking and
-        /// clears the holder, which would hand the account to any other phone.
-        /// </summary>
-        /// <param name="onBusy">
-        /// Raised on 409, meaning another device has taken this account. Kept apart
-        /// from <paramref name="onError"/> because the two need opposite handling:
-        /// a dropped connection must be ignored so a tunnel does not end the game,
-        /// while a takeover has to end it.
-        /// </param>
-        /// <param name="onSignedOut">
-        /// Raised on 401/403, meaning this device's login is no longer accepted -
-        /// the account's password was changed elsewhere, which retires every
-        /// token issued before it. Separate from <paramref name="onError"/> again
-        /// because it is permanent: no amount of waiting makes this token work,
-        /// so unlike a dropped connection it has to end the session.
-        /// </param>
         public IEnumerator Heartbeat(Action onSuccess = null, Action<string> onError = null,
             Action<string> onBusy = null, Action<string> onSignedOut = null)
         {
@@ -162,14 +142,12 @@ namespace AgriDabao3D
                 "/api/marketplace/listings/" + listingId + "/cancel", onSuccess, onError);
         }
 
-        /// <summary>Sales the player has not been shown a notification for yet.</summary>
         public IEnumerator GetUnseenSales(
             Action<List<MarketplaceSaleDto>> onSuccess, Action<string> onError)
         {
             yield return Get("/api/marketplace/sales/unseen", onSuccess, onError);
         }
 
-        /// <summary>Marks one sale as shown so its popup is not repeated.</summary>
         public IEnumerator AcknowledgeSale(string listingId,
             Action onSuccess, Action<string> onError)
         {
@@ -190,11 +168,6 @@ namespace AgriDabao3D
             else onSuccess?.Invoke(wrapper != null ? wrapper.trade : null);
         }
 
-        /// <summary>
-        /// One trade by id, in whatever state it ended. The active trade call only
-        /// reports PENDING and ACTIVE trades, so this is how a finished trade that
-        /// dropped out of it is told apart from a cancelled one.
-        /// </summary>
         public IEnumerator GetTrade(string tradeId, Action<TradeViewDto> onSuccess, Action<string> onError)
         {
             yield return Get("/api/trades/" + tradeId, onSuccess, onError);

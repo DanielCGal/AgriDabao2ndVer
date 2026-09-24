@@ -19,13 +19,10 @@ namespace AgriDabao3D
         public List<WorldObjectSaveDto> worldObjects = new List<WorldObjectSaveDto>();
         public TutorialSaveDto tutorial = new TutorialSaveDto();
 
-        // Added with save version 4. A version-3 farm has neither, and loads
-        // with a fresh Seedling Tent and no prepared ground.
         public NurserySaveDto nursery = new NurserySaveDto();
         public List<PreparedPlotSaveDto> preparedPlots = new List<PreparedPlotSaveDto>();
     }
 
-    /// <summary>The Seedling Tent: where it stands and what is in each bag.</summary>
     [Serializable]
     public class NurserySaveDto
     {
@@ -45,7 +42,6 @@ namespace AgriDabao3D
         public float prickedGameDay = -1f;
     }
 
-    /// <summary>A patch of tilled or prepared ground that has not been planted yet.</summary>
     [Serializable]
     public class PreparedPlotSaveDto
     {
@@ -61,13 +57,6 @@ namespace AgriDabao3D
         public string districtName;
     }
 
-    /// <summary>
-    /// Beginner-guide progress and this farm's dealt seed kinds.
-    ///
-    /// A farm saved before the tutorial existed has no tutorial block at all; the
-    /// restore path treats that as "already completed" so a returning player is
-    /// never ambushed by the tour.
-    /// </summary>
     [Serializable]
     public class TutorialSaveDto
     {
@@ -188,15 +177,10 @@ namespace AgriDabao3D
         public List<TropicalBundleHarvestSaveDto> tropicalBundles = new List<TropicalBundleHarvestSaveDto>();
         public List<PestConditionSaveDto> activeConditions = new List<PestConditionSaveDto>();
 
-        // Added with save version 4; older saves read as unknown material and a
-        // crop that has been in the field for a long time.
         public string plantingMaterial;
         public float nurseryDays;
         public float fieldPlantedGameDay = -1f;
 
-        // Fruit bag and drainage kit protection. These were never saved before,
-        // so a reload silently removed both and let a second drainage kit stack
-        // another +25% drainage on the same crop.
         public bool hasFruitBag;
         public bool hasDrainageImprovement;
     }
@@ -230,7 +214,6 @@ namespace AgriDabao3D
         public float capacity;
         public float radius;
         public string mitigation;
-        // Climate mitigation fields. Old saves safely deserialize with default values.
         public string climateMitigationType;
         public float effectiveness;
         public float storedResource;

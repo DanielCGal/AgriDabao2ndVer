@@ -4,7 +4,6 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>One page of a picture-and-caption tutorial.</summary>
     [Serializable]
     public class TutorialSlide
     {
@@ -26,25 +25,11 @@ namespace AgriDabao3D
         }
     }
 
-    /// <summary>
-    /// A short picture-book tutorial: one page at a time on the log-ended board,
-    /// turned with the >> plank, closing itself after the last page.
-    ///
-    /// It sits over a dim full-screen layer that swallows every click, so the
-    /// screen behind cannot be used while a page is up - otherwise a player could
-    /// press ENTER through the page explaining what ENTER does.
-    ///
-    /// A plain class rather than a MonoBehaviour, the same as DescriptionBoard: it
-    /// owns its objects and needs no update loop. It also uses DescriptionBoard's
-    /// board art and lettering, so the tutorial reads as part of the same screen
-    /// rather than as something bolted on.
-    /// </summary>
     public class TutorialSlideBoard
     {
         private const float BoardWidth = 1440f;
         private const float BoardHeight = 900f;
 
-        // Heights measured up from the board's bottom edge.
         private const float ButtonBottom = 42f;
         private const float ButtonHeight = 112f;
         private const float TextBottom = 165f;
@@ -52,7 +37,6 @@ namespace AgriDabao3D
         private const float PictureBottom = 360f;
         private const float PictureTop = 790f;
 
-        /// <summary>RightButton.png is 400x180, so preserveAspect keeps this true.</summary>
         private const float ButtonWidth = 250f;
 
         private GameObject root;
@@ -67,7 +51,6 @@ namespace AgriDabao3D
 
         public bool IsOpen => root != null && root.activeSelf;
 
-        /// <summary>Builds the board hidden. Call <see cref="Show"/> to open it.</summary>
         public static TutorialSlideBoard Create(Transform parent, UIThemeSprites theme)
         {
             var board = new TutorialSlideBoard();
@@ -114,7 +97,6 @@ namespace AgriDabao3D
 
             boardImage.raycastTarget = true;
 
-            // How far in from each side the planks start, clear of the painted logs.
             float inset = DescriptionBoard.ContentInset(theme, BoardWidth);
 
             BuildPicture(boardGo.transform, inset);
@@ -140,8 +122,6 @@ namespace AgriDabao3D
 
             pictureImage = pictureGo.GetComponent<Image>();
 
-            // Screenshots come in whatever shape they were captured at; they are
-            // fitted inside the band rather than stretched to it.
             pictureImage.preserveAspect = true;
             pictureImage.raycastTarget = false;
             pictureImage.enabled = false;
@@ -156,8 +136,6 @@ namespace AgriDabao3D
             bodyText.horizontalOverflow = HorizontalWrapMode.Wrap;
             bodyText.verticalOverflow = VerticalWrapMode.Truncate;
 
-            // The longest page is about three times the length of the shortest, so
-            // the size gives way before any line can be cut off.
             bodyText.resizeTextForBestFit = true;
             bodyText.resizeTextMinSize = 16;
             bodyText.resizeTextMaxSize = 30;
@@ -168,7 +146,6 @@ namespace AgriDabao3D
             var go = new GameObject("NextPage", typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(board, false);
 
-            // Bottom right, its right edge against the log, where the mockups put it.
             RectTransform rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(1f, 0f);
             rect.pivot = new Vector2(1f, 0f);
@@ -202,10 +179,6 @@ namespace AgriDabao3D
             labelRect.offsetMax = Vector2.zero;
         }
 
-        /// <summary>
-        /// A horizontal band of the board, inset from the logs on both sides and
-        /// running between two heights measured up from the board's bottom edge.
-        /// </summary>
         private static void PlaceBand(RectTransform rect, float inset, float bottom, float top)
         {
             rect.anchorMin = new Vector2(0f, 0f);
@@ -215,11 +188,6 @@ namespace AgriDabao3D
             rect.offsetMax = new Vector2(-inset, top);
         }
 
-        /// <summary>
-        /// Opens on the first page. <paramref name="finished"/> runs once the last
-        /// page is turned. With no pages to show it runs straight away, so a
-        /// caller waiting on it is never left stuck.
-        /// </summary>
         public void Show(TutorialSlide[] slides, Action finished)
         {
             if (root == null || slides == null || slides.Length == 0)
@@ -249,10 +217,6 @@ namespace AgriDabao3D
                 root.SetActive(false);
         }
 
-        /// <summary>
-        /// Shrinks the board on a screen too narrow or short for it, so the >> plank
-        /// can never end up off the edge where the player could not press it.
-        /// </summary>
         private void FitToScreen()
         {
             RectTransform parentRect = root.transform.parent as RectTransform;
@@ -262,8 +226,6 @@ namespace AgriDabao3D
             float width = parentRect.rect.width;
             float height = parentRect.rect.height;
 
-            // Before the canvas has laid out its size reads as zero; full size is
-            // the right answer then, not the smallest allowed.
             if (width < 1f || height < 1f)
             {
                 boardRect.localScale = Vector3.one;

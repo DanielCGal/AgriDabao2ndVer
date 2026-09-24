@@ -73,7 +73,7 @@ namespace AgriDabao3D
             CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+            scaler.matchWidthOrHeight = 1f;
         }
 
         private void Build()
@@ -103,7 +103,6 @@ namespace AgriDabao3D
                 bg.color = new Color(0f, 0f, 0f, 0.78f);
             }
 
-            // Hanging "Pest & Disease Event" sign above the plank.
             if (theme?.pestDiseaseLabel != null)
             {
                 GameObject signGo = new GameObject("TitleSign", typeof(RectTransform), typeof(Image));
@@ -137,15 +136,10 @@ namespace AgriDabao3D
             messageText.alignment = TextAnchor.MiddleCenter;
             messageText.color = board != null ? new Color(0.20f, 0.12f, 0.04f, 1f) : Color.white;
 
-            // Falls back to the Climate Event's Okay art, since it is the same word
-            // in the same role - one sprite can serve both popups.
             Sprite okArt = theme?.pestDiseaseOkayButton != null
                 ? theme.pestDiseaseOkayButton
                 : theme?.climateOkayButton;
 
-            // Same board and same defect as the Climate Event popup: the painted edge
-            // ends at panel-local y = -169.7, and at -125 the button's base sat at
-            // -158, hard against it.
             Button okButton = CreateButton(panel.transform, "Okay",
                 new Vector2(0f, board != null ? -100f : -80f),
                 board != null ? 230f : 200f, board != null ? 66f : 60f, okArt);
@@ -171,7 +165,6 @@ namespace AgriDabao3D
 
             if (art != null)
             {
-                // The word is painted into the art, so no Text child is added.
                 bg.sprite = art;
                 bg.preserveAspect = true;
                 bg.color = Color.white;

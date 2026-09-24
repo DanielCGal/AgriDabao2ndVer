@@ -60,11 +60,6 @@ namespace AgriDabao3D
                 return false;
             }
 
-            // Prepared ground and the Seedling Tent belong to the farming system:
-            // a Mulch Bag laid on a raised bed, a transplant, or any tap on the
-            // tent. Handing them over here stops "must be used directly on a crop"
-            // from swallowing them. A structure kit aimed at prepared ground still
-            // builds on the terrain behind it, as it always did.
             if (hit.collider.GetComponentInParent<SeedlingTentInstance>() != null)
                 return false;
 
@@ -138,8 +133,6 @@ namespace AgriDabao3D
                 return true;
             }
 
-            // Measured to the crop's root rather than the tap point, so tapping high
-            // on a tall plant still counts as standing beside it.
             if (!IsWithinReach(crop.Transform.position))
             {
                 Show("That crop is too far away. Move closer.");
@@ -256,9 +249,6 @@ namespace AgriDabao3D
                         <FarmingInteractionSystem>();
             }
 
-            // Structures are built on the ground the player tapped, so reach is
-            // measured to that point. Checked after the ownership test so "you do not
-            // own it" still takes priority, matching the farming system's ordering.
             if (!IsWithinReach(position))
             {
                 Show("That ground is too far away. Move closer to build here.");
@@ -420,8 +410,6 @@ namespace AgriDabao3D
 
             SnapObjectBottomToTerrain(runtimeObject, terrain, placementOffset.y);
 
-            // Slide the model sideways in its OWN space, so the nudge stays on the
-            // same side of the object however the placement rotated it.
             if (placementOffset.x != 0f || placementOffset.z != 0f)
             {
                 runtimeObject.transform.position += runtimeObject.transform.TransformVector(
@@ -571,8 +559,6 @@ namespace AgriDabao3D
                          terrain,
                          nearestAnyHit.point))
             {
-                // Allows placement when a grass or surface collider
-                // is covering the generated TerrainCollider.
                 sampledPoint = nearestAnyHit.point;
             }
             else
@@ -817,11 +803,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// Defers to the farming system so both interaction paths agree on how far the
-        /// player can reach, and there is only one distance to tune. Falls open when
-        /// the farming system is absent rather than blocking the player.
-        /// </summary>
         private bool IsWithinReach(Vector3 position)
         {
             return farmingSystem == null || farmingSystem.IsWithinReach(position);

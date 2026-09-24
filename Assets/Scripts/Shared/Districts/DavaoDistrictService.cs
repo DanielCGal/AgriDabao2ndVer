@@ -62,15 +62,6 @@ namespace AgriDabao3D
             "TUGBOK DISTRICT"
         };
 
-        /// <summary>
-        /// The production districts in selector order. Names match the
-        /// entries returned by <see cref="TryGetDistrictAtNormalized"/>.
-        ///
-        /// Adding a district here is not enough on its own. It also needs a row of
-        /// map art on the Area Selection Builder, a painted sign in the UI theme, a
-        /// seed pool in DistrictCropPools and in the backend's DistrictSeedPools,
-        /// and a description in DistrictDescriptions.
-        /// </summary>
         public static readonly string[] ProductiveDistrictOrder =
         {
             "Calinan",
@@ -308,11 +299,6 @@ namespace AgriDabao3D
             return result;
         }
 
-        /// <summary>
-        /// Validates that every sampled point of the box falls inside one specific
-        /// district. Used to keep the player's plot within the district they picked
-        /// from the selector.
-        /// </summary>
         public AreaValidationResult ValidateSelectionForDistrict(
             Rect normalizedRect, string requiredDistrict, int sampleResolution = 7)
         {
@@ -361,10 +347,6 @@ namespace AgriDabao3D
             return result;
         }
 
-        /// <summary>
-        /// Normalized bounding rect and centroid (u=0 left..1 right, v=0 bottom..1 top)
-        /// of a district's coloured region, used to aim the camera and place the box.
-        /// </summary>
         public bool TryGetDistrictNormalizedBounds(string districtName, out Rect bounds, out Vector2 center)
         {
             bounds = new Rect(0f, 0f, 1f, 1f);
@@ -422,7 +404,6 @@ namespace AgriDabao3D
             int width = districtTexture.width;
             int height = districtTexture.height;
 
-            // Sample roughly 512 points per axis regardless of source resolution.
             int stride = Mathf.Max(1, Mathf.RoundToInt(Mathf.Max(width, height) / 512f));
 
             for (int y = 0; y < height; y += stride)

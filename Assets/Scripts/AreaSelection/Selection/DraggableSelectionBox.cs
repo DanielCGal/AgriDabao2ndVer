@@ -42,7 +42,6 @@ namespace AgriDabao3D
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            // A second finger landing mid-drag must not take the box over.
             if (dragging && eventData.pointerId != dragPointerId)
                 return;
 
@@ -54,10 +53,6 @@ namespace AgriDabao3D
             if (!TryPointerInArea(eventData, out Vector2 pointer))
                 return;
 
-            // Kept for the whole drag, so the box travels with the pointer from
-            // wherever it was grabbed. The version before this measured the grab
-            // from the box's centre while positioning it by its corner, which made
-            // the box jump half its own size down and left the moment a drag began.
             grabOffset = boxRect.anchoredPosition - pointer;
             dragging = true;
             dragPointerId = eventData.pointerId;
@@ -79,10 +74,6 @@ namespace AgriDabao3D
             float maxX = dragArea.rect.width - boxWidth;
             float maxY = dragArea.rect.height - boxHeight;
 
-            // Held to what can actually be seen. The map is larger than the frame's
-            // window once it is zoomed, and a box pushed past the window's edge
-            // carries on across the hidden part of the map where the player has no
-            // way to get it back.
             if (visibleArea != null && TryGetVisibleBounds(out Rect visible))
             {
                 minX = Mathf.Max(minX, visible.xMin);
@@ -91,8 +82,6 @@ namespace AgriDabao3D
                 maxY = Mathf.Min(maxY, visible.yMax - boxHeight);
             }
 
-            // A window narrower than the box leaves no valid range at all; centre it
-            // rather than letting the clamp pick one edge.
             if (maxX < minX) minX = maxX = (minX + maxX) * 0.5f;
             if (maxY < minY) minY = maxY = (minY + maxY) * 0.5f;
 
@@ -117,10 +106,6 @@ namespace AgriDabao3D
             dragging = false;
         }
 
-        /// <summary>
-        /// The pointer measured from the drag area's bottom-left corner - the same
-        /// space the box's anchoredPosition is in, since the box is anchored there.
-        /// </summary>
         private bool TryPointerInArea(PointerEventData eventData, out Vector2 point)
         {
             point = Vector2.zero;
@@ -138,11 +123,6 @@ namespace AgriDabao3D
             return true;
         }
 
-        /// <summary>
-        /// The part of the drag area currently showing through
-        /// <see cref="visibleArea"/>, in the same bottom-left space. Worked out from
-        /// world corners, so the map's zoom and pan are already accounted for.
-        /// </summary>
         private bool TryGetVisibleBounds(out Rect bounds)
         {
             bounds = default;

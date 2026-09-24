@@ -133,7 +133,6 @@ namespace AgriDabao3D
                 }
                 catch
                 {
-                    // Fall back to the raw response below.
                 }
 
                 return raw;

@@ -4,25 +4,6 @@ using UnityEngine.Video;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// A video that fills the screen behind a menu and keeps looping.
-    ///
-    /// Unity's VideoPlayer does not reliably keep running on its own. It stops at
-    /// the loop point on some devices, loses its render texture when the app is
-    /// backgrounded or the on-screen keyboard opens and closes, and can sit
-    /// "playing" while the picture is frozen. Setting isLooping and walking away
-    /// was the cause of the main menu background stopping after a while.
-    ///
-    /// So the looping is watched rather than trusted. The player is re-asserted at
-    /// every loop point, restarted on an error, restarted when the app comes back
-    /// to the foreground or the keyboard closes, and checked a few times a second
-    /// for a frame counter that has stopped moving. The render texture is rebuilt
-    /// if it was lost. This is the same treatment the main menu background needed,
-    /// kept in one place so a second screen does not have to rediscover it.
-    ///
-    /// Audio is switched off at the source - a background loop is decoration, and
-    /// whatever music is baked into the clip would fight the game's own.
-    /// </summary>
     public class LoopingVideoBackground : MonoBehaviour
     {
         private VideoPlayer player;
@@ -40,11 +21,6 @@ namespace AgriDabao3D
         private long lastFrame = -1;
         private float lastFrameTime;
 
-        /// <summary>
-        /// Builds the picture and its player under <paramref name="parent"/>, filling
-        /// it. Returns null when there is no clip to play, so the caller can fall
-        /// back to a still background.
-        /// </summary>
         public static LoopingVideoBackground Create(
             string objectName, RectTransform parent, VideoClip clip, int width, int height)
         {
@@ -64,8 +40,6 @@ namespace AgriDabao3D
             raw.color = Color.white;
             raw.raycastTarget = false;
 
-            // Hidden until the first frame lands, so the fallback behind it shows
-            // instead of one frame of whatever the texture happened to contain.
             raw.enabled = false;
 
             var background = go.AddComponent<LoopingVideoBackground>();
@@ -92,8 +66,6 @@ namespace AgriDabao3D
             player.renderMode = VideoRenderMode.RenderTexture;
             player.targetTexture = renderTexture;
 
-            // The clip's own soundtrack is discarded here rather than turned down,
-            // so it can never be heard however the game's volume is set.
             player.audioOutputMode = VideoAudioOutputMode.None;
             player.clip = clip;
 
@@ -179,10 +151,6 @@ namespace AgriDabao3D
             lastFrameTime = Time.unscaledTime;
         }
 
-        /// <summary>
-        /// True when the player claims to be playing but the picture has not moved
-        /// for a while - the failure that looks like the video simply stopping.
-        /// </summary>
         private bool IsStalled()
         {
             if (player == null || !player.isPlaying)
@@ -220,8 +188,6 @@ namespace AgriDabao3D
         {
             source.isLooping = true;
 
-            // Some devices stop at the loop point instead of wrapping, so the wrap
-            // is done by hand when that happens.
             if (!source.isPlaying)
             {
                 source.time = 0d;

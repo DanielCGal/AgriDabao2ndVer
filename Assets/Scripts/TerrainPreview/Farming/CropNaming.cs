@@ -5,17 +5,8 @@ using System.Text;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Friendly per-crop names like "corn_1", "cacao_2". These are a display/AI-facing
-    /// alias only - the machine <c>cropId</c> GUID and all matching logic are unchanged.
-    /// </summary>
     public static class CropNaming
     {
-        /// <summary>
-        /// Next friendly name for a crop type, e.g. "corn_1" then "corn_2". Numbering is
-        /// derived by scanning the live crops, so it keeps counting correctly after a
-        /// save/reload with no persistent counter to reset.
-        /// </summary>
         public static string NextName(string cropTypeLabel)
         {
             string prefix = Slug(cropTypeLabel) + "_";
@@ -41,7 +32,6 @@ namespace AgriDabao3D
             return prefix + (max + 1);
         }
 
-        /// <summary>{ cropId GUID -> friendly name } for every live crop.</summary>
         public static Dictionary<string, string> LiveIdToNameMap()
         {
             Dictionary<string, string> map = new Dictionary<string, string>();
@@ -58,11 +48,6 @@ namespace AgriDabao3D
             return map;
         }
 
-        /// <summary>
-        /// Replaces any raw crop GUID inside AI-generated text with the crop's friendly
-        /// name, so the player never sees the machine id even if the model leaks one.
-        /// GUIDs are unique 32-char strings, so the replacement can't corrupt other text.
-        /// </summary>
         public static string Humanize(string aiText)
         {
             if (string.IsNullOrEmpty(aiText))

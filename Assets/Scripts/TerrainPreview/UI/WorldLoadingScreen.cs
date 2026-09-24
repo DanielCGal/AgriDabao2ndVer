@@ -27,8 +27,6 @@ namespace AgriDabao3D
 
         private void Update()
         {
-            // This catches UI that gets created after the loading screen starts,
-            // like InventoryUIBuilder and DevToolsUIBuilder.
             if (isShowing)
                 HideGameplayUI();
         }
@@ -52,7 +50,7 @@ namespace AgriDabao3D
                 CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+                scaler.matchWidthOrHeight = 1f;
             }
 
             root = new GameObject("WorldLoadingScreen_UI", typeof(RectTransform));
@@ -106,7 +104,6 @@ namespace AgriDabao3D
                 panel.color = new Color(0f, 0f, 0f, 0.65f);
             }
 
-            // Hanging "Generating Farm" sign; falls back to plain title text.
             if (theme?.loadingLabel != null)
             {
                 GameObject signGo = new GameObject("TitleSign", typeof(RectTransform), typeof(Image));

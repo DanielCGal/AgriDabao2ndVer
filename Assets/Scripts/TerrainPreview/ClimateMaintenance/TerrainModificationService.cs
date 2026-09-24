@@ -6,14 +6,6 @@ namespace AgriDabao3D
 {
     public static class TerrainModificationService
     {
-        // Keyed by the Terrain object reference itself, not GetInstanceID().
-        // Unity can recycle instance IDs within a session once the old Terrain
-        // GameObject is destroyed (e.g. on scene reload), which previously made
-        // this guard falsely think a patch was already applied to a brand-new
-        // terrain and silently skip re-carving it - the bug behind raised beds /
-        // drainage canals reverting after a farm save+reload. A ConditionalWeakTable
-        // tracks patches per actual Terrain instance and cleans itself up once a
-        // terrain is destroyed/GC'd, so there is no risk of ID collisions or leaks.
         private static readonly ConditionalWeakTable<Terrain, HashSet<string>> AppliedPatchesByTerrain =
             new ConditionalWeakTable<Terrain, HashSet<string>>();
 
@@ -23,17 +15,6 @@ namespace AgriDabao3D
             return patches.Add(key);
         }
 
-        /// <summary>
-        /// Returns the world X/Z of the heightmap vertex nearest <paramref name="worldPosition"/>,
-        /// leaving Y untouched.
-        ///
-        /// A terrain can only raise its vertices, so a mound's peak always lands on
-        /// one - it cannot sit between them. On this terrain the vertices are about
-        /// 2.7 m apart (700 m over 256 steps) while a raised bed is only 3.2 m across,
-        /// so a crop left at an arbitrary position ends up on the side of its own bed.
-        /// Snapping the crop to the vertex that becomes the peak puts it on top; the
-        /// crop moves by at most half a vertex spacing, which is not noticeable.
-        /// </summary>
         public static Vector3 SnapToHeightmapVertex(Terrain terrain, Vector3 worldPosition)
         {
             if (terrain == null || terrain.terrainData == null)
@@ -64,12 +45,6 @@ namespace AgriDabao3D
             return true;
         }
 
-        /// <summary>
-        /// Lowers a raised bed that was lifted earlier with the same centre, size
-        /// and patch id, returning the ground to how it was. Used when the player
-        /// fills in a bed nothing was planted in. Does nothing for a patch that is
-        /// not currently applied, so it can never dig a pit.
-        /// </summary>
         public static bool RemoveRaisedBed(Terrain terrain, Vector3 center, float radiusMeters, float heightMeters, string patchId)
         {
             if (terrain == null || terrain.terrainData == null) return false;
@@ -97,15 +72,6 @@ namespace AgriDabao3D
             float[,] heights = data.GetHeights(x0, z0, width, height);
             float normalizedDelta = heightMeters / data.size.y;
 
-            // Measure the falloff from the crop's true position, not from the rounded
-            // sample index.
-            //
-            // centerX/centerZ are whole heightmap samples, and on this terrain one
-            // sample spans about 2.7 m (700 m over 256 steps). Rounding the centre to
-            // the nearest sample could therefore shift the peak up to ~1.4 m away from
-            // the crop - close to half the bed's 3.2 m radius, which is why the crop
-            // ended up on the side of the mound instead of on top of it. Using the
-            // real world distance puts the peak exactly on the crop.
             float metresPerSampleX = data.size.x / (resolution - 1);
             float metresPerSampleZ = data.size.z / (resolution - 1);
 

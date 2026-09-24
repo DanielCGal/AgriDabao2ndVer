@@ -2,17 +2,9 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Marks a spawned farm object for distance-based render culling.
-    /// Only the object's renderers are toggled - the GameObject and every
-    /// script on it stay active, so growth timers, mitigation effects,
-    /// selling, collection, etc. keep running while the object is hidden.
-    /// Attach one per spawned root via <see cref="Attach"/>.
-    /// </summary>
     [DisallowMultipleComponent]
     public class DistanceCullable : MonoBehaviour
     {
-        /// <summary>Adds the component to <paramref name="go"/> if it does not already have one.</summary>
         public static DistanceCullable Attach(GameObject go)
         {
             if (go == null)
@@ -87,7 +79,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>Re-reads renderers/bounds after the object's visual hierarchy changes.</summary>
         public void Recache()
         {
             cached = false;
@@ -99,8 +90,6 @@ namespace AgriDabao3D
             if (cached)
                 return;
 
-            // Let this culler own visibility for trees; disable the billboard
-            // sprite-swap so they fully disappear instead of turning into a flat sprite.
             NeutralizeBillboardLOD();
 
             renderers = GetComponentsInChildren<Renderer>(true);
@@ -142,8 +131,6 @@ namespace AgriDabao3D
             {
                 Renderer r = renderers[i];
 
-                // Skip inactive renderers (e.g. a dormant billboard child) so
-                // their degenerate bounds don't inflate the cull radius.
                 if (r == null || !r.gameObject.activeInHierarchy)
                     continue;
 

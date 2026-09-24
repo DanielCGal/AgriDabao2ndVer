@@ -5,84 +5,37 @@ using System.Text;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// One planting material: what it grows into, how it reaches the field, and
-    /// the real-world timing the game compresses.
-    /// </summary>
     public sealed class PlantingMaterialInfo
     {
         public InventoryItemType Item;
         public FarmCropType Crop;
         public string Name;
 
-        /// <summary>Raised in a seedling bag in the Seedling Tent before it goes to the field.</summary>
         public bool SowInBag;
 
-        /// <summary>Goes straight into prepared ground in the field.</summary>
         public bool PlantDirect;
 
-        /// <summary>Bought already raised, so it skips the tent and is transplanted straight away.</summary>
         public bool ReadySeedling;
 
-        /// <summary>The ground this crop needs in the field.</summary>
         public PreparedPlotKind Plot;
 
-        /// <summary>The raised bed must be mulched before this goes in.</summary>
         public bool NeedsMulchedBed;
 
-        /// <summary>Game days from sowing in a bag to ready for transplanting.</summary>
         public float NurseryDays;
 
-        /// <summary>
-        /// Above zero for seeds that germinate in a seed tray first and are then
-        /// pricked into their bag by hand. The bag waits for the player after this
-        /// many days, and the rest of <see cref="NurseryDays"/> starts from the
-        /// pricking.
-        /// </summary>
         public float PrickAfterDays;
 
-        /// <summary>
-        /// Extra age given on top of the nursery time. Used for the grafted mango,
-        /// which the notes say flowers sooner than a seed-grown tree.
-        /// </summary>
         public float ExtraAgeDays;
 
-        /// <summary>How old a bought ready seedling already is, in game days.</summary>
         public float ReadySeedlingAgeDays;
 
-        /// <summary>The real figure from the user's crop notes, shown beside the game one.</summary>
         public string RealWorld;
 
-        /// <summary>A material that can go into the field today, without the tent.</summary>
         public bool FieldReady => PlantDirect || ReadySeedling;
     }
 
-    /// <summary>
-    /// The sixteen planting materials and the route each one takes to the field.
-    ///
-    /// The planting material, not the crop, decides the route. The same crop can
-    /// come from different material - a banana from a tissue-cultured plantlet or
-    /// a sword sucker, a mango from a grafted seedling or a liso seed - and squash
-    /// seed can go either way, or be bought as a ready seedling. Every real-world
-    /// figure below is taken from the user's own notes in the Handoff folder
-    /// (crop_materials.txt and crop_production_notes.txt).
-    ///
-    /// Nursery waits are compressed into a few game days on purpose. A game day
-    /// lasts fifteen real minutes, so even a five-month cacao nursery would take
-    /// tens of hours of play; the real figure stays visible in the text instead.
-    ///
-    /// The five old seed items (banana, coconut, mango, pineapple and strawberry
-    /// seed) are kept in the item list only so that older saves, trades and
-    /// listings still read. They are turned into the material that replaced them
-    /// wherever they are loaded.
-    /// </summary>
     public static class PlantingMaterialCatalog
     {
-        /// <summary>
-        /// A seedling left in its bag long after it was ready only counts up to
-        /// this multiple of its nursery time, so a forgotten bag does not turn into
-        /// a tree that is already bearing.
-        /// </summary>
         public const float MaxNurseryAgeMultiplier = 2f;
 
         private static readonly Dictionary<InventoryItemType, PlantingMaterialInfo> Materials =
@@ -98,7 +51,6 @@ namespace AgriDabao3D
                 { InventoryItemType.StrawberrySeed, InventoryItemType.StrawberryRunner }
             };
 
-        /// <summary>The order the shop shelf and the developer tools list them in, grouped by crop.</summary>
         public static readonly InventoryItemType[] AllMaterials =
         {
             InventoryItemType.CacaoSeed,
@@ -240,14 +192,11 @@ namespace AgriDabao3D
             Materials[info.Item] = info;
         }
 
-        // ------------------------------------------------------------- lookups
-
         public static bool TryGet(InventoryItemType item, out PlantingMaterialInfo info)
         {
             return Materials.TryGetValue(item, out info);
         }
 
-        /// <summary>By saved name, upgrading an old seed name first.</summary>
         public static bool TryGet(string itemName, out PlantingMaterialInfo info)
         {
             info = null;
@@ -265,13 +214,11 @@ namespace AgriDabao3D
             return TryGet(item, out PlantingMaterialInfo info) && info.SowInBag;
         }
 
-        /// <summary>Can go into prepared ground today: a direct material or a bought seedling.</summary>
         public static bool IsFieldReadyMaterial(InventoryItemType item)
         {
             return TryGet(item, out PlantingMaterialInfo info) && info.FieldReady;
         }
 
-        /// <summary>Every material that grows into this crop, in shelf order.</summary>
         public static List<InventoryItemType> MaterialsFor(FarmCropType crop)
         {
             List<InventoryItemType> result = new List<InventoryItemType>();
@@ -283,10 +230,6 @@ namespace AgriDabao3D
             return result;
         }
 
-        /// <summary>
-        /// The material assumed for a crop that was planted before materials were
-        /// recorded - what its old seed would be called today.
-        /// </summary>
         public static InventoryItemType DefaultMaterialFor(FarmCropType crop)
         {
             switch (crop)
@@ -308,7 +251,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>The ground a crop needs in the field, whatever it was grown from.</summary>
         public static PreparedPlotKind PlotFor(FarmCropType crop)
         {
             switch (crop)
@@ -357,12 +299,6 @@ namespace AgriDabao3D
                 : itemName ?? string.Empty;
         }
 
-        /// <summary>
-        /// What a nursery material is called once it is growing in its bag: a seed
-        /// becomes "Cacao Seedling", while a banana plantlet or a grafted mango
-        /// seedling keeps its own name. Tacking "seedling" onto the material's
-        /// name gave "Cacao Seed seedling".
-        /// </summary>
         public static string SeedlingName(PlantingMaterialInfo info)
         {
             if (info == null)
@@ -373,7 +309,6 @@ namespace AgriDabao3D
                 : info.Name;
         }
 
-        /// <summary>"Banana" to the crop; false for anything that is not a crop name.</summary>
         public static bool TryGetCropType(string cropName, out FarmCropType crop)
         {
             crop = FarmCropType.Coconut;
@@ -391,9 +326,6 @@ namespace AgriDabao3D
                    item != InventoryItemType.None;
         }
 
-        // ------------------------------------------------------- old seed items
-
-        /// <summary>One of the five seed items the new materials replaced.</summary>
         public static bool IsLegacySeed(InventoryItemType item)
         {
             return LegacyUpgrades.ContainsKey(item);
@@ -401,13 +333,11 @@ namespace AgriDabao3D
 
         public static IEnumerable<InventoryItemType> LegacySeeds => LegacyUpgrades.Keys;
 
-        /// <summary>The replacement for an old seed item, or the item itself.</summary>
         public static InventoryItemType UpgradeLegacy(InventoryItemType item)
         {
             return LegacyUpgrades.TryGetValue(item, out InventoryItemType upgraded) ? upgraded : item;
         }
 
-        /// <summary>The same, for an item saved by name. Unknown names are returned as they were.</summary>
         public static string UpgradeLegacyName(string itemName)
         {
             if (!TryParseItem(itemName, out InventoryItemType item))
@@ -418,10 +348,6 @@ namespace AgriDabao3D
                 : itemName;
         }
 
-        /// <summary>
-        /// Upgrades every old seed name inside an "A|B|C" alternative list, as the
-        /// daily tasks and the adviser's objectives store them, keeping the rest.
-        /// </summary>
         public static string UpgradeLegacyList(string alternatives)
         {
             if (string.IsNullOrWhiteSpace(alternatives))
@@ -439,14 +365,6 @@ namespace AgriDabao3D
             return string.Join("|", result);
         }
 
-        // -------------------------------------------------------------- timing
-
-        /// <summary>
-        /// Age, in game days, a crop starts at when this material goes into the
-        /// field. The user decided nursery days count toward the crop's age; a
-        /// seedling left in its bag long after it was ready only counts up to
-        /// <see cref="MaxNurseryAgeMultiplier"/> times its nursery time.
-        /// </summary>
         public static float StartingAgeDays(PlantingMaterialInfo info, float daysInNursery)
         {
             if (info == null)
@@ -474,12 +392,6 @@ namespace AgriDabao3D
             return days.ToString("0.0", CultureInfo.InvariantCulture) + " game days";
         }
 
-        // ---------------------------------------------------------------- text
-
-        /// <summary>
-        /// The planting route in plain words, for the shop, the Seedling Tent and
-        /// the adviser.
-        /// </summary>
         public static string DescribeRoute(PlantingMaterialInfo info)
         {
             if (info == null)
@@ -537,10 +449,6 @@ namespace AgriDabao3D
             return text.ToString();
         }
 
-        /// <summary>
-        /// "Planted From" line for the crop board: the material, and how long it
-        /// spent in the tent.
-        /// </summary>
         public static string CropBoardLine(string materialName, float nurseryDays)
         {
             if (!TryGet(materialName, out PlantingMaterialInfo info))
@@ -557,7 +465,6 @@ namespace AgriDabao3D
             return "Planted From: " + info.Name + " (" + route + ")";
         }
 
-        /// <summary>"In real farms: ..." for the crop board.</summary>
         public static string RealWorldLine(string materialName)
         {
             return TryGet(materialName, out PlantingMaterialInfo info) && !string.IsNullOrEmpty(info.RealWorld)
@@ -566,25 +473,14 @@ namespace AgriDabao3D
         }
     }
 
-    /// <summary>
-    /// The two planting lines every crop board shows, formatted to drop straight
-    /// into the three crop classes' readouts: nothing at all for a crop planted
-    /// before materials were recorded.
-    /// </summary>
     public static class CropPlantingText
     {
-        /// <summary>"Planted From: ..." plus its line break, or nothing.</summary>
         public static string PlantedFromLine(string materialName, float nurseryDays)
         {
             string line = PlantingMaterialCatalog.CropBoardLine(materialName, nurseryDays);
             return string.IsNullOrEmpty(line) ? string.Empty : line + "\n";
         }
 
-        /// <summary>
-        /// A line break plus "In real farms: ...". A crop planted before materials
-        /// were recorded uses the material its old seed became, so every crop on
-        /// the farm shows its real-world timing.
-        /// </summary>
         public static string RealWorldLine(string materialName, FarmCropType crop)
         {
             if (string.IsNullOrWhiteSpace(materialName))

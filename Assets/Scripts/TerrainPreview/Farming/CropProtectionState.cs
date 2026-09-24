@@ -2,9 +2,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Stores persistent non-spray protection applied to one crop.
-    /// </summary>
     public class CropProtectionState : MonoBehaviour
     {
         [Header("Installed Protection")]
@@ -103,11 +100,6 @@ namespace AgriDabao3D
             return true;
         }
 
-        /// <summary>
-        /// Brings back protection from a farm save. Unlike installing, this does
-        /// not raise drainage: the crop's saved drainage already includes the
-        /// kit's bonus, so adding it again would count it twice.
-        /// </summary>
         public void RestoreSaveData(bool fruitBag, bool drainageImprovement, GameObject fruitBagPrefab)
         {
             hasDrainageImprovement = drainageImprovement;

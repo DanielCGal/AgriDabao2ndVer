@@ -59,7 +59,6 @@ namespace AgriDabao3D
                 return;
             }
             Instance = this;
-            // Day 1 begins at the requested time.
             TotalGameDays =
                 Mathf.Repeat(startHour, 24f) / 24f;
             RefreshTimeOfDay();
@@ -69,8 +68,6 @@ namespace AgriDabao3D
         {
             if (FarmLoadContext.IsRestoring)
                 return;
-            // Initialization is idempotent, so script Start order
-            // no longer affects the first pest/disease evaluation.
             if (WeatherSystem.Instance != null)
             {
                 WeatherSystem.Instance.EnsureInitialized();
@@ -160,11 +157,6 @@ namespace AgriDabao3D
         }
         private void ProcessNewGameDay()
         {
-            // Required deterministic order:
-            // 1. The clock is already on the new day.
-            // 2. Roll the new day's weather and temperature.
-            // 3. Evaluate pest/disease risk using that weather.
-            // 4. Notify any additional daily systems.
             if (WeatherSystem.Instance != null)
             {
                 WeatherSystem.Instance
@@ -211,8 +203,6 @@ namespace AgriDabao3D
             );
             UpdateSun();
             OnTimeChanged?.Invoke();
-            // Do not misclassify changes caused by skipped simulation as
-            // direct player actions after the skip finishes.
             FarmTaskActionObserver.Instance?.ResetBaseline();
             Debug.Log(
                 $"[DevTools] Advanced {days:F2} game day(s). " +
@@ -232,7 +222,6 @@ namespace AgriDabao3D
         {
             if (days <= 0f)
                 return;
-            // Continuous mitigation is applied before disease damage.
             SimulateContinuousMitigations(days);
             if (PestDiseaseSystem.Instance != null)
             {
@@ -288,8 +277,6 @@ namespace AgriDabao3D
                 if (maintenance != null)
                     maintenance.SimulateTimeSkip(days);
             }
-            // Climate mitigation objects also have continuous effects and
-            // stored resources, so they must advance during task-based skips.
             ClimateMitigationWorldObject[] climateMitigations =
                 Object.FindObjectsByType<ClimateMitigationWorldObject>(
                     FindObjectsSortMode.None);
@@ -345,8 +332,6 @@ namespace AgriDabao3D
         {
             if (sunLight == null)
                 return;
-            // 6 AM = sunrise, 12 PM = highest sun,
-            // 6 PM = sunset.
             float sunAngle =
                 TimeOfDay01 * 360f - 90f;
             sunLight.transform.rotation =

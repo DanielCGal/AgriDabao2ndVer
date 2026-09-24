@@ -50,7 +50,7 @@ namespace AgriDabao3D
                 CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+                scaler.matchWidthOrHeight = 1f;
             }
         }
 
@@ -78,7 +78,6 @@ namespace AgriDabao3D
             startPopupText.fontSize = themed ? 24 : 28;
             startPopupText.fontStyle = themed ? FontStyle.Bold : FontStyle.Normal;
             startPopupText.alignment = TextAnchor.MiddleCenter;
-            // Dark ink reads on the light plank; white on the plain fallback.
             startPopupText.color = themed ? new Color(0.20f, 0.12f, 0.04f, 1f) : Color.white;
 
             CreateButton(
@@ -86,8 +85,6 @@ namespace AgriDabao3D
                 "Okay!",
                 new Vector2(0.5f, 0f),
                 new Vector2(themed ? 230f : 180f, themed ? 66f : 60f),
-                // ClimateEventBoard.png's painted edge ends at panel-local y = -170.6;
-                // at the old 30 the button's base reached -160, right against it.
                 new Vector2(0f, themed ? 55f : 30f),
                 () => startPopup.SetActive(false),
                 Theme?.climateOkayButton
@@ -110,9 +107,6 @@ namespace AgriDabao3D
                 "Okay!",
                 new Vector2(0.5f, 0f),
                 new Vector2(themed ? 230f : 180f, themed ? 66f : 60f),
-                // Centred in the bottom plank band: at the old 34 the button's base
-                // reached -326, past the plank edge at -314 and onto the outline.
-                // 60 leaves 14px of plank below it and 14px up to the scroll area.
                 new Vector2(0f, themed ? 60f : 24f),
                 () => resultPopup.SetActive(false),
                 Theme?.climateOkayButton
@@ -129,9 +123,6 @@ namespace AgriDabao3D
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(0.5f, 1f);
             rect.sizeDelta = new Vector2(0f, 60f);
-            // ClimateEvaluateBoard.png draws 1:1 at this panel's size, and its top
-            // plank edge sits at panel-local y = +313. At the old -20 the title's
-            // glyphs straddled that edge and spilled onto the painted outline.
             rect.anchoredPosition = new Vector2(0f, -44f);
 
             resultTitleText = go.GetComponent<Text>();
@@ -152,8 +143,6 @@ namespace AgriDabao3D
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(0.5f, 1f);
             rect.sizeDelta = new Vector2(0f, 50f);
-            // Follows the title down, staying clear of the first plank seam at
-            // panel-local y = +215 so no dark line cuts through the digits.
             rect.anchoredPosition = new Vector2(0f, -100f);
 
             resultScoreText = go.GetComponent<Text>();
@@ -166,16 +155,6 @@ namespace AgriDabao3D
 
         private void CreateScrollableBody()
         {
-            // No Mask here: the Viewport below does the clipping, exactly as every
-            // other scrolling panel in the game builds it.
-            //
-            // A Mask with showMaskGraphic=false draws its graphic only to write the
-            // stencil buffer, and that draw is alpha-clipped. The themed board wants
-            // no backdrop of its own, so this Image sits at alpha 0 - every fragment
-            // is then discarded, the stencil is never written, and every child of the
-            // mask fails the stencil test. The evaluation text rendered as nothing at
-            // all while the title and score, being siblings of this object rather
-            // than children, kept showing.
             GameObject scrollView = new GameObject(
                 "Scroll View",
                 typeof(RectTransform),
@@ -188,17 +167,10 @@ namespace AgriDabao3D
             RectTransform scrollRectTransform = scrollView.GetComponent<RectTransform>();
             scrollRectTransform.anchorMin = new Vector2(0f, 0f);
             scrollRectTransform.anchorMax = new Vector2(1f, 1f);
-            // The board's planks stop at panel-local x = -404 and +388 - not a
-            // symmetric pair, since the painted plank field sits about 8px left of
-            // the panel's own centre. The old +-130 put the text at -420 and +420,
-            // i.e. under both rolled logs, worst on the right. These insets leave
-            // 24px of bare plank on each side once the layout group's 12px padding
-            // is taken off. The bottom lifts to -220 to give the Okay! button room.
             scrollRectTransform.offsetMin = new Vector2(themedBoard ? 158f : 30f, themedBoard ? 140f : 100f);
             scrollRectTransform.offsetMax = new Vector2(themedBoard ? -174f : -30f, themedBoard ? -210f : -140f);
 
             Image scrollBg = scrollView.GetComponent<Image>();
-            // The board already provides the panel look behind the text.
             scrollBg.color = themedBoard
                 ? new Color(1f, 1f, 1f, 0f)
                 : new Color(1f, 1f, 1f, 0.06f);
@@ -305,7 +277,6 @@ namespace AgriDabao3D
             return panel;
         }
 
-        /// <summary>Hanging painted sign above a popup; no-op when no art is set.</summary>
         private void CreateSign(Transform parent, Sprite art, Vector2 size, float offsetY)
         {
             if (art == null)
@@ -346,7 +317,6 @@ namespace AgriDabao3D
 
             if (art != null)
             {
-                // The word is painted into the art, so no Text child is added.
                 bg.sprite = art;
                 bg.preserveAspect = true;
                 bg.color = Color.white;
@@ -397,10 +367,6 @@ namespace AgriDabao3D
             resultScoreText.text = $"Mitigation Score: {Mathf.RoundToInt(clampedScore)}%";
             resultBodyText.text = CropNaming.Humanize(AiText.StripMarkdown(evaluationText));
 
-            // The weather/time HUD shares this canvas, so draw order is sibling
-            // order and whichever builder ran last wins. The HUD was painting over
-            // the board's top-left corner and the score line; claiming the last
-            // slot on open puts the popup in front wherever it happens to be built.
             resultPopup.transform.SetAsLastSibling();
             resultPopup.SetActive(true);
 

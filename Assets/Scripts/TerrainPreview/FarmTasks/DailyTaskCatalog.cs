@@ -19,16 +19,14 @@ namespace AgriDabao3D
         private static List<DailyTaskTemplate> Build()
         {
             List<DailyTaskTemplate> values = new List<DailyTaskTemplate>();
-            AddRoutineTasks(values);          // 1-65
-            AddGeneralTasks(values);          // 66-80
-            AddDroughtTasks(values);          // 81-105
-            AddTyphoonTasks(values);          // 106-130
-            AddPestDiseaseTasks(values);      // 131-177
-            AddAdvancedTasks(values);         // 178-200
-            AddNurseryTasks(values);          // 201-204
+            AddRoutineTasks(values);
+            AddGeneralTasks(values);
+            AddDroughtTasks(values);
+            AddTyphoonTasks(values);
+            AddPestDiseaseTasks(values);
+            AddAdvancedTasks(values);
+            AddNurseryTasks(values);
 
-            // Ids are positions in this list, and a saved task keeps its id, so
-            // new templates only ever go on the end.
             if (values.Count != ExpectedCount)
             {
                 throw new InvalidOperationException(
@@ -573,11 +571,6 @@ namespace AgriDabao3D
                 reduction: 5f, activeCondition: true));
         }
 
-        /// <summary>
-        /// The planting system's own jobs: working ground, and the Seedling Tent.
-        /// A seed sown today cannot be transplanted before the day ends, so sowing
-        /// and transplanting are separate tasks rather than one "raise a seedling".
-        /// </summary>
         private static void AddNurseryTasks(List<DailyTaskTemplate> list)
         {
             list.Add(Task("Sow a seedling bag",

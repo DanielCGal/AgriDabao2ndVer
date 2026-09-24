@@ -46,19 +46,11 @@ namespace AgriDabao3D
                 soilInfoText = soilInfoPanel.createdText;
         }
 
-        /// <summary>
-        /// Shows a farming feedback message (dug ground, planted seed, warnings)
-        /// on the same panel used for crop inspection.
-        /// </summary>
         public void ShowMessage(string text)
         {
             SetInspectionText(text);
         }
 
-        /// <summary>
-        /// Writes a crop inspection readout and reveals the panel. The panel is
-        /// hidden the rest of the time - raw ground soil is no longer inspectable.
-        /// </summary>
         private void SetInspectionText(string text)
         {
             EnsureSoilInfoText();
@@ -186,8 +178,6 @@ namespace AgriDabao3D
 
             yield return new WaitForSeconds(0.35f);
 
-            // The inspection panel stays hidden until the player clicks a crop.
-
             if (FarmPersistenceManager.Instance != null)
                 FarmPersistenceManager.Instance.NotifyWorldReady(sampleA, sampleB, a, b);
 
@@ -215,17 +205,10 @@ namespace AgriDabao3D
                 layer.tileSize = new Vector2(td.size.x, td.size.z);
             }
 
-            // IMPORTANT: make terrain look like rough grass, not shiny plastic/water
             layer.metallic = 0f;
             layer.smoothness = 0f;
             layer.normalScale = 0.35f;
 
-            // TerrainLit reads gloss as albedo.alpha * _Smoothness0, and the engine
-            // rewrites _Smoothness0 for us, so the line above is not on its own
-            // enough to stop the ground mirroring the sky. Clearing the alpha makes
-            // the product zero regardless. Skipped for a non-readable imported
-            // texture, which cannot be edited at runtime - set its Alpha Source to
-            // "None" in the importer instead.
             TemporaryTerrainGenerator.ClearSmoothnessAlpha(layer.diffuseTexture as Texture2D);
 
             td.terrainLayers = new TerrainLayer[] { layer };
@@ -515,14 +498,6 @@ namespace AgriDabao3D
             return "Unknown";
         }
 
-        /// <summary>
-        /// Tapping bare ground no longer reports raw soil chemistry - only crops
-        /// can be inspected. This clears the panel so a previous crop's readout
-        /// does not linger after the player looks away.
-        ///
-        /// Soil data itself is untouched: <see cref="TryGetSoilAtWorldPosition"/>
-        /// and the terrain/soil generation still use the full samples internally.
-        /// </summary>
         public void InspectAtScreenPosition(Vector2 screenPosition)
         {
             EnsureSoilInfoText();
@@ -548,15 +523,6 @@ namespace AgriDabao3D
             return sample != null;
         }
 
-        /// <summary>
-        /// The crop whose readout is currently on the info panel.
-        ///
-        /// The developer tools edit this one rather than asking the player to arm
-        /// a separate pick mode: tapping a crop to read it is already the gesture
-        /// for choosing it. Cleared when nothing has been inspected yet, and it
-        /// goes stale rather than dangling if the crop is destroyed - callers
-        /// check for null.
-        /// </summary>
         public static GameObject LastInspectedCrop { get; private set; }
 
         public void ShowTreeInfo(CoconutTreeInstance tree)
@@ -595,12 +561,6 @@ namespace AgriDabao3D
                 PestDiseaseAffectedCrop.GetInspectionTextFor(plant.gameObject));
         }
 
-        /// <summary>
-        /// The full readout for whatever crop this object belongs to.
-        ///
-        /// Returns false when the object is not a crop, so a caller can fall back
-        /// rather than silently showing nothing.
-        /// </summary>
         public bool ShowFullCropInfo(GameObject cropObject)
         {
             if (cropObject == null)
@@ -633,15 +593,6 @@ namespace AgriDabao3D
             return false;
         }
 
-        /// <summary>
-        /// Shown after a mitigation item is used on a crop.
-        ///
-        /// This used to print a shorter board of its own - crop, health, stress,
-        /// water and the pest block - so the player saw two different readouts for
-        /// the same plant depending on how they looked at it, and the mitigation
-        /// one hid drainage, fertility and suitability. It now shows exactly what
-        /// tapping the crop shows.
-        /// </summary>
         public void ShowPestDiseaseInfo(PestDiseaseAffectedCrop disease)
         {
             if (disease == null)
@@ -650,8 +601,6 @@ namespace AgriDabao3D
             if (ShowFullCropInfo(disease.gameObject))
                 return;
 
-            // Not a crop we have a full readout for - better a short board than
-            // no feedback that the treatment landed.
             SetInspectionText(
                 $"Crop: {disease.CropDisplayName}\n" +
                 $"Health: {disease.Health:F1}/100\n" +

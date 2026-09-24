@@ -13,36 +13,12 @@ namespace AgriDabao3D
         public KeyCode toggleKey = KeyCode.F1;
         public bool startHidden = true;
 
-        /// <summary>
-        /// Above every panel the game builds, below the on-screen typing bar,
-        /// which sits at 32000 and has to stay above everything.
-        /// </summary>
         private const int DevPanelSortingOrder = 30000;
 
-        /// <summary>
-        /// On a desktop or in the editor the panel simply exists, toggled with
-        /// F1. There is no account check because there is no account worth
-        /// checking: anyone running the editor already has the project.
-        /// </summary>
         private static bool DesktopToolsAllowed => !Application.isMobilePlatform;
 
-        /// <summary>
-        /// Set only once the server has confirmed both that this account is on
-        /// the admin list and that the deployment currently allows the tools on
-        /// a phone. Never decided here: the list and the switch both live on the
-        /// server, so a phone has to ask, and an ordinary player is told no.
-        ///
-        /// Worth being honest about the limit of this. The panel's local actions
-        /// are simulated on the device, so a rebuilt APK could perform them
-        /// whatever the server says. What the gate buys is that the ordinary
-        /// build has no button at all. The actions that reach other people -
-        /// deleting an account, sending an event to another player - are checked
-        /// against the admin list on the server every time and do not depend on
-        /// this at all.
-        /// </summary>
         private bool mobileToolsGranted;
 
-        /// <summary>True when the panel is being drawn for a touch screen.</summary>
         private bool MobileLayout => !DesktopToolsAllowed;
 
         private Canvas canvas;
@@ -73,7 +49,6 @@ namespace AgriDabao3D
         private InputField sendTimeInput;
         private Text sendCommandStatus;
 
-        // ---- crop info edit ----
         private Text cropEditTitle;
         private InputField cropEditStressInput;
         private InputField cropEditWaterInput;
@@ -82,12 +57,6 @@ namespace AgriDabao3D
         private InputField cropEditSuitabilityInput;
         private Text cropEditStatus;
 
-        /// <summary>
-        /// Every object the crop-editor section owns, so the whole block can be
-        /// hidden when no crop is selected. Collected as a range of the content's
-        /// children rather than tracked one by one, which keeps the flow-layout
-        /// helpers unchanged.
-        /// </summary>
         private readonly List<GameObject> cropEditBlock = new List<GameObject>();
         private float cropEditBlockHeight;
         private float contentFullHeight;
@@ -100,19 +69,9 @@ namespace AgriDabao3D
         private GameObject eventPicker;
         private int selectedEventIndex;
 
-        /// <summary>
-        /// How much vertical room the duration label and field occupy, so hiding
-        /// them can pull everything below back up by exactly that much.
-        /// </summary>
         private float durationBlockHeight;
         private bool durationVisible = true;
 
-        /// <summary>
-        /// Every option the picker offers: what to send, and how to name it on
-        /// screen. The wording is carried alongside rather than parsed back out
-        /// of the label, so a row can be reworded for readability without
-        /// changing what pressing it triggers.
-        /// </summary>
         private readonly System.Collections.Generic.List<(string type, string payload, string label)>
             sendEventOptions = new System.Collections.Generic.List<(string, string, string)>();
 
@@ -121,10 +80,8 @@ namespace AgriDabao3D
         private GameObject deleteAccountPrompt;
         private Text deleteAccountPromptText;
 
-        /// <summary>The address the open confirmation is about.</summary>
         private string pendingDeleteEmail;
 
-        /// <summary>One admin request at a time; deleting is not something to fire twice.</summary>
         private bool deleteAccountBusy;
 
         private float nextY;
@@ -135,7 +92,6 @@ namespace AgriDabao3D
             EnsureCanvas();
             theme = UIThemeSprites.Instance;
 
-            // These must also appear on Android.
             if (HasWeatherPanelArt())
             {
                 BuildWeatherPanel();
@@ -155,9 +111,6 @@ namespace AgriDabao3D
             }
             else
             {
-                // A phone builds nothing yet. The panel appears only if the
-                // server says this account may have it, which takes a round trip
-                // and cannot be answered here.
                 StartCoroutine(RequestMobileTools());
             }
 
@@ -167,8 +120,6 @@ namespace AgriDabao3D
                     RefreshDayCounter;
             }
 
-            // Weather changes do not tick the clock, so the panel needs its own
-            // signal to swap plates the moment a storm starts or clears.
             if (WeatherSystem.Instance != null)
                 WeatherSystem.Instance.OnWeatherChanged += RefreshDayCounter;
 
@@ -186,14 +137,6 @@ namespace AgriDabao3D
 
         private void Update()
         {
-            // The crop editor follows whatever crop is on the info panel, and the
-            // two can be opened in either order. Opening the dev panel refreshes
-            // it, but tapping a crop while the panel is already open cannot - the
-            // toggle never runs. Comparing the bound crop each frame covers both
-            // orders, and costs one reference comparison.
-            //
-            // Deliberately above the desktop guard: on a phone Update returns
-            // early, and the section has to work there too.
             if (panelRoot != null &&
                 panelRoot.activeSelf &&
                 SoilAwareTerrainGenerator.LastInspectedCrop != cropEditBoundCrop)
@@ -201,32 +144,16 @@ namespace AgriDabao3D
                 RefreshCropEditSection();
             }
 
-            // F1 belongs to the desktop build. A phone toggles with the on-screen
-            // button instead, so a keyboard plugged into a tablet still cannot
-            // open anything the server did not grant.
             if (!DesktopToolsAllowed)
                 return;
 
             if (Input.GetKeyDown(toggleKey) &&
                 panelRoot != null)
             {
-                // Through the shared toggle rather than SetActive, so opening with
-                // the key does everything opening with the button does - it used
-                // to skip the crop-editor refresh entirely.
                 ToggleDevPanel();
             }
         }
 
-        // ----------------------------------------------- tools on a phone
-
-        /// <summary>
-        /// Asks the server whether this account may open the tools here, and
-        /// builds them if so.
-        ///
-        /// The wait exists because a saved login is restored asynchronously: on a
-        /// cold launch this runs before AuthSession has a token, and asking then
-        /// would get an unauthenticated refusal and never retry.
-        /// </summary>
         private IEnumerator RequestMobileTools()
         {
             float waited = 0f;
@@ -245,8 +172,6 @@ namespace AgriDabao3D
             AdminCapabilityDto capability = null;
             yield return AuthSession.Instance.GetAdminCapability(
                 value => capability = value,
-                // Silent on purpose. Every ordinary player runs this, and a
-                // failed check should leave the game exactly as it was.
                 _ => { });
 
             if (capability == null || !capability.mobileToolsEnabled)
@@ -263,10 +188,6 @@ namespace AgriDabao3D
             Debug.Log("[DevTools] Mobile developer tools granted by the server.");
         }
 
-        /// <summary>
-        /// The plain button that opens the panel on a phone, tucked under the
-        /// map on the right edge where the farm HUD leaves a gap.
-        /// </summary>
         private void BuildMobileToolsButton()
         {
             GameObject go = new GameObject("MobileDevToolsButton",
@@ -278,11 +199,6 @@ namespace AgriDabao3D
             rect.pivot = new Vector2(1f, 1f);
             rect.sizeDelta = new Vector2(150f, 78f);
 
-            // Below the small map, derived rather than eyeballed. The map hangs
-            // from the same top-right corner at -(14 + moneyPlankSize.y + 12),
-            // which is -176 with the stock 150-tall plank, and it is 300 tall -
-            // so its bottom edge is at -476. A first attempt at -430 put this
-            // button behind that last 46 units of it.
             const float moneyPlankTop = 14f;
             const float mapGap = 12f;
             float plankHeight = theme != null ? theme.moneyPlankSize.y : 150f;
@@ -318,11 +234,6 @@ namespace AgriDabao3D
             label.text = "DEV";
         }
 
-        /// <summary>
-        /// The X in the panel's own corner. A phone has no F1, and although the
-        /// DEV button toggles, a panel that covers a third of the screen wants a
-        /// close where the eye already is.
-        /// </summary>
         private void BuildDevPanelCloseButton(RectTransform parent)
         {
             GameObject go = new GameObject("DevPanelClose",
@@ -367,8 +278,6 @@ namespace AgriDabao3D
             if (panelRoot == null)
                 return;
 
-            // Second guard, after the one that decided to build at all. Nothing
-            // else calls this on a phone, but the panel is worth two checks.
             if (MobileLayout && !mobileToolsGranted)
                 return;
 
@@ -378,8 +287,6 @@ namespace AgriDabao3D
             {
                 panelRoot.transform.SetAsLastSibling();
 
-                // Picks up whatever crop was tapped since the panel was last open,
-                // and hides the block again if none was.
                 RefreshCropEditSection();
             }
         }
@@ -411,7 +318,7 @@ namespace AgriDabao3D
                 CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+                scaler.matchWidthOrHeight = 1f;
             }
 
             if (canvas.GetComponent<GraphicRaycaster>() == null)
@@ -426,14 +333,6 @@ namespace AgriDabao3D
                     theme.weatherDrought != null);
         }
 
-        /// <summary>
-        /// The wooden weather panel: one Image whose sprite is swapped per weather
-        /// state, with the clock, date and temperature drawn on the plank.
-        ///
-        /// All five sprites must share one canvas size with the plank in the same
-        /// place - the text positions below are fixed, so a sprite whose plank sits
-        /// elsewhere would make the text drift when the weather changes.
-        /// </summary>
         private void BuildWeatherPanel()
         {
             Vector2 panelSize = theme.weatherPanelSize;
@@ -442,7 +341,6 @@ namespace AgriDabao3D
             go.transform.SetParent(canvas.transform, false);
             HudRegistry.RegisterPiece(HudPiece.WeatherPanel, go);
 
-            // Top-left, tucked under the pause and AI-Adviser buttons.
             RectTransform rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 1f);
@@ -455,8 +353,6 @@ namespace AgriDabao3D
             weatherPanelImage.preserveAspect = true;
             weatherPanelImage.raycastTarget = false;
 
-            // Offsets are expressed as fractions of the panel so tweaking
-            // weatherPanelSize keeps the text on the planks.
             float w = panelSize.x;
             float h = panelSize.y;
 
@@ -465,21 +361,14 @@ namespace AgriDabao3D
             clockRect.anchorMin = clockRect.anchorMax = new Vector2(0.5f, 1f);
             clockRect.pivot = new Vector2(0.5f, 0.5f);
             clockRect.sizeDelta = new Vector2(w * 0.54f, h * 0.20f);
-            // Shifted left from 0.16: the clock sat right of its plank's centre
-            // because the sun disc on the left was not accounted for.
             clockRect.anchoredPosition = new Vector2(w * 0.11f, -h * 0.275f);
 
             weatherText = CreatePanelText(go.transform, "DateTempText", 20, TextAnchor.UpperCenter);
-            // White, unlike the clock above it. The clock sits on the pale top
-            // plank where dark brown reads well, but the date and temperature sit
-            // on the shaded lower plank, where the same brown all but disappeared.
             weatherText.color = Color.white;
             RectTransform infoRect = weatherText.rectTransform;
             infoRect.anchorMin = infoRect.anchorMax = new Vector2(0.5f, 1f);
             infoRect.pivot = new Vector2(0.5f, 0.5f);
             infoRect.sizeDelta = new Vector2(w * 0.60f, h * 0.30f);
-            // Dropped from 0.66 so the date and temperature sit low on their plank
-            // rather than riding its upper edge.
             infoRect.anchoredPosition = new Vector2(w * 0.16f, -h * 0.70f);
 
             RefreshWeatherPanelSprite();
@@ -501,11 +390,6 @@ namespace AgriDabao3D
             return text;
         }
 
-        /// <summary>
-        /// Clear weather follows the clock (sunny by day, night after dark). Rain,
-        /// typhoon and drought hold their own panel regardless of the hour, and only
-        /// hand back to sunny/night once the weather returns to clear.
-        /// </summary>
         private void RefreshWeatherPanelSprite()
         {
             if (weatherPanelImage == null)
@@ -531,8 +415,6 @@ namespace AgriDabao3D
                     break;
             }
 
-            // Fall back to the sunny plate rather than blanking the HUD if a slot
-            // has not been filled in yet.
             if (chosen == null)
                 chosen = theme.weatherSunny != null ? theme.weatherSunny : theme.weatherNight;
 
@@ -606,31 +488,14 @@ namespace AgriDabao3D
             Image bg = panelRoot.GetComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.82f);
 
-            // Draw above every other panel on the shared canvas.
-            //
-            // Without this the panel is ordered by when it was created, and the
-            // farm HUD's map is built afterwards and lands on top of it - which
-            // is exactly what it did, hiding half the seed buttons behind the
-            // map. Its own sorting layer settles that no matter what is built
-            // later, so a new panel added next month cannot bury it again.
-            //
-            // Below MobileTextEntryOverlay's 32000: the on-screen typing bar has
-            // to stay above everything, this one included.
             Canvas overlay = panelRoot.AddComponent<Canvas>();
             overlay.overrideSorting = true;
             overlay.sortingOrder = DevPanelSortingOrder;
 
-            // A nested canvas needs its own raycaster or nothing inside it can be
-            // clicked; the parent's does not reach through.
             panelRoot.AddComponent<GraphicRaycaster>();
 
             if (MobileLayout)
             {
-                // Scaled as a whole rather than re-laid-out. Every row, field and
-                // button grows together, so a panel designed for a mouse becomes
-                // comfortable under a thumb without a second set of sizes to keep
-                // in step. 1.25 is the most that keeps a 760-tall board inside a
-                // 1080 canvas.
                 panelRoot.transform.localScale = Vector3.one * 1.25f;
                 BuildDevPanelCloseButton(rect);
             }
@@ -707,8 +572,6 @@ namespace AgriDabao3D
             CreateLabel(contentRect, "Planting Material Amount", 21, 34f);
             seedInput = CreateInputField(contentRect, "10", 150f, 50f);
 
-            // One button per planting material, from the catalog, so a material
-            // added later gets its button without touching this list.
             foreach (InventoryItemType material in PlantingMaterialCatalog.AllMaterials)
             {
                 InventoryItemType captured = material;
@@ -798,9 +661,6 @@ namespace AgriDabao3D
 
             CreateLabel(contentRect, "Event", 16, 26f);
             CreateEventSelector(contentRect, 340f, 46f);
-            // Height of the label plus the field plus their spacing, so hiding
-            // the pair can close the gap they leave behind rather than leaving a
-            // hole in the middle of the panel.
             float beforeDuration = nextY;
             sendDurationLabel = CreateLabel(contentRect, "Weather duration (days)", 16, 26f);
             sendDurationInput = CreateInputField(contentRect, "3", 340f, 46f);
@@ -808,19 +668,12 @@ namespace AgriDabao3D
 
             CreateButton(contentRect, "Trigger Event", OnSendEventPressed, 340f);
 
-            // Same picker, applied to this farm instead of someone else's. The
-            // four hard-coded buttons above only reach four of the forty-odd
-            // conditions in the database; this reaches all of them without a
-            // second list to keep in step.
             CreateButton(contentRect, "Force Here (my farm)", OnForceEventHerePressed, 340f);
 
             CreateLabel(contentRect, "Money to send", 16, 26f);
             sendMoneyInput = CreateInputField(contentRect, "1000", 340f, 46f);
             CreateButton(contentRect, "Send Money", OnSendMoneyPressed, 340f);
 
-            // One field feeds both buttons: the number means days or hours
-            // depending on which is pressed, so there is no second box to keep
-            // in step and no way to send a value typed into the wrong one.
             CreateLabel(contentRect, "Time to pass", 16, 26f);
             sendTimeInput = CreateInputField(contentRect, "1", 340f, 46f);
             CreateButton(contentRect, "Pass Days on Player", OnSendPassDaysPressed, 340f);
@@ -842,21 +695,9 @@ namespace AgriDabao3D
             contentRect.sizeDelta = new Vector2(400f, contentFullHeight);
             scrollRect.verticalNormalizedPosition = 1f;
 
-            // Nothing is selected when the panel is first built.
             SetCropEditVisible(false);
         }
 
-        // ----------------------------------------------------------- water tank
-
-        /// <summary>
-        /// Fills the water tank the player last clicked.
-        ///
-        /// A tank gathers 45 a day in rain and 85 in a typhoon against a capacity
-        /// of 500, so filling one honestly costs six game days of storm. That is
-        /// fine to watch once, when the collection itself is what is being tested,
-        /// and pure waiting every other time - the irrigation tests only need a
-        /// tank that already has water in it.
-        /// </summary>
         private void BuildTankSection()
         {
             CreateLabel(contentRect, "WATER TANK", 22, 40f);
@@ -897,16 +738,6 @@ namespace AgriDabao3D
             Debug.Log("[DevTools] Water tank filled to " + structure.storedResource);
         }
 
-        // ------------------------------------------------------- crop info edit
-
-        /// <summary>
-        /// Edits the readings of the crop currently shown on the info panel.
-        ///
-        /// Built last on purpose. The panel lays its contents out in a single
-        /// downward flow, so a block anywhere else could only be hidden by
-        /// shifting everything below it; at the end, hiding it is just a shorter
-        /// content rect.
-        /// </summary>
         private void BuildCropEditSection()
         {
             int firstChild = contentRect.childCount;
@@ -961,12 +792,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// Names the selected crop and fills the boxes with its current numbers,
-        /// so one value can be changed without retyping the rest - and so a pair
-        /// of plants can be matched by reading one and typing those figures into
-        /// the other.
-        /// </summary>
         private void RefreshCropEditSection()
         {
             GameObject crop = SoilAwareTerrainGenerator.LastInspectedCrop;
@@ -1008,9 +833,6 @@ namespace AgriDabao3D
                 return;
             }
 
-            // A box left empty or holding something unparseable keeps the crop's
-            // present value, so a slip of the keyboard cannot silently zero a
-            // reading the developer never meant to touch.
             DevCropVitals.Vitals next = new DevCropVitals.Vitals
             {
                 cropName = current.cropName,
@@ -1040,8 +862,6 @@ namespace AgriDabao3D
 
             Debug.Log("[DevTools] Crop vitals set on " + next.cropName);
 
-            // Redraw the info panel so the board shows the new numbers rather than
-            // the ones it was opened with.
             SoilAwareTerrainGenerator terrain =
                 Object.FindFirstObjectByType<SoilAwareTerrainGenerator>();
             if (terrain != null)
@@ -1056,17 +876,6 @@ namespace AgriDabao3D
             return float.TryParse(field.text, out float parsed) ? parsed : fallback;
         }
 
-        // --------------------------------------------- send to another player
-
-        /// <summary>
-        /// Fills the option list and shows the current pick on a button.
-        ///
-        /// Not a Unity Dropdown. That control opens its list as a child of
-        /// itself, and this panel lives inside a masked ScrollRect, so the list
-        /// was clipped away by the mask with half an entry escaping over the
-        /// label above it. The picker below opens on the canvas root instead,
-        /// clear of the scroll view entirely.
-        /// </summary>
         private void CreateEventSelector(Transform parent, float width, float height)
         {
             sendEventOptions.Clear();
@@ -1082,8 +891,6 @@ namespace AgriDabao3D
                 sendEventOptions.Add(("FORCE_WEATHER", weather.ToString(), "Weather - " + weather));
             }
 
-            // Read from the enum, so a condition added later shows up here
-            // without this list being touched.
             foreach (PestDiseaseType pest in
                      (PestDiseaseType[])System.Enum.GetValues(typeof(PestDiseaseType)))
             {
@@ -1126,24 +933,12 @@ namespace AgriDabao3D
                     ? sendEventOptions[selectedEventIndex].label + "   (tap to change)"
                     : "(choose an event)";
 
-            // Duration only means anything to a weather event. The server drops
-            // it for a pest command, so leaving the box on screen would invite a
-            // developer to set a number that quietly does nothing.
             SetDurationVisible(
                 selectedEventIndex >= 0 &&
                 selectedEventIndex < sendEventOptions.Count &&
                 sendEventOptions[selectedEventIndex].type == "FORCE_WEATHER");
         }
 
-        /// <summary>
-        /// Shows or hides the duration pair, closing the gap behind it.
-        ///
-        /// This panel is laid out once with fixed positions rather than by a
-        /// layout group, so hiding a row does not reflow anything on its own -
-        /// everything below has to be moved by hand, and the scroll content
-        /// resized to match, or the panel is left with a hole and a stretch of
-        /// dead scroll at the bottom.
-        /// </summary>
         private void SetDurationVisible(bool visible)
         {
             if (sendDurationLabel == null || sendDurationInput == null)
@@ -1156,7 +951,6 @@ namespace AgriDabao3D
             sendDurationLabel.gameObject.SetActive(visible);
             sendDurationInput.gameObject.SetActive(visible);
 
-            // Rows sit at negative y, so moving up means adding.
             float shift = visible ? -durationBlockHeight : durationBlockHeight;
 
             int firstBelow = sendDurationInput.transform.GetSiblingIndex() + 1;
@@ -1171,10 +965,6 @@ namespace AgriDabao3D
                 Mathf.Max(0f, contentRect.sizeDelta.y - shift));
         }
 
-        /// <summary>
-        /// The option list, on the canvas root above the dev panel so no mask or
-        /// sibling order can hide it. Built once and reused.
-        /// </summary>
         private void ShowEventPicker()
         {
             if (eventPicker == null)
@@ -1200,7 +990,6 @@ namespace AgriDabao3D
             blocker.color = new Color(0f, 0f, 0f, 0.80f);
             blocker.raycastTarget = true;
 
-            // Above the dev panel own 30000, below the typing bar 32000.
             Canvas overlay = eventPicker.GetComponent<Canvas>();
             overlay.overrideSorting = true;
             overlay.sortingOrder = DevPanelSortingOrder + 500;
@@ -1236,8 +1025,6 @@ namespace AgriDabao3D
 
             for (int i = 0; i < sendEventOptions.Count; i++)
             {
-                // Captured per row. One shared variable would leave every button
-                // selecting whatever the loop finished on.
                 int index = i;
 
                 GameObject row = new GameObject(sendEventOptions[i].label,
@@ -1316,13 +1103,6 @@ namespace AgriDabao3D
             return text;
         }
 
-        /// <summary>
-        /// Forces the picked pest on this farm.
-        ///
-        /// Weather is deliberately refused: the farm already has Force Rain,
-        /// Typhoon and Drought buttons of its own, and those take the duration
-        /// field, which this path has no way to pass.
-        /// </summary>
         private void OnForceEventHerePressed()
         {
             if (selectedEventIndex < 0 || selectedEventIndex >= sendEventOptions.Count)
@@ -1413,15 +1193,6 @@ namespace AgriDabao3D
             SendTimeSkip("PASS_HOURS", "hours");
         }
 
-        /// <summary>
-        /// Sends a clock skip to the target player.
-        ///
-        /// The server holds the real ceilings and refuses anything past them;
-        /// this only catches an empty or zero box so the obvious mistake does
-        /// not cost a round trip. Skipping time is not undoable on the receiving
-        /// farm - crops age, weather rerolls, objectives regenerate - so neither
-        /// side quietly rounds a number down.
-        /// </summary>
         private void SendTimeSkip(string commandType, string unit)
         {
             int amount = ParsePositiveInt(sendTimeInput, 0);
@@ -1438,7 +1209,6 @@ namespace AgriDabao3D
             });
         }
 
-        /// <summary>Fills in the target and posts, with the shared guards.</summary>
         private void SendCommand(AdminCommandRequestDto request)
         {
             if (sendCommandBusy)
@@ -1484,12 +1254,6 @@ namespace AgriDabao3D
                 sendCommandStatus.text = message;
         }
 
-        // ------------------------------------------------- delete an account
-
-        /// <summary>
-        /// Looks the address up first, so the confirmation can name a real
-        /// account rather than asking the developer to trust their own typing.
-        /// </summary>
         private void OnDeleteAccountPressed()
         {
             if (deleteAccountBusy)
@@ -1569,11 +1333,6 @@ namespace AgriDabao3D
                 deleteAccountStatus.text = message;
         }
 
-        /// <summary>
-        /// A plain dark box over the screen. Deliberately unstyled - no player
-        /// ever sees this, and dressing it in wooden planks would only make it
-        /// look like something they are meant to.
-        /// </summary>
         private void ShowDeletePrompt(AdminAccountLookupDto account)
         {
             if (deleteAccountPrompt == null)
@@ -1690,7 +1449,6 @@ namespace AgriDabao3D
             text.text = label;
         }
 
-        /// <summary>A wrapping line for results, unlike CreateLabel's fixed row.</summary>
         private Text CreateStatusLabel(Transform parent, float height)
         {
             GameObject go = new GameObject("Status", typeof(RectTransform), typeof(Text));
@@ -1719,8 +1477,6 @@ namespace AgriDabao3D
             GameTimeSystem time = GameTimeSystem.Instance;
             WeatherSystem weather = WeatherSystem.Instance;
 
-            // Themed panel: clock on the top plank, date and temperature below,
-            // and the plate itself swapped to match the weather.
             if (weatherPanelImage != null)
             {
                 RefreshWeatherPanelSprite();
@@ -1777,7 +1533,6 @@ namespace AgriDabao3D
                 farming.ForceAllPlantsNextStageForDev();
         }
 
-        /// <summary>Every sown bag in the Seedling Tent skips to ready to transplant.</summary>
         private void OnSeedlingsReadyPressed()
         {
             int changed = NurserySystem.Instance != null ? NurserySystem.Instance.DevMakeAllReady() : 0;
@@ -1820,10 +1575,6 @@ namespace AgriDabao3D
                 farming.ForceAllPlantsToProduceForDev();
         }
 
-        /// <summary>
-        /// Runs the beginner guide again on this farm. Testing it otherwise means
-        /// creating a whole new account every time, since it only ever runs once.
-        /// </summary>
         private void OnReplayTutorialPressed()
         {
             TutorialState.ResetForNewFarm();
@@ -1837,7 +1588,6 @@ namespace AgriDabao3D
             Debug.Log("[DevTools] Beginner guide restarted.");
         }
 
-        /// <summary>Ends the guide immediately and hands back the full HUD.</summary>
         private void OnSkipTutorialPressed()
         {
             TutorialDirector existing = Object.FindFirstObjectByType<TutorialDirector>();
@@ -1855,8 +1605,6 @@ namespace AgriDabao3D
         {
             if (!HudRegistry.TryGetPiece(HudPiece.Joystick, out GameObject go))
             {
-                // Saying "shown" when there is nothing to show sends you hunting
-                // for a rendering bug that does not exist.
                 Debug.LogWarning(
                     "[DevTools] There is no joystick to toggle. MobileHudBuilder only " +
                     "builds the on-screen controls on a phone. To use them in the " +
@@ -1949,10 +1697,6 @@ namespace AgriDabao3D
                 : fallback;
         }
 
-        /// <summary>
-        /// Returns the label so a caller can hide or reword it later. Most
-        /// callers ignore it.
-        /// </summary>
         private Text CreateLabel(Transform parent, string textValue, int fontSize, float height)
         {
             GameObject go = new GameObject(textValue, typeof(RectTransform), typeof(Text));

@@ -130,9 +130,6 @@ namespace AgriDabao3D
             rootRect = root.GetComponent<RectTransform>();
             Stretch(rootRect);
 
-            // The background art and the logo/buttons live on separate layers:
-            // the white fade reveals the background alone, and the logo and
-            // buttons only join it once the player has logged in.
             backgroundRoot = new GameObject("BackgroundRoot", typeof(RectTransform));
             backgroundRoot.transform.SetParent(rootRect, false);
             Stretch(backgroundRoot.GetComponent<RectTransform>());
@@ -156,18 +153,6 @@ namespace AgriDabao3D
                 introVideoClip != null &&
                 (!playIntroOnlyOnce || !introAlreadyPlayed);
 
-            // Deliberately gated on the intro rather than on being signed in.
-            //
-            // This shortcut exists for coming back from the farm mid-session, where
-            // replaying the studio logo every time would be tiresome. Being signed
-            // in used to be a good enough stand-in for that, because the only way to
-            // reach the menu already authenticated was to have just come from the
-            // farm. Remembering the login broke that assumption: a cold launch now
-            // arrives here authenticated too, and took this branch, which is why the
-            // intro stopped playing for anyone with a saved account.
-            //
-            // introAlreadyPlayed is static, so it is false exactly once per app
-            // launch - which is precisely when the logo should be shown.
             if (!shouldPlayIntro &&
                 AuthSession.Instance != null && AuthSession.Instance.IsAuthenticated)
             {
@@ -177,8 +162,6 @@ namespace AgriDabao3D
                 menuContentRoot.SetActive(true);
                 StartMenuBackgroundVideo();
 
-                // A player thrown out of the farm because another device took the
-                // account lands here. Say so, or the farm just vanishes on them.
                 if (SessionTakeover.Consume(out string takeoverMessage))
                     ShowAccountBusyPrompt(takeoverMessage);
 
@@ -192,7 +175,6 @@ namespace AgriDabao3D
 
             if (shouldPlayIntro)
             {
-                // Created last, so the intro renders above the white cover.
                 CreateIntroOverlay(rootRect);
                 PlayIntroVideo();
             }
@@ -234,14 +216,9 @@ namespace AgriDabao3D
             color.a = alpha;
             whiteCoverImage.color = color;
 
-            // Stop swallowing clicks once it is essentially invisible.
             whiteCoverImage.raycastTarget = alpha > 0.01f;
         }
 
-        /// <summary>
-        /// Fades the white cover away to reveal the background art on its own,
-        /// then - and only then - opens the login board.
-        /// </summary>
         private IEnumerator RevealBackgroundThenLogin()
         {
             if (revealStarted)
@@ -281,11 +258,6 @@ namespace AgriDabao3D
         {
             bool authenticated = AuthSession.Instance != null && AuthSession.Instance.IsAuthenticated;
 
-            // Signed out while the menu was already up - the account's password
-            // was changed on another device, so this login was retired mid-visit.
-            // The menu has to be put away as well as the login form brought up:
-            // that form only dims what is behind it, so Start, Settings, Account
-            // and Logout would otherwise stay visible and pressable through it.
             if (!authenticated)
             {
                 if (!menuRevealed)
@@ -336,7 +308,7 @@ namespace AgriDabao3D
 
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+                scaler.matchWidthOrHeight = 1f;
 
                 if (foundCanvas.GetComponent<GraphicRaycaster>() == null)
                     foundCanvas.gameObject.AddComponent<GraphicRaycaster>();
@@ -357,7 +329,7 @@ namespace AgriDabao3D
             CanvasScaler canvasScaler = canvasGo.GetComponent<CanvasScaler>();
             canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             canvasScaler.referenceResolution = new Vector2(1920, 1080);
-            canvasScaler.matchWidthOrHeight = 1f; // landscape: scale by height
+            canvasScaler.matchWidthOrHeight = 1f;
 
             return newCanvas;
         }
@@ -673,20 +645,9 @@ namespace AgriDabao3D
             if (introOverlayRoot != null)
                 introOverlayRoot.SetActive(false);
 
-            // The screen is solid white underneath the intro; fade it away to
-            // reveal the background, then open the login board.
             StartCoroutine(RevealBackgroundThenLogin());
         }
 
-        /// <summary>
-        /// Runs once the white cover has faded, after the intro or in its place.
-        ///
-        /// A player who is not signed in gets the login form, and the menu fades in
-        /// later when SessionChanged fires. A player restored from the phone's saved
-        /// login has nothing to sign in to, and no session change is coming - so the
-        /// menu has to be brought in here, or it would sit at zero alpha behind a
-        /// cleared cover and the game would look like it had frozen on the artwork.
-        /// </summary>
         private void ShowAuthenticationIfNeeded()
         {
             if (AuthSession.Instance == null || !AuthSession.Instance.IsAuthenticated)
@@ -699,11 +660,6 @@ namespace AgriDabao3D
                 StartCoroutine(FadeInMenuContent());
             }
 
-            // Read in both cases, not just when signed in. A device thrown out of
-            // the farm because the account's password changed elsewhere arrives
-            // here signed OUT, and used to return above without ever showing the
-            // explanation - so the farm simply vanished and the login form
-            // appeared, with nothing to say why.
             if (SessionTakeover.Consume(out string takeoverMessage))
                 ShowAccountBusyPrompt(takeoverMessage);
         }
@@ -761,13 +717,6 @@ namespace AgriDabao3D
             CreateAccountButton(parent);
         }
 
-        /// <summary>
-        /// The Credits button, pinned to the bottom-right corner.
-        ///
-        /// It is parented to the same menu content root as the other buttons, which
-        /// is only revealed once the player is authenticated - so the button
-        /// inherits that gating rather than needing a check of its own.
-        /// </summary>
         private void CreateCreditsButton(RectTransform parent)
         {
             GameObject go = new GameObject("CreditsButton",
@@ -794,7 +743,6 @@ namespace AgriDabao3D
                 return;
             }
 
-            // Plain fallback so the button still works before the art is dropped in.
             image.color = new Color(0.20f, 0.45f, 0.22f, 0.95f);
 
             GameObject textGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
@@ -819,44 +767,21 @@ namespace AgriDabao3D
             CreditsUIBuilder.Instance?.Show();
         }
 
-        // ------------------------------------------------------------- logout
-
         private GameObject logoutPrompt;
         private GameObject accountBusyPrompt;
         private Text accountBusyMessage;
         private Text logoutPromptMessage;
 
-        /// <summary>
-        /// The Logout button, in the bottom-left corner opposite Credits.
-        ///
-        /// Parented to the same menu content root as the other buttons, which is
-        /// only revealed once the player is signed in, so it cannot be pressed on
-        /// the login screen. It is the only way to change accounts on a phone:
-        /// the saved login is otherwise kept until it expires.
-        /// </summary>
         private void CreateLogoutButton(RectTransform parent)
         {
             CreateCornerDiscButton(parent, "LogoutButton", "Logout", 40f, OnLogoutPressed);
         }
 
-        /// <summary>
-        /// The Account button, on the same row as Logout and using the same
-        /// wooden disc. It opens the board where a player reads their display
-        /// name and email and can change either, or their password.
-        /// </summary>
         private void CreateAccountButton(RectTransform parent)
         {
-            // 40 for the left margin plus the 150 disc, then 20 of gap.
             CreateCornerDiscButton(parent, "AccountButton", "Account", 210f, OnAccountPressed);
         }
 
-        /// <summary>
-        /// One of the small wooden discs in the bottom-left corner.
-        ///
-        /// Parented to the same menu content root as the other buttons, which is
-        /// only revealed once the player is signed in, so neither disc can be
-        /// pressed on the login screen.
-        /// </summary>
         private void CreateCornerDiscButton(RectTransform parent, string name, string text,
             float x, UnityEngine.Events.UnityAction action)
         {
@@ -868,8 +793,6 @@ namespace AgriDabao3D
 
             RectTransform rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 0f);
-            // Square, because the knob art is a disc and preserveAspect would letterbox
-            // anything else. Large enough that the word inside stays readable.
             rect.sizeDelta = art != null ? new Vector2(150f, 150f) : new Vector2(200f, 70f);
             rect.anchoredPosition = new Vector2(x, 40f);
 
@@ -898,7 +821,6 @@ namespace AgriDabao3D
             label.fontSize = 26;
             label.fontStyle = FontStyle.Bold;
             label.alignment = TextAnchor.MiddleCenter;
-            // Dark on the wooden disc, white on the plain fallback.
             label.color = art != null ? new Color(0.20f, 0.12f, 0.04f, 1f) : Color.white;
             label.raycastTarget = false;
             label.verticalOverflow = VerticalWrapMode.Overflow;
@@ -921,8 +843,6 @@ namespace AgriDabao3D
             if (logoutPrompt == null)
                 BuildLogoutPrompt();
 
-            // Naming the account matters on a shared phone, where the whole reason
-            // to open this is not being sure who is signed in.
             string email = AuthSession.Instance?.CurrentUser?.email;
             if (string.IsNullOrWhiteSpace(email))
                 email = SavedSession.RememberedEmail();
@@ -939,14 +859,8 @@ namespace AgriDabao3D
         {
             logoutPrompt.SetActive(false);
 
-            // Clears the phone's saved login and releases this device's claim on
-            // the account, so the next launch asks who is playing.
             AuthSession.Instance?.Logout();
 
-            // Put the menu back to its signed-out state. The login form only dims
-            // what is behind it, so without this the Start, Settings and Logout
-            // buttons stay visible through it - and the menu would still count as
-            // revealed, so the next sign-in would snap in without its fade.
             menuRevealed = false;
             if (menuContentGroup != null)
                 menuContentGroup.alpha = 0f;
@@ -975,7 +889,6 @@ namespace AgriDabao3D
             logoutPrompt.SetActive(false);
         }
 
-        /// <summary>Shown when this account is already being played on another phone.</summary>
         private void ShowAccountBusyPrompt(string message)
         {
             if (accountBusyPrompt == null)
@@ -990,8 +903,6 @@ namespace AgriDabao3D
                 accountBusyPrompt.SetActive(false);
             }
 
-            // The server owns this wording, so a change there does not need a
-            // matching edit here; the fallback only covers it going missing.
             accountBusyMessage.text = string.IsNullOrWhiteSpace(message)
                 ? "The account you are logged in are currently using in a different " +
                   "device. If you didn't share your login information, contact at " +
@@ -1002,11 +913,6 @@ namespace AgriDabao3D
             accountBusyPrompt.transform.SetAsLastSibling();
         }
 
-        /// <summary>
-        /// A dimmed backdrop with the trade-request plank on it, shared by both
-        /// prompts. Parented to the canvas rather than the menu content so it sits
-        /// over everything, including the login form.
-        /// </summary>
         private GameObject CreatePromptBoard(string name, out Text message)
         {
             GameObject root = new GameObject(name, typeof(RectTransform), typeof(Image));
@@ -1064,8 +970,6 @@ namespace AgriDabao3D
             string fallbackLabel, Vector2 anchoredPosition, Vector2 size,
             UnityEngine.Events.UnityAction action)
         {
-            // Parented to the board, not the backdrop, so the positions below are
-            // measured from the plank rather than the screen.
             Transform board = parent.Find("Board");
             if (board == null)
                 board = parent;
@@ -1183,17 +1087,6 @@ namespace AgriDabao3D
 
         private bool claimingSession;
 
-        /// <summary>
-        /// Takes the account's play session before opening the farm.
-        ///
-        /// Checked here rather than at login because a player may well be signed
-        /// in on two phones - that is the point of remembering the login - and only
-        /// one of them may be playing. Pressing Start is the moment that matters.
-        ///
-        /// A network failure is deliberately not treated as a refusal: being unable
-        /// to reach the server should not stop someone playing their own farm, and
-        /// the in-farm heartbeat re-checks the claim continuously anyway.
-        /// </summary>
         private IEnumerator ClaimThenStart()
         {
             claimingSession = true;

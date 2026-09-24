@@ -2,24 +2,6 @@ using System.Collections.Generic;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// The shop's item descriptions.
-    ///
-    /// Every fact here is taken from the simulation's own tables rather than
-    /// written from general knowledge, so a player who reads a description and
-    /// then plays sees the same numbers:
-    ///
-    ///   growth timing and yield - TropicalCropCatalog, CoconutTreeInstance,
-    ///                             BananaPlantInstance
-    ///   pests per crop          - DavaoPestDiseaseDatabase.asset
-    ///   treatments per pest     - the mitigation list on each rule
-    ///   allowed care actions    - CropMaintenanceCatalog
-    ///   temperature comfort     - CropClimateRules
-    ///
-    /// If any of those change, the matching lines here have to change with them.
-    /// Nothing reads this at runtime except the shop panel, so a stale line is
-    /// silent - it will not fail a build or throw.
-    /// </summary>
     public static class ShopItemDescriptions
     {
         public static string For(InventoryItemType item)
@@ -31,10 +13,6 @@ namespace AgriDabao3D
             return body + "\n\n" + DistrictAvailability(item);
         }
 
-        /// <summary>
-        /// Where a seed can be had, built from DistrictCropPools rather than written
-        /// out per crop, so it cannot drift from what the shop actually allows.
-        /// </summary>
         private static string DistrictAvailability(InventoryItemType item)
         {
             List<string> districts = DistrictCropPools.DistrictsGrowing(item);
@@ -53,8 +31,6 @@ namespace AgriDabao3D
 
         private static string BaseDescription(InventoryItemType item)
         {
-            // Every planting material - and the old seed items, as the material
-            // that replaced them - reads its crop's text plus its own route.
             if (PlantingMaterialCatalog.TryGet(PlantingMaterialCatalog.UpgradeLegacy(item),
                     out PlantingMaterialInfo material))
             {
@@ -63,8 +39,6 @@ namespace AgriDabao3D
 
             switch (item)
             {
-                // ---------------- Pest and disease tools ----------------
-
                 case InventoryItemType.SprayerPump:
                     return
                         "A refillable back-mounted sprayer. A tool, not a treatment - it "
@@ -172,8 +146,6 @@ namespace AgriDabao3D
                         + "Pruning before a typhoon also gives the wind less to catch. Not "
                         + "every crop can be pruned - corn, squash and pineapple cannot.";
 
-                // ---------------- Climate care, one crop at a time ----------------
-
                 case InventoryItemType.MulchBag:
                     return
                         "A bag of wood chips spread over the soil around a crop.\n\n"
@@ -221,8 +193,6 @@ namespace AgriDabao3D
                         + "Those crops are now planted on a raised bed built with the "
                         + "shovel, which counts as the same bed; the kit is for one "
                         + "already growing without a bed.";
-
-                // ---------------- Farm-wide structures ----------------
 
                 case InventoryItemType.IrrigationSystemKit:
                     return
@@ -277,10 +247,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// A planting material: its crop, then how this particular material gets
-        /// into the field, then the real-world timing the game compresses.
-        /// </summary>
         private static string MaterialDescription(PlantingMaterialInfo material)
         {
             return CropText(material.Crop)
@@ -288,7 +254,6 @@ namespace AgriDabao3D
                    + "\n\nIN REAL FARMS\n" + material.RealWorld;
         }
 
-        /// <summary>What the crop is like once it is growing, shared by all its materials.</summary>
         private static string CropText(FarmCropType crop)
         {
             switch (crop)

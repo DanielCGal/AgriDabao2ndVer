@@ -16,9 +16,6 @@ namespace AgriDabao3D
         private Action yesAction;
         private Action noAction;
 
-        // This popup is shared by several confirmations (Save Farm, trap cleanup,
-        // plant removal), so the hanging sign is set per call rather than baked in -
-        // otherwise every prompt would be titled "Save Farm?".
         private GameObject titleSign;
         private Image titleSignImage;
 
@@ -39,15 +36,6 @@ namespace AgriDabao3D
                 Instance = null;
         }
 
-        /// <summary>
-        /// Shows the confirmation. Pass <paramref name="titleArt"/> to hang a
-        /// painted sign above it; omit it for a plain untitled prompt.
-        /// </summary>
-        /// <param name="onNo">
-        /// Optional. Most prompts treat No as "do nothing", which is still the
-        /// default, but the beginner guide needs to know it was declined so it can
-        /// hand the player a playable farm instead of simply going quiet.
-        /// </param>
         public void Show(string message, Action onYes, Sprite titleArt = null, Action onNo = null)
         {
             yesAction = onYes;
@@ -122,7 +110,7 @@ namespace AgriDabao3D
             CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+            scaler.matchWidthOrHeight = 1f;
         }
 
         private void Build()
@@ -153,7 +141,6 @@ namespace AgriDabao3D
                 bg.color = new Color(0f, 0f, 0f, 0.82f);
             }
 
-            // Built once, hidden by default; Show() supplies the sprite per call.
             titleSign = new GameObject("TitleSign", typeof(RectTransform), typeof(Image));
             titleSign.transform.SetParent(panel.transform, false);
 
@@ -184,8 +171,6 @@ namespace AgriDabao3D
             messageText.alignment = TextAnchor.MiddleCenter;
             messageText.color = Color.white;
 
-            // SaveFarmBoard.png's painted edge ends at panel-local y = -127.5, and at
-            // the old -95 the 62-tall buttons reached -126 - sitting right on it.
             float buttonY = board != null ? -70f : -62f;
             Button yes = CreateButton(
                 panel.transform, "Yes", new Vector2(-120f, buttonY),
@@ -217,7 +202,6 @@ namespace AgriDabao3D
 
             if (art != null)
             {
-                // The word is painted into the art, so no Text child is added.
                 bg.sprite = art;
                 bg.preserveAspect = true;
                 bg.color = Color.white;

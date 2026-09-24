@@ -51,7 +51,6 @@ namespace AgriDabao3D
         public float averageSuitabilityPercent;
     }
 
-    /// <summary>One bag in the Seedling Tent. The tent is not near any crop, so it is listed on its own.</summary>
     [System.Serializable]
     public class AdvisorSeedlingBagData
     {
@@ -106,12 +105,6 @@ namespace AgriDabao3D
             return data;
         }
 
-        /// <summary>
-        /// The Seedling Tent's bags, wherever the player stands. Crops are only
-        /// described within 25 m of the player, and the tent is usually further
-        /// away than that, so without this the adviser could not see a single
-        /// seedling the player is raising.
-        /// </summary>
         private static List<AdvisorSeedlingBagData> BuildSeedlingTent()
         {
             List<AdvisorSeedlingBagData> bags = new List<AdvisorSeedlingBagData>();

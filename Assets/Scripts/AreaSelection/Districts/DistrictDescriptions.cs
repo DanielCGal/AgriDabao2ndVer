@@ -2,24 +2,6 @@ using System;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// What each Davao City district is like, shown on the area selection map
-    /// before the player commits to one.
-    ///
-    /// Two different kinds of fact are mixed here, and it is worth knowing which
-    /// is which:
-    ///
-    ///   The STARTER CROPS section is read off DistrictCropPools, so it is exactly
-    ///   what the game will hand the player. If a pool changes, the matching lines
-    ///   here have to change with it.
-    ///
-    ///   The opening paragraph and the TERRAIN section are real-world background
-    ///   about Davao City, written from general knowledge rather than taken from a
-    ///   cited elevation and slope map. They are accurate in outline - which
-    ///   districts are highland, which are coastal, what each is known for growing
-    ///   - but the specific figures should be checked against a proper source
-    ///   before any of this is quoted in the paper.
-    /// </summary>
     public static class DistrictDescriptions
     {
         private const string SeedRule =

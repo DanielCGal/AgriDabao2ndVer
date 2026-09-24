@@ -167,14 +167,12 @@ namespace AgriDabao3D
             CropTemperatureProfile profile =
                 GetProfile(crop);
 
-            // Temperature is inside the ideal range.
             if (temperatureC >= profile.idealMin &&
                 temperatureC <= profile.idealMax)
             {
                 return 1f;
             }
 
-            // Temperature is too cold.
             if (temperatureC < profile.idealMin)
             {
                 return Mathf.Clamp01(
@@ -186,7 +184,6 @@ namespace AgriDabao3D
                 );
             }
 
-            // Temperature is too hot.
             return Mathf.Clamp01(
                 1f -
                 Mathf.InverseLerp(

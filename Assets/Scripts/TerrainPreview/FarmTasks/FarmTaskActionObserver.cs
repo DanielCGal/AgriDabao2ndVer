@@ -45,7 +45,6 @@ namespace AgriDabao3D
             public float capacity;
         }
 
-        /// <summary>What a patch of prepared ground was at the last scan.</summary>
         private struct GroundObservation
         {
             public PreparedPlotKind kind;
@@ -220,9 +219,6 @@ namespace AgriDabao3D
                 if (!crops.TryGetValue(
                         now.cropId, out CropObservation before))
                 {
-                    // The material it was planted from - a sucker, a runner, a
-                    // transplanted seedling - so "plant a fruit crop" style tasks
-                    // can tell them apart.
                     Route(new ClimateActionRecord
                     {
                         actionType = "PlantCrop",
@@ -240,11 +236,6 @@ namespace AgriDabao3D
                     });
                     continue;
                 }
-
-                // Watering is recorded directly by FarmingInteractionSystem through
-                // ClimateEventTracker.RecordWaterAction. Do not infer watering
-                // from moisture changes because rain and irrigation can also
-                // increase moisture automatically.
 
 
 
@@ -464,13 +455,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// Ground work, in the three steps the shovel takes it through: newly
-        /// tilled ground ("TillGround"), tilled ground turned into a planting
-        /// hole, raised bed or furrow ("DigPlantingSpot" - a spot a crop can go
-        /// into, which is what that action always meant), and a raised bed covered
-        /// with mulch ("MulchBed").
-        /// </summary>
         private void ScanDigSpots()
         {
             Dictionary<int, GroundObservation> current =
@@ -933,10 +917,6 @@ namespace AgriDabao3D
                 return current;
             }
 
-            // A 500 ml spray can empty the pump before the observer scans the
-            // crop. Keep the previously observed liquid so the condition-change
-            // record still identifies Neem, Bt, Copper, disinfectant, or
-            // insecticide correctly.
             if (!string.IsNullOrWhiteSpace(lastKnownTreatment))
                 return lastKnownTreatment;
 

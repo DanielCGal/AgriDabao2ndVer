@@ -6,13 +6,6 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Runtime Settings overlay opened from the Main Menu and the in-farm pause
-    /// menu. Six horizontal sliders (BG music, SFX, weather ambience, render
-    /// distance, interface size, text size) drive <see cref="GameSettings"/> live.
-    /// Closing after a change prompts to save; Save persists locally and (if
-    /// logged in) to the backend account, No reverts to the last saved values.
-    /// </summary>
     public class SettingsUIBuilder : MonoBehaviour
     {
         public static SettingsUIBuilder Instance { get; private set; }
@@ -45,35 +38,14 @@ namespace AgriDabao3D
 
         private UIThemeSprites theme;
 
-        // Widened from 1000 to pay for the larger knob. The knob has to stop half
-        // its own width before each end of the groove, so a bigger knob costs travel
-        // unless the bar grows with it. BackgroundUI.png's caps are 130, and content
-        // is inset by panelPaddingX (170), so this still leaves 40 of clearance.
         private const float PanelWidth = 1200f;
 
-        /// <summary>
-        /// Panel height is unchanged at 740, and the rows were tightened from 90 to
-        /// 72 apart to seat six of them instead of four rather than growing the
-        /// board. That is a hard constraint, not a preference: the interface-size
-        /// slider shrinks every canvas's reference resolution, so at the 1.20
-        /// ceiling the usable height falls to 900. A 740-tall board centred there
-        /// puts the top of its hanging "Settings" sign at 433 of the 450 available,
-        /// and a taller board would push that sign off the screen - on the one
-        /// panel the player needs in order to undo the setting.
-        /// </summary>
         private const float PanelHeight = 740f;
         private const float FirstRowY = -150f;
 
-        /// <summary>
-        /// Tightened again from 72 to seat a seventh row. The board deliberately
-        /// does not grow to make space: the height above is what keeps its hanging
-        /// sign on screen at the 1.20 interface ceiling, so rows have to fit within
-        /// it rather than the other way round.
-        /// </summary>
         private const float RowSpacing = 64f;
         private const float CloseButtonY = -625f;
 
-        /// <summary>Row index of the AI Summarization toggle - always the last one.</summary>
         private const int AiRowIndex = 6;
 
         private static float RowY(int index)
@@ -81,39 +53,14 @@ namespace AgriDabao3D
             return FirstRowY - RowSpacing * index;
         }
 
-        // Measured from SliderBar.png (840x72, border {40,0,40,0}): the grooved
-        // channel runs from x=40 to x=796, i.e. exactly between the two rounded
-        // caps. Because 9-slice caps render at native size, these insets hold at
-        // any bar width.
         private const float SliderGrooveLeftInset = 40f;
         private const float SliderGrooveRightInset = 44f;
 
-        /// <summary>
-        /// Knob diameter. Sized as a phone touch target rather than to the art:
-        /// 48 clears the ~44dp minimum most mobile guidelines use. SliderBarHeight
-        /// must stay above this or the knob pokes out above and below the wood.
-        /// </summary>
         private const float SliderKnobSize = 48f;
 
-        /// <summary>
-        /// The AI Summarization knob. Larger than the slider knob because it
-        /// carries a word, and held under RowSpacing so it cannot reach the row
-        /// above it.
-        /// </summary>
         private const float ToggleButtonSize = 60f;
         private const float SliderBarHeight = 56f;
 
-        /// <summary>
-        /// Width of the label column on every row, and of the value column at the
-        /// right end of the slider rows.
-        ///
-        /// Sized for the largest Text Size (115%), where these labels are drawn at
-        /// 28 instead of 24. "BG SFX (Weather)" and "AI Summarization" measure about
-        /// 250 there, and "100%" and "60 m" about 80, so at the old 240 and 70 they
-        /// wrapped onto a second line the 60-tall row cannot show and the board
-        /// read "BG SFX", "AI" and "100". The slider gives up the difference and
-        /// still has over 300 of knob travel.
-        /// </summary>
         private const float LabelColumnWidth = 280f;
         private const float ValueColumnWidth = 95f;
         private float PaddingX => theme != null ? theme.panelPaddingX : 120f;
@@ -132,7 +79,6 @@ namespace AgriDabao3D
 
         public void Show()
         {
-            // Snapshot the current values so we can detect changes on close.
             baseMusic = GameSettings.MusicVolume;
             baseSfx = GameSettings.SfxVolume;
             baseAmbience = GameSettings.AmbienceVolume;
@@ -154,9 +100,6 @@ namespace AgriDabao3D
             root.SetActive(true);
             root.transform.SetAsLastSibling();
 
-            // The board is about to be looked at closely, so make sure it is already
-            // at the player's chosen sizes rather than being corrected by the next
-            // poll a fraction of a second later.
             UIScaleService.ApplyNow();
         }
 
@@ -193,10 +136,6 @@ namespace AgriDabao3D
                 GameSettings.RenderDistance, out renderValue,
                 v => { GameSettings.SetRenderDistance(v); RefreshValueLabels(); });
 
-            // Both scale rows apply live. UIScaleService listens to GameSettings
-            // and re-applies on the same frame, so the board under the player's
-            // thumb resizes as the knob moves and they can judge the result on the
-            // real interface rather than on a preview.
             uiScaleSlider = CreateSliderRow(panel.transform, "UI Size",
                 RowY(4), GameSettings.UiScaleMin, GameSettings.UiScaleMax,
                 GameSettings.UiScale, out uiScaleValue,
@@ -207,8 +146,6 @@ namespace AgriDabao3D
                 GameSettings.TextScale, out textScaleValue,
                 v => { GameSettings.SetTextScale(v); RefreshValueLabels(); });
 
-            // A toggle rather than a slider, so it borrows the slider row's geometry
-            // but puts a single round knob button where the track would be.
             CreateToggleRow(panel.transform, "AI Summarization", RowY(AiRowIndex),
                 out aiSummarizationValue, OnAiSummarizationPressed);
 
@@ -219,7 +156,6 @@ namespace AgriDabao3D
             BuildAiConfirmPopup(panelRect);
         }
 
-        /// <summary>The hanging "Settings" sign, or a plain Text when no sprite is set.</summary>
         private void CreateHeading(Transform parent, string value, Sprite sprite)
         {
             if (sprite != null)
@@ -272,7 +208,6 @@ namespace AgriDabao3D
                 promptBg.color = new Color(0.05f, 0.1f, 0.06f, 0.99f);
             }
 
-            // Hanging "Save Settings?" sign above the plank.
             if (theme?.saveSettingsLabel != null)
             {
                 GameObject signGo = new GameObject("TitleSign", typeof(RectTransform), typeof(Image));
@@ -312,8 +247,6 @@ namespace AgriDabao3D
 
         private void OnClosePressed()
         {
-            // The confirm board sits over the panel; closing underneath it would
-            // strand it on screen with nothing behind it.
             if (aiConfirmPopup != null && aiConfirmPopup.activeSelf)
                 return;
 
@@ -327,9 +260,6 @@ namespace AgriDabao3D
         {
             GameSettings.SaveLocal();
 
-            // Handed to AuthSession, which outlives this panel. Starting the request
-            // here meant it died the moment the player left the scene, leaving the
-            // account on its old values.
             AuthSession.Instance?.SaveSettingsToAccount();
 
             root.SetActive(false);
@@ -337,24 +267,10 @@ namespace AgriDabao3D
 
         private void OnSaveNo()
         {
-            // Discard the edits rather than merely skipping the write.
-            //
-            // The sliders apply their value live as they are dragged, so declining to
-            // save previously left the new values sitting in GameSettings for the rest
-            // of the session. Show() reads its slider positions from GameSettings, so
-            // re-opening the panel showed the rejected values as though they had been
-            // saved. Restoring the snapshot taken in Show() puts the audio, render
-            // distance and slider positions back to the last saved state.
             RestoreBaseline();
             root.SetActive(false);
         }
 
-        /// <summary>
-        /// Returns every setting to the values captured when the panel was opened,
-        /// which is the last saved state. Assigning through the GameSettings setters
-        /// raises its Changed event, so the audio mixer and culling distance follow
-        /// the revert immediately instead of waiting for a restart.
-        /// </summary>
         private void RestoreBaseline()
         {
             GameSettings.SetMusicVolume(baseMusic);
@@ -396,15 +312,6 @@ namespace AgriDabao3D
             aiSummarizationValue.text = GameSettings.AiSummarization ? "On" : "Off";
         }
 
-        // ---------------- UI helpers ----------------
-
-        /// <summary>
-        /// A label with a single round button where a slider's track would be.
-        ///
-        /// Laid out from the same measurements as <see cref="CreateSliderRow"/> so
-        /// the label column lines up with the six rows above it, and the button
-        /// lands on the centre of the control column rather than floating.
-        /// </summary>
         private void CreateToggleRow(Transform parent, string label, float y,
             out Text stateText, UnityEngine.Events.UnityAction onPressed)
         {
@@ -433,8 +340,6 @@ namespace AgriDabao3D
             RectTransform rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
             rect.pivot = new Vector2(0.5f, 1f);
-            // Kept inside the row spacing so the knob never overlaps the slider on
-            // the row above it.
             rect.sizeDelta = new Vector2(ToggleButtonSize, ToggleButtonSize);
             rect.anchoredPosition = new Vector2(controlCentre, y);
 
@@ -462,7 +367,6 @@ namespace AgriDabao3D
                 image.color = new Color(0.12f, 0.55f, 0.20f, 1f);
             }
 
-            // The word sits on the knob, so it is dark to read against the wood.
             stateText = CreateText(go.transform, "State", 22, TextAnchor.MiddleCenter);
             stateText.color = new Color(0.20f, 0.12f, 0.04f, 1f);
             stateText.fontStyle = FontStyle.Bold;
@@ -470,10 +374,6 @@ namespace AgriDabao3D
             Stretch(stateText.rectTransform);
         }
 
-        /// <summary>
-        /// The "Do you want to turn ... on/off?" board, built from the same trade
-        /// request art the social panel uses and the shared Yes/No buttons.
-        /// </summary>
         private void BuildAiConfirmPopup(RectTransform parent)
         {
             Sprite board = theme?.tradeRequestBoard;
@@ -521,7 +421,6 @@ namespace AgriDabao3D
             aiConfirmPopup.SetActive(false);
         }
 
-        /// <summary>Asks before flipping, so a mis-tap never silently changes it.</summary>
         private void OnAiSummarizationPressed()
         {
             aiConfirmMessage.text = GameSettings.AiSummarization
@@ -534,8 +433,6 @@ namespace AgriDabao3D
 
         private void OnAiSummarizationConfirmed()
         {
-            // Applied straight away like the sliders. Closing the board still asks
-            // whether to keep it, and answering No puts it back.
             GameSettings.SetAiSummarization(!GameSettings.AiSummarization);
             aiConfirmPopup.SetActive(false);
             RefreshValueLabels();
@@ -550,8 +447,6 @@ namespace AgriDabao3D
             float min, float max, float value, out Text valueText,
             UnityEngine.Events.UnityAction<float> onChanged)
         {
-            // Lay the row out between the board's two log ends: label on the
-            // left, then the grooved bar, then the live value on the right.
             const float labelWidth = LabelColumnWidth;
             const float valueWidth = ValueColumnWidth;
             float innerLeft = -PanelWidth * 0.5f + PaddingX;
@@ -583,8 +478,6 @@ namespace AgriDabao3D
             sliderRect.anchorMin = sliderRect.anchorMax = new Vector2(0.5f, 1f);
             sliderRect.pivot = new Vector2(0.5f, 1f);
             sliderRect.sizeDelta = new Vector2(sliderWidth, SliderBarHeight);
-            // -2 rather than -10 so the taller bar's centre still lines up with the
-            // 60-tall label beside it.
             sliderRect.anchoredPosition = new Vector2(sliderLeft + sliderWidth * 0.5f, y - 2f);
             slider.onValueChanged.AddListener(onChanged);
 
@@ -627,8 +520,6 @@ namespace AgriDabao3D
             RectTransform fillRect = fill.GetComponent<RectTransform>();
             fillRect.sizeDelta = new Vector2(10f, 0f);
             Image fillImage = fill.GetComponent<Image>();
-            // The wooden groove art already reads as the track, so the green
-            // progress fill is hidden once the bar sprite is in use.
             fillImage.color = barSprite != null
                 ? new Color(0f, 0f, 0f, 0f)
                 : new Color(0.20f, 0.70f, 0.30f, 1f);
@@ -638,15 +529,6 @@ namespace AgriDabao3D
             RectTransform handleAreaRect = handleArea.GetComponent<RectTransform>();
             Stretch(handleAreaRect);
 
-            // This rect is the knob's travel range, and Unity places the knob's
-            // CENTRE on its edges - so at the old inset of 10 a 44-wide knob hung
-            // 12 units past each end of the bar.
-            //
-            // SliderBar.png is 840x72 with a {40,0,40,0} border. Those caps are the
-            // rounded wooden ends and are drawn at native size whatever the bar's
-            // width, so the grooved channel between them always begins 40 in from
-            // the left and 44 from the right. Insetting by that plus half the knob
-            // keeps the knob inside the groove at both extremes.
             float knobHalf = (knobSprite != null ? SliderKnobSize : 28f) * 0.5f;
             handleAreaRect.offsetMin = new Vector2(SliderGrooveLeftInset + knobHalf + 2f, 0f);
             handleAreaRect.offsetMax = new Vector2(-(SliderGrooveRightInset + knobHalf + 2f), 0f);
@@ -657,8 +539,6 @@ namespace AgriDabao3D
             Image handleImage = handle.GetComponent<Image>();
             if (knobSprite != null)
             {
-                // Kept below SliderBarHeight so the knob never pokes out above or
-                // below the wood, as it did when 44 sat in a 40-tall bar.
                 handleRect.sizeDelta = new Vector2(SliderKnobSize, SliderKnobSize);
                 handleImage.sprite = knobSprite;
                 handleImage.preserveAspect = true;
@@ -701,7 +581,6 @@ namespace AgriDabao3D
 
             if (sprite != null)
             {
-                // The word is painted into the art, so no Text child is added.
                 image.sprite = sprite;
                 image.preserveAspect = true;
                 image.color = Color.white;
@@ -741,7 +620,6 @@ namespace AgriDabao3D
             Sprite board = theme?.panelBoard;
             if (board != null)
             {
-                // Sliced so the rolled log ends keep their true size.
                 image.sprite = board;
                 image.type = Image.Type.Sliced;
                 image.color = Color.white;
@@ -754,13 +632,6 @@ namespace AgriDabao3D
             return panel;
         }
 
-        /// <summary>
-        /// Lets a row's label or value shrink to fit its column instead of losing
-        /// its second line, the same fix as the shop's status row and the tutorial's
-        /// objective plank. The columns are sized so every current label fits at the
-        /// largest text size, so this is only a safety net - best fit never draws
-        /// above the font size, and the text size setting scales both limits.
-        /// </summary>
         private static void FitToRow(Text text)
         {
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -794,7 +665,7 @@ namespace AgriDabao3D
             CanvasScaler scaler = go.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+            scaler.matchWidthOrHeight = 1f;
         }
 
         private static void EnsureEventSystem()

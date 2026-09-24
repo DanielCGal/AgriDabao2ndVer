@@ -4,28 +4,6 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Shows what the player is typing in a bar across the top of the screen,
-    /// because on a phone in landscape the soft keyboard covers most of the game
-    /// and usually the text box itself with it.
-    ///
-    /// Android has its own version of this - the fullscreen "extract" editor -
-    /// but it cannot be relied on. uGUI already asks for it: InputField sets
-    /// TouchScreenKeyboard.hideInput from shouldHideMobileInput, which defaults to
-    /// false on Android, so the native editor is enabled and still does not
-    /// appear. Whether it shows is up to the device's keyboard app and the
-    /// activity's window flags, neither of which the game controls. Drawing it
-    /// ourselves gives every phone the same behaviour.
-    ///
-    /// This watches the EventSystem instead of being wired into each panel, so it
-    /// covers every text box in the game - login, sign-up, the verification code,
-    /// the AI adviser, player chat, marketplace search, the shop - without any of
-    /// those builders knowing it exists.
-    ///
-    /// It is deliberately inert: its canvas has no GraphicRaycaster and nothing on
-    /// it is a raycast target, so it cannot take focus from the field being typed
-    /// into, swallow a tap, or change any existing behaviour. It only reads.
-    /// </summary>
     public class MobileTextEntryOverlay : MonoBehaviour
     {
         private static MobileTextEntryOverlay instance;
@@ -46,22 +24,10 @@ namespace AgriDabao3D
                  "bar would only sit on top of the Game view.")]
         public bool showInEditor;
 
-        /// <summary>Longest tail of text kept on screen; older characters scroll off the front.</summary>
         private const int MaxVisibleCharacters = 240;
 
         private const float BarHeight = 190f;
 
-        /// <summary>
-        /// The overlay's own canvas, kept switched OFF whenever nobody is typing.
-        ///
-        /// This is load-bearing, not tidiness. Every UI builder in the game finds
-        /// its canvas with FindObjectOfType&lt;Canvas&gt;() and assumes the scene has
-        /// exactly one, so a second permanent canvas makes two builders pick
-        /// different ones and whichever has the lower sorting order disappears
-        /// behind the other. FindObjectOfType skips inactive objects, so while
-        /// this is off it cannot be found, and nothing is built while the player
-        /// is mid-keystroke.
-        /// </summary>
         private GameObject canvasRoot;
 
         private GameObject bar;
@@ -99,7 +65,6 @@ namespace AgriDabao3D
             valueText.text = BuildDisplayText(field);
         }
 
-        /// <summary>The InputField the keyboard is currently typing into, if any.</summary>
         private InputField ResolveFocusedField()
         {
             if (!ShouldRun())
@@ -132,23 +97,6 @@ namespace AgriDabao3D
 #endif
         }
 
-        /// <summary>
-        /// The typed text, trimmed to the most recent characters, with a blinking
-        /// caret on the end.
-        ///
-        /// Passwords are shown here in the clear, deliberately. The field itself
-        /// still masks them - that is Unity drawing its own Password contentType,
-        /// and it is untouched. This bar exists only because the soft keyboard
-        /// covers the box being typed into, so repeating the mask up here made it
-        /// useless for exactly the fields where a typo is hardest to notice and
-        /// most annoying to recover from: the password, its confirmation, and the
-        /// sign-up password.
-        ///
-        /// The trade is that a password is briefly readable over the player's
-        /// shoulder while they type it. That is the same exposure as any "show
-        /// password" eye toggle, it lasts only while the field has focus, and the
-        /// bar is already showing every other credential they type.
-        /// </summary>
         private string BuildDisplayText(InputField field)
         {
             string value = field.text ?? string.Empty;
@@ -160,11 +108,6 @@ namespace AgriDabao3D
             return caretOn ? value + "|" : value;
         }
 
-        /// <summary>
-        /// Names the box being typed into, so the bar is not just a floating line
-        /// of text. Falls back to the object's name when a field has no
-        /// placeholder of its own.
-        /// </summary>
         private static string PlaceholderOf(InputField field)
         {
             if (field.placeholder is Text placeholder &&
@@ -185,14 +128,12 @@ namespace AgriDabao3D
             Canvas canvas = canvasRoot.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
-            // Above every other canvas in the game. No GraphicRaycaster is added,
-            // which is what keeps this bar from ever intercepting a touch.
             canvas.sortingOrder = 32000;
 
             CanvasScaler scaler = canvasRoot.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+            scaler.matchWidthOrHeight = 1f;
 
             bar = new GameObject("EntryBar", typeof(RectTransform), typeof(Image));
             bar.transform.SetParent(canvasRoot.transform, false);
@@ -241,12 +182,9 @@ namespace AgriDabao3D
             text.color = color;
             text.raycastTarget = false;
 
-            // Geometry is left to the caller; both of them position their label
-            // differently and would only overwrite anything set here.
             return text;
         }
 
-        /// <summary>The green rule along the bottom edge, echoing a text field's underline.</summary>
         private void CreateUnderline()
         {
             GameObject go = new GameObject("Underline", typeof(RectTransform), typeof(Image));

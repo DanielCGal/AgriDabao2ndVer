@@ -5,12 +5,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Routes successful farm actions to the Daily Task and AI Adviser Task systems.
-    /// It also removes only cross-source duplicates (for example, one direct action
-    /// record plus one state-observer record for the same mulch application).
-    /// Repeated actions from the same source are never collapsed.
-    /// </summary>
     public static class FarmTaskActionHub
     {
         private sealed class RecentAction
@@ -24,9 +18,6 @@ namespace AgriDabao3D
         private static readonly List<RecentAction> Recent =
             new List<RecentAction>();
 
-        // The state observer runs on a short interval after the direct interaction.
-        // Two seconds is long enough to pair those records without suppressing two
-        // legitimate direct clicks, because same-origin records are never deduped.
         private const float CrossSourceDuplicateWindowSeconds = 2f;
 
         public static void Record(ClimateActionRecord record)
@@ -57,10 +48,6 @@ namespace AgriDabao3D
                         recent.semanticFamily,
                         recent.semanticItem))
                 {
-                    // Keep the direct record when it already exists. If the observer
-                    // arrived first, the later direct record is still ignored here;
-                    // both contain the same completed action and task progress remains
-                    // exactly one. The climate tracker uses the same hub decision.
                     return;
                 }
             }
@@ -81,14 +68,6 @@ namespace AgriDabao3D
             ActionRecorded?.Invoke(record);
         }
 
-        /// <summary>
-        /// Raised once for every action that survives de-duplication above.
-        ///
-        /// The beginner guide listens here rather than hooking each interaction
-        /// system separately: digging, planting, watering and mulching all already
-        /// arrive at this one point, and they arrive already de-duplicated, so a
-        /// single mulch application cannot satisfy a tutorial gate twice.
-        /// </summary>
         public static event Action<ClimateActionRecord> ActionRecorded;
 
         public static void ClearRecent()
@@ -147,9 +126,6 @@ namespace AgriDabao3D
             if (!SameOrUnspecified(first.cropType, second.cropType))
                 return false;
 
-            // A treatment can have its exact condition only in the observer record.
-            // Treat an empty condition as a wildcard, but never merge two different
-            // named conditions.
             if (!SameOrUnspecified(
                     first.conditionType,
                     second.conditionType))
@@ -167,8 +143,6 @@ namespace AgriDabao3D
                 return false;
             }
 
-            // Placement actions without a crop target are paired by item and nearby
-            // position. This prevents two separately placed traps from being merged.
             if (string.IsNullOrWhiteSpace(first.cropId) &&
                 string.IsNullOrWhiteSpace(second.cropId) &&
                 IsPlacementFamily(firstFamily))
@@ -208,8 +182,6 @@ namespace AgriDabao3D
                 (record.itemType ?? string.Empty) + " " +
                 (record.taskSource ?? string.Empty));
 
-            // Specific placement/protection families must be checked before
-            // generic words such as "water" (WaterStorageTank) or "trap".
             if (action.Contains("cleantrap"))
                 return "cleantrap";
             if (action.Contains("removeinfected") ||

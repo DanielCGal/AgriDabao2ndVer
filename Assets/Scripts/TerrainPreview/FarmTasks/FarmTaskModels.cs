@@ -27,8 +27,6 @@ namespace AgriDabao3D
         RaiseAverageHealth,
         LowerAverageStress,
 
-        // The planting system. Tasks are saved by kind name, but keep new kinds at
-        // the end anyway so the numbers of the old ones never move.
         TillGround,
         SowSeedlingBag,
         TransplantSeedling
@@ -157,7 +155,6 @@ namespace AgriDabao3D
         public List<FarmTaskConditionContext> conditions = new List<FarmTaskConditionContext>();
     }
 
-    /// <summary>One Seedling Tent bag, as the adviser sees it.</summary>
     [Serializable]
     public class FarmTaskNurseryBagContext
     {
@@ -168,7 +165,6 @@ namespace AgriDabao3D
         public float daysUntilNextStep;
     }
 
-    /// <summary>A patch of tilled or prepared ground with nothing planted in it yet.</summary>
     [Serializable]
     public class FarmTaskPreparedGroundContext
     {

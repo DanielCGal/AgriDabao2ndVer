@@ -4,10 +4,6 @@ namespace AgriDabao3D
 {
     public static class DavaoGeoReference
     {
-        // Corners of the area selection satellite map. These belong to the map
-        // picture the player drags the box on, so they have to be replaced
-        // together with it - a new map with the old corners would hand the terrain
-        // generator coordinates for somewhere else entirely.
         private const double TopLeftLat = 7.6089;
         private const double TopLeftLon = 125.1439;
 
@@ -20,8 +16,6 @@ namespace AgriDabao3D
         private const double BottomRightLat = 6.9381;
         private const double BottomRightLon = 125.7182;
 
-        // u = 0 left, 1 right
-        // v = 0 bottom, 1 top
         public static Vector2 LatLonFromNormalized(float u, float v)
         {
             double bottomLat = Mathf.Lerp((float)BottomLeftLat, (float)BottomRightLat, u);

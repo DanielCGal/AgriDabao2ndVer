@@ -1,20 +1,5 @@
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// What each line of the crop readout means, shown by the Crop Information
-    /// Description button on that panel.
-    ///
-    /// The readout was ten numbers with no explanation anywhere in the game - a
-    /// player could see "Stress: 31.5" and "Avg Health: 64.3" without being told
-    /// which of them costs them fruit, or why there are two health figures at all.
-    ///
-    /// Facts here come from the simulation itself: the yield formulas in
-    /// TropicalCropCatalog, CoconutTreeInstance and BananaPlantInstance, and the
-    /// water scoring in each crop class. The ideal moisture band is deliberately
-    /// described rather than quoted, because it is per crop - coconut is happy
-    /// between 45 and 80 percent, banana wants 60 to 90, and the tropical crops
-    /// each carry their own range in TropicalCropCatalog.
-    /// </summary>
     public static class CropFieldDescriptions
     {
         public const string Title = "Crop Information";

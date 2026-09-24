@@ -303,10 +303,6 @@ namespace AgriDabao3D
                 : InventoryItemType.None;
         }
 
-        /// <summary>
-        /// Every planting material of a crop named in a task ("Banana" gives the
-        /// plantlet and the sucker). Empty for a name that is not a crop.
-        /// </summary>
         public static List<InventoryItemType> CropNameToPlantingMaterials(string cropType)
         {
             return PlantingMaterialCatalog.TryGetCropType(cropType, out FarmCropType crop)

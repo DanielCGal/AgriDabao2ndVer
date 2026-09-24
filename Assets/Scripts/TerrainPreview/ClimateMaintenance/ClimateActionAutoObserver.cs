@@ -5,11 +5,6 @@ using Object = UnityEngine.Object;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Observes existing game systems that do not directly call ClimateEventTracker.
-    /// This lets the evaluation retain planting, crop removal, digging, inventory,
-    /// pest-trap, fruit-bag, and drainage actions performed during an active event.
-    /// </summary>
     public class ClimateActionAutoObserver : MonoBehaviour
     {
         private sealed class CropObservation

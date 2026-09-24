@@ -5,9 +5,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    // These classes are kept so your existing
-    // FarmAdvisorContextBuilder continues compiling.
-
     [Serializable]
     public class AdvisorPestDiseaseData
     {
@@ -108,7 +105,6 @@ namespace AgriDabao3D
 
         private void Start()
         {
-            // Initialization is safe regardless of Unity Start order.
             if (WeatherSystem.Instance != null)
             {
                 WeatherSystem.Instance.EnsureInitialized();
@@ -140,10 +136,6 @@ namespace AgriDabao3D
                 EvaluateDailyRisk();
             }
         }
-
-        // =========================================================
-        // CROP REGISTRATION
-        // =========================================================
 
         public void RegisterCrop(
             PestDiseaseAffectedCrop crop)
@@ -212,18 +204,11 @@ namespace AgriDabao3D
             }
         }
 
-        // =========================================================
-        // DAILY RISK
-        // =========================================================
-
         private void EvaluateDailyRisk()
         {
             if (!enableDailyRisk)
                 return;
 
-            // Days 1 and 2 belong to the new farmer, not to the pests. See
-            // FarmGraceperiod for why this is keyed to the date rather than to
-            // whether the beginner guide is running.
             if (FarmGraceperiod.IsCalmWeatherDay)
                 return;
 
@@ -438,13 +423,6 @@ namespace AgriDabao3D
 
             if (logSuccessfulAppearances)
             {
-                // Month, stage and temperature are recorded alongside the
-                // appearance so a log can be checked against the rule that
-                // allowed it - host crop, peak months, stage window and
-                // temperature range are the four hard gates, and without these
-                // fields an appearance cannot be audited after the fact. All
-                // four values are already in scope; nothing here is computed for
-                // the log's sake.
                 Debug.Log(
                     $"[Pest Appeared] " +
                     $"Crop={crop.CropDisplayName} | " +
@@ -662,8 +640,6 @@ namespace AgriDabao3D
             PestDiseaseAffectedCrop crop,
             PestDiseaseRule rule)
         {
-            // Squash Mosaic Virus becomes much more likely
-            // when Aphids are already present.
             if (rule.type ==
                 PestDiseaseType.MosaicVirus)
             {
@@ -675,8 +651,6 @@ namespace AgriDabao3D
                     : 0.20f;
             }
 
-            // Fusarium ear/kernel rot becomes more likely
-            // after insect damage.
             if (rule.type ==
                 PestDiseaseType.FusariumEarKernelRot)
             {
@@ -760,10 +734,6 @@ namespace AgriDabao3D
             );
         }
 
-        // =========================================================
-        // DEVELOPMENT TIME SKIPS
-        // =========================================================
-
         [Obsolete(
             "GameTimeSystem.AdvanceDays now owns weather/day ordering. " +
             "Use SimulateDiseaseProgress for elapsed disease damage only."
@@ -802,11 +772,6 @@ namespace AgriDabao3D
             }
         }
 
-        // =========================================================
-        // DEVELOPMENT / FORCE EVENTS
-        // Keeps existing DevTools buttons working.
-        // =========================================================
-
         public void ForceEvent(
             PestDiseaseType type)
         {
@@ -833,7 +798,6 @@ namespace AgriDabao3D
                         type
                     );
 
-                // Only valid host crops are affected.
                 if (rule == null)
                     continue;
 
@@ -887,10 +851,6 @@ namespace AgriDabao3D
                 PestDiseaseType.Mites
             );
         }
-
-        // =========================================================
-        // EXISTING ADVISER COMPATIBILITY
-        // =========================================================
 
         public AdvisorPestDiseaseData
             BuildAdvisorPestData()

@@ -79,12 +79,6 @@ namespace AgriDabao3D
             RecordInternal(record, "Direct");
         }
 
-        /// <summary>
-        /// Records an action inferred from state changes. It uses a distinct
-        /// origin so FarmTaskActionHub can collapse only the observer copy of
-        /// an already instrumented interaction while preserving legitimate
-        /// repeated direct actions.
-        /// </summary>
         public void RecordObservedAction(ClimateActionRecord record)
         {
             RecordInternal(record, "Observer");
@@ -107,21 +101,12 @@ namespace AgriDabao3D
                     ? actionRecords[duplicateIndex]
                     : null;
 
-            // Enrich the observer copy before task progress sees it. This is
-            // important when a 500 ml spray empties the pump and the observer can
-            // only infer a generic item name; the earlier direct record still knows
-            // the exact liquid that was used.
             if (previousDuplicate != null &&
                 ShouldPreferIncomingRecord(previousDuplicate, record))
             {
                 MergeMissingTreatmentDetails(record, previousDuplicate);
             }
 
-            // A direct sprayer record created by the existing inventory code does
-            // not contain the affected condition or the before/after severity. The
-            // state observer supplies that richer record a fraction of a second
-            // later. Do not send the low-detail copy to task progress, otherwise it
-            // can either be counted twice or hide the condition-aware observer copy.
             bool deferTaskRouting =
                 ShouldDeferDirectTreatmentToObserver(record);
             if (!deferTaskRouting)
@@ -184,7 +169,7 @@ namespace AgriDabao3D
             if (record == null || actionRecords.Count == 0)
                 return -1;
 
-            float minimumDay = record.gameDay - 0.0025f; // about 3.6 game minutes
+            float minimumDay = record.gameDay - 0.0025f;
             for (int i = actionRecords.Count - 1; i >= 0; i--)
             {
                 ClimateActionRecord previous = actionRecords[i];
@@ -207,9 +192,6 @@ namespace AgriDabao3D
                     return i;
                 }
 
-                // Existing sprayer instrumentation and the state observer may use
-                // different action names/items for the same treatment. Pair them
-                // when one copy is low-detail and both target the same crop.
                 if (IsTreatmentAction(previousAction) &&
                     IsTreatmentAction(currentAction) &&
                     (IsLowDetailTreatment(previous) ||

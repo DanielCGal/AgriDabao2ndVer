@@ -1,33 +1,5 @@
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// The list of things the player can actually do, appended to the adviser's
-    /// system instruction.
-    ///
-    /// Without this the adviser answers "what can I use against this typhoon?"
-    /// from general agricultural knowledge, because nothing in its context says
-    /// what this game contains. It knows the weather, soil, crops and pest levels;
-    /// it does not know that a Windbreak Kit exists. So it recommends real
-    /// practices with no item behind them - and the player hunts the shop for
-    /// something that was never there.
-    ///
-    /// Two entries here are actively counter-intuitive and are the reason the
-    /// effectiveness column matters: irrigation during a typhoon and a drainage
-    /// canal during a drought are both scored as HARMFUL by
-    /// <see cref="CropMaintenanceCatalog"/>, and both are exactly what a
-    /// general-knowledge answer would reach for.
-    ///
-    /// Every line is read off the game's own tables - ScoreCropAction and
-    /// ScoreWorldAction for the effectiveness, the Allowed map for the per-crop
-    /// restrictions, and the mitigation lists on each pest rule for the
-    /// treatments. If those change, this has to change with them; nothing checks
-    /// it at build time.
-    ///
-    /// The framing is deliberately a lookup table rather than a topic. An earlier
-    /// draft opened with "TOOLS THAT EXIST IN THIS GAME" and read as something to
-    /// talk about, which risks turning "are my crops okay?" into a shopping list.
-    /// The opening paragraph now names the question types it must stay out of.
-    /// </summary>
     public static class FarmAdvisorToolReference
     {
         public const string Block =

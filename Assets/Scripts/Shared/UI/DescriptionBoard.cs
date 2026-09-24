@@ -3,41 +3,17 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// The wooden board that shows a long description, centred over whatever
-    /// opened it, with a CLOSE plank along the bottom.
-    ///
-    /// Shared rather than copied because two screens use it - the shop's item
-    /// descriptions and the area selection's district descriptions - and they are
-    /// meant to be the same board. Kept as a plain class rather than a
-    /// MonoBehaviour: it owns its GameObjects and needs no update loop, so the
-    /// caller holds one of these as a field and forgets about it.
-    ///
-    /// It parents itself to whatever transform it is given, which is what makes it
-    /// safe to leave lying around: hiding the parent panel hides this too, without
-    /// every close path having to know it exists.
-    /// </summary>
     public class DescriptionBoard
     {
-        /// <summary>
-        /// TradeConfirmBoard.png is 1760x1320 with fixed 130px 9-slice corners, and
-        /// its painted logs run to x=280 and resume at x=1458. Because slicing
-        /// holds the corners at true size, those logs eat a near-constant amount
-        /// off the board however wide it is drawn - at 380 wide only about 96 units
-        /// of plank would remain to write on. At 1200 the text column is about 730,
-        /// which is what makes this readable rather than a ribbon.
-        /// </summary>
         private const float BoardWidth = 1200f;
         private const float BoardHeight = 800f;
         private const float BoardArtWidth = 1760f;
         private const float LogEndsAtPx = 280f;
         private const float LogResumesAtPx = 1458f;
 
-        /// <summary>CloseButton.png is 640x190, so preserveAspect keeps this true.</summary>
         private const float CloseWidth = 230f;
         private const float CloseHeight = 68f;
 
-        /// <summary>Room left under the text for the close plank.</summary>
         private const float Footer = 104f;
 
         private GameObject root;
@@ -47,7 +23,6 @@ namespace AgriDabao3D
 
         public bool IsOpen => root != null && root.activeSelf;
 
-        /// <summary>Builds the board hidden. Call <see cref="Show"/> to open it.</summary>
         public static DescriptionBoard Create(Transform parent, UIThemeSprites theme)
         {
             DescriptionBoard board = new DescriptionBoard();
@@ -79,7 +54,6 @@ namespace AgriDabao3D
                 boardImage.color = new Color(0f, 0f, 0f, 0.82f);
             }
 
-            // Left on so the board swallows clicks meant for whatever is behind it.
             boardImage.raycastTarget = true;
 
             float inset = ContentInset(theme, BoardWidth);
@@ -99,19 +73,6 @@ namespace AgriDabao3D
             root.SetActive(false);
         }
 
-        /// <summary>
-        /// A scrolling text column.
-        ///
-        /// The label IS the scroll content rather than a child of a layout group.
-        /// Wrapping it in one left the label sized by the group instead of by the
-        /// viewport, and the mask then cut characters off both edges. Stretched
-        /// horizontal anchors with a zero sizeDelta give it exactly the viewport's
-        /// width, so nothing can fall underneath the mask.
-        ///
-        /// The text also overflows vertically rather than truncating: a truncating
-        /// label silently drops whole lines once the player raises the text size,
-        /// so the words would vanish rather than scroll.
-        /// </summary>
         private void BuildScroll(float inset)
         {
             GameObject viewport = new GameObject("Viewport",
@@ -200,14 +161,6 @@ namespace AgriDabao3D
             fallbackRect.offsetMax = Vector2.zero;
         }
 
-        /// <summary>
-        /// The plank button that opens a board.
-        ///
-        /// Shared for the same reason the board itself is: two screens put one of
-        /// these on screen and they are meant to be the same button. The caller
-        /// positions the returned button; only its size is passed in, because the
-        /// two screens have very different space to give it.
-        /// </summary>
         public static Button CreateOpenButton(Transform parent, UIThemeSprites theme,
             string label, Vector2 size, UnityEngine.Events.UnityAction onClick)
         {
@@ -226,9 +179,6 @@ namespace AgriDabao3D
             if (art != null)
             {
                 image.sprite = art;
-                // TradeRequestBoard.png has no 9-slice border, so it can only be
-                // stretched, never sliced. Its grain runs lengthwise, which is why
-                // a wider-than-native plank still reads as a plank.
                 image.preserveAspect = false;
                 image.color = Color.white;
                 PauseMenuBuilder.ApplySpriteTint(button);
@@ -251,7 +201,6 @@ namespace AgriDabao3D
             return button;
         }
 
-        /// <summary>Fills the board and brings it to the front.</summary>
         public void Show(string title, string body)
         {
             if (root == null || string.IsNullOrEmpty(body))
@@ -264,11 +213,8 @@ namespace AgriDabao3D
 
             root.SetActive(true);
 
-            // Drawn last so it covers everything its parent panel holds.
             root.transform.SetAsLastSibling();
 
-            // A new subject starts at the top rather than wherever the last one was
-            // left scrolled to.
             if (scroll != null)
                 scroll.verticalNormalizedPosition = 1f;
         }
@@ -279,15 +225,6 @@ namespace AgriDabao3D
                 root.SetActive(false);
         }
 
-        /// <summary>
-        /// How far in from each edge the plank wall begins.
-        ///
-        /// Computed from the width rather than fixed, because 9-slicing keeps the
-        /// corners at true size and stretches only the middle, so the painted log
-        /// moves inward as the board narrows. Laying text out against the sprite's
-        /// 9-slice border instead would put the first eighty-odd units of every
-        /// line on top of the log.
-        /// </summary>
         internal static float ContentInset(UIThemeSprites theme, float width)
         {
             Sprite art = theme != null ? theme.tradeConfirmBoard : null;
@@ -307,11 +244,6 @@ namespace AgriDabao3D
             return Mathf.Max(left, right) + 10f;
         }
 
-        /// <summary>
-        /// A label styled for the board's planks. The dark browns used elsewhere
-        /// are near-invisible against this art, so it uses a light fill over a hard
-        /// outline, which stays readable over both plank and log.
-        /// </summary>
         internal static Text CreateLabel(Transform parent, int fontSize,
             float width, float height)
         {

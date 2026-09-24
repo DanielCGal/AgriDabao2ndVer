@@ -4,13 +4,6 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// The row of round wooden buttons along the farm HUD's top-left edge.
-    ///
-    /// Every builder that owns one of these buttons asks for a slot number rather
-    /// than hard-coding a position, so the row stays evenly spaced and nothing
-    /// overlaps even though five different scripts create the buttons.
-    /// </summary>
     public static class HudIconButton
     {
         public const float Size = 90f;
@@ -18,7 +11,6 @@ namespace AgriDabao3D
         public const float StartX = 20f;
         public const float TopY = -20f;
 
-        // Left-to-right order of the row.
         public const int SlotPause = 0;
         public const int SlotAdviserChat = 1;
         public const int SlotShop = 2;
@@ -33,11 +25,6 @@ namespace AgriDabao3D
             return new Vector2(StartX + slot * (Size + Gap), TopY);
         }
 
-        /// <summary>
-        /// Creates a round icon button in the given slot. With no sprite it falls
-        /// back to a dark box carrying <paramref name="fallbackLabel"/>, so the HUD
-        /// still works before the art is dropped in.
-        /// </summary>
         public static Button Create(
             Transform parent,
             string objectName,
@@ -57,9 +44,6 @@ namespace AgriDabao3D
             rect.sizeDelta = new Vector2(Size, Size);
             rect.anchoredPosition = PositionForSlot(slot);
 
-            // Every one of these buttons is created through here, so registering
-            // once covers the whole row. The beginner guide reveals them one at a
-            // time as Antonio introduces each feature.
             HudRegistry.RegisterIconButton(slot, go);
 
             image = go.GetComponent<Image>();

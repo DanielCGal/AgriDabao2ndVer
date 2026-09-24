@@ -81,20 +81,20 @@ namespace AgriDabao3D
 
         private readonly Color[] elevationLegendColors =
         {
-            From255(128, 255, 0),   // < 200m, green
-            From255(255, 255, 0),   // 201 - 500m, yellow
-            From255(255, 166, 0),   // 501 - 1000m, orange
-            From255(255, 80, 0),    // 1001 - 1500m, orange-red
-            From255(255, 0, 0)      // > 1500m, red
+            From255(128, 255, 0),
+            From255(255, 255, 0),
+            From255(255, 166, 0),
+            From255(255, 80, 0),
+            From255(255, 0, 0)
         };
 
         private readonly Color[] slopeLegendColors =
         {
-            From255(128, 255, 0),   // 0 - 8%, green
-            From255(255, 255, 0),   // 8 - 18%, yellow
-            From255(255, 180, 0),   // 18 - 30%, yellow-orange
-            From255(255, 85, 0),    // 30 - 50%, orange-red
-            From255(255, 0, 0)      // > 50%, red
+            From255(128, 255, 0),
+            From255(255, 255, 0),
+            From255(255, 180, 0),
+            From255(255, 85, 0),
+            From255(255, 0, 0)
         };
 
         private void Start()
@@ -110,8 +110,6 @@ namespace AgriDabao3D
         {
             if (davaoMapSprite == null || elevationMapSprite == null || slopeMapSprite == null)
             {
-                // Named, because more than one of these can sit in a scene and a
-                // bare message gives no clue which one is short of a sprite.
                 Debug.LogError(
                     "TemporaryTerrainGenerator on \"" + name + "\": assign the Davao satellite map, " +
                     "the official elevation map and the official slope map.", this);
@@ -179,8 +177,6 @@ namespace AgriDabao3D
             float[,] rawMeters = new float[resolution, resolution];
             float[,] heights = new float[resolution, resolution];
 
-            // Kept so the natural relief pass can tell lowland from mountainside;
-            // the slope reading was previously computed and thrown away.
             float[,] slopeMap = new float[resolution, resolution];
 
             float min = float.MaxValue;
@@ -218,8 +214,6 @@ namespace AgriDabao3D
                     float baseElevationMeters = GetElevationMeters(elevationRamp);
 
 
-                    // add natural lowland hills, fading out as the ground climbs
-                    // out of the lowest class instead of stopping at a hard line
                     float lowland = Mathf.Clamp01(1f - elevationRamp);
                     if (lowland > 0f)
                     {
@@ -257,10 +251,6 @@ namespace AgriDabao3D
     * slopeReliefMultiplier;
 
 
-                    // Gentle ground keeps half the relief, as it always has. Written
-                    // as a ramp rather than an "is this class 0 or 1" test so the two
-                    // halves meet smoothly; at every whole class this is the same
-                    // 0.5 / 0.5 / 1 / 1 / 1 the step version gave.
                     reliefMeters *= Mathf.Lerp(0.5f, 1f, Mathf.Clamp01(slopeRamp - 1f));
 
                     float terrainVariation =
@@ -330,16 +320,11 @@ namespace AgriDabao3D
                         float localU = x / (float)(resolution - 1);
                         float localV = y / (float)(resolution - 1);
 
-                        // Full strength on the flat, tapering to nothing on a real
-                        // mountainside so the shaping above is left intact.
                         float flatness = 1f - Mathf.Clamp01(slopeMap[y, x]);
                         float amount = flatlandReliefStrength * flatness;
 
                         if (amount > 0f)
                         {
-                            // Centred on half the amplitude rather than added on top,
-                            // so troughs cannot be clipped away at zero and the mean
-                            // ground level stays where the shaping put it.
                             float detail = Fbm(
                                 localU * flatlandReliefScale + 137.2f,
                                 localV * flatlandReliefScale + 61.9f,
@@ -357,18 +342,6 @@ namespace AgriDabao3D
             return heights;
         }
 
-        /// <summary>
-        /// Fractional Brownian motion: several octaves of Perlin noise stacked, each
-        /// half the amplitude and double the frequency of the last.
-        ///
-        /// A single Perlin octave reads as smooth blobs, which is what made the old
-        /// lowland pass look artificial. Stacking octaves puts small undulations on
-        /// top of broad ones, which is how real ground behaves.
-        ///
-        /// Returns 0..1, and is a pure function of its inputs - the same farm always
-        /// regenerates the same terrain, which is what lets the save file store only
-        /// the map area rather than the whole heightmap.
-        /// </summary>
         private static float Fbm(float x, float y, int octaves, float persistence)
         {
             float total = 0f;
@@ -501,19 +474,6 @@ namespace AgriDabao3D
             return result;
         }
 
-        /// <summary>
-        /// Where a pixel sits along a legend ramp, as a continuous position from 0
-        /// to the last legend index.
-        ///
-        /// This replaced a version that snapped every pixel to whichever of the
-        /// five legend swatches was nearest. That was right for the old maps, which
-        /// were drawn as five flat bands, but the newer official maps are smooth
-        /// gradients - and snapping a gradient to five values turns a hillside into
-        /// five terraces with cliffs between them.
-        ///
-        /// A colour that IS one of the swatches still returns that swatch index
-        /// exactly, so nothing about a flat-band map reads differently than before.
-        /// </summary>
         private float SampleLegendRampRobust(
             Texture2D texture,
             float u,
@@ -572,15 +532,6 @@ namespace AgriDabao3D
             return true;
         }
 
-        /// <summary>
-        /// The closest point on the legend ramp to this colour, expressed as a
-        /// position along it. The ramp is treated as the straight lines joining
-        /// consecutive swatches in colour space, so a colour half way between the
-        /// yellow and the orange comes back as 1.5 rather than being rounded to one
-        /// of them. The distance to that closest point is handed back too, so the
-        /// caller can still reject pixels that are not on the ramp at all - roads,
-        /// labels, the white background.
-        /// </summary>
         private float GetLegendRampPosition(Color pixel, Color[] legendColors, out float bestDistance)
         {
             bestDistance = float.MaxValue;
@@ -630,10 +581,6 @@ namespace AgriDabao3D
             return bestPosition;
         }
 
-        /// <summary>
-        /// Blends between the five per-class figures at a fractional ramp position.
-        /// At a whole number it returns that band figure unchanged.
-        /// </summary>
         private float LerpAcrossClasses(float rampPosition, float c0, float c1, float c2, float c3, float c4)
         {
             float clamped = Mathf.Clamp(rampPosition, 0f, 4f);
@@ -656,18 +603,12 @@ namespace AgriDabao3D
             }
         }
 
-        // What each legend band stands for. The figures are unchanged; they are
-        // just read at a fractional position now, so a gradient map lands between
-        // two bands instead of being forced onto one of them.
-
-        //                                  < 200m   201-500  501-1000  1001-1500  > 1500m
         private float GetElevationMeters(float elevationRamp)
         {
             return LerpAcrossClasses(
                 elevationRamp, lowlandElevationMeters, 350f, 750f, 1250f, maxLegendElevationMeters);
         }
 
-        //                                   0-8%   8-18%  18-30%  30-50%  > 50%
         private float GetSlopeStrength01(float slopeRamp)
         {
             return LerpAcrossClasses(slopeRamp, 0.04f, 0.13f, 0.24f, 0.40f, 0.65f);
@@ -678,12 +619,6 @@ namespace AgriDabao3D
             return LerpAcrossClasses(slopeRamp, 4f, 10f, 22f, 42f, 70f);
         }
 
-        /// <summary>
-        /// The three source pictures are read at the same normalized coordinates,
-        /// so they only line up if they were exported over the same ground. Shape is
-        /// the one part of that this can check, and a mismatch there means the farm
-        /// is being built from the elevation of somewhere else entirely.
-        /// </summary>
         private void WarnIfSourceMapsDisagree()
         {
             float mapAspect = SpriteAspect(davaoMapSprite);
@@ -718,14 +653,6 @@ namespace AgriDabao3D
             return sprite.rect.height / sprite.rect.width;
         }
 
-        /// <summary>
-        /// Robustly resolves the active generated terrain. A bare
-        /// FindFirstObjectByType&lt;TemporaryTerrainGenerator&gt;().targetTerrain lookup
-        /// is not reliable right after a scene load / farm restore (it can return
-        /// null even though the terrain was already generated), so this mirrors the
-        /// same defensive fallback chain already used for placing mitigation objects
-        /// in ClimateMaintenanceInteractionSystem.ResolveTargetTerrain().
-        /// </summary>
         public static Terrain ResolveActiveTerrain()
         {
             TemporaryTerrainGenerator[] generators =
@@ -771,15 +698,6 @@ namespace AgriDabao3D
             return targetTerrain;
         }
 
-        /// <summary>
-        /// Forces the terrain onto an explicitly referenced URP material.
-        ///
-        /// The terrain is created at runtime, so nothing in any scene references a
-        /// terrain material at build time and Unity's shader stripper drops the URP
-        /// terrain shader from the player build - which is why the terrain renders
-        /// magenta on a phone while looking correct in the Editor. Assigning an
-        /// asset in <see cref="terrainMaterial"/> creates that build-time reference.
-        /// </summary>
         private void ApplyTerrainMaterial(Terrain terrain)
         {
             if (terrain == null)
@@ -822,20 +740,6 @@ namespace AgriDabao3D
             return cropped;
         }
 
-        /// <summary>
-        /// Clears a terrain texture's alpha channel so the ground renders matte.
-        ///
-        /// URP's TerrainLit is compiled with _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A,
-        /// which means a layer's gloss is albedo.alpha * _Smoothness0 - the diffuse
-        /// texture's alpha channel IS the smoothness map. Setting the layer's
-        /// smoothness to 0 alone proved not to be enough, because _Smoothness0 is
-        /// marked "set by terrain engine" and is rewritten outside our control;
-        /// zeroing the alpha pins the product at 0 whatever that value becomes.
-        ///
-        /// Only the alpha is touched. RGB - the colour the player actually sees -
-        /// is untouched, and the heightmap, collider and soil data never read this
-        /// texture at all, so gameplay is unaffected.
-        /// </summary>
         public static void ClearSmoothnessAlpha(Texture2D texture)
         {
             if (texture == null || !texture.isReadable)
@@ -851,8 +755,6 @@ namespace AgriDabao3D
 
         private void ApplyMapTexture(TerrainData td, Texture2D croppedMap)
         {
-            // croppedMap is created fresh by CropTexture, so this does not touch the
-            // imported source sprite.
             ClearSmoothnessAlpha(croppedMap);
 
             TerrainLayer layer = new TerrainLayer();

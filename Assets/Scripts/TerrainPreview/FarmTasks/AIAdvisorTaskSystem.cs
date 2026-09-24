@@ -232,11 +232,6 @@ namespace AgriDabao3D
             if (verdict == null)
                 return;
 
-            // The grader writes about a specific crop and, left alone, quotes its
-            // machine GUID alongside the name - "the 'mangosteen_1' tree (ID:
-            // 9f435ff9...)". The name is the useful half, since that is what the
-            // player reads when they click the crop; the GUID is noise that fills
-            // two lines of a wooden sign.
             verdict.reason = PolishVerdictText(verdict.reason);
             verdict.progressSummary = PolishVerdictText(verdict.progressSummary);
 
@@ -537,17 +532,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// Whether the player can get planting material for a planting objective:
-        /// they hold some already, a seedling of that crop is waiting in the
-        /// Seedling Tent, or their district's shop sells it. Without this the
-        /// adviser could set "plant tomato" on a farm whose district does not grow
-        /// tomato, and the task would sit there with no way to finish it. An
-        /// objective that names neither a crop nor a material is always fine.
-        ///
-        /// The adviser's tasks have no deadline, so a material still to be raised
-        /// in the tent counts here, unlike for the one-day daily tasks.
-        /// </summary>
         private static bool CanObtainSeedFor(string cropType, string itemType)
         {
             List<InventoryItemType> options = new List<InventoryItemType>();
@@ -592,8 +576,6 @@ namespace AgriDabao3D
                 CleanText(objective.cropId);
             objective.conditionType =
                 CleanText(objective.conditionType);
-            // An old seed name - from a saved task, or from the model still using
-            // one - becomes the material that replaced it.
             objective.itemType =
                 PlantingMaterialCatalog.UpgradeLegacyList(
                     CleanText(objective.itemType));
@@ -1142,11 +1124,6 @@ namespace AgriDabao3D
             };
         }
 
-        /// <summary>
-        /// A planting objective that names one material ("plant two banana
-        /// suckers") is met by planting any material of the same crop - a banana
-        /// plantlet grows the same banana. What the adviser measures is the crop.
-        /// </summary>
         private static bool SameCropMaterial(string requirement, string plantedItem)
         {
             if (string.IsNullOrWhiteSpace(requirement) ||
@@ -1220,7 +1197,6 @@ namespace AgriDabao3D
                         ? action.itemType
                         : action.taskSource);
 
-                // Pest traps and pesticides are not typhoon protection.
                 string[] allowedItems =
                 {
                     "Windbreak",
@@ -1462,56 +1438,20 @@ namespace AgriDabao3D
                 : value.Trim();
         }
 
-        // ------------------------------------------- tidying the model's text
-
-        /// <summary>
-        /// The opening the board prints for itself - "Now... Do ", or either
-        /// word alone.
-        ///
-        /// A bare leading "Do" is stripped too, and that is deliberate even
-        /// though it looks lossy: the board puts "Do " back in front, so a task
-        /// reading "Do not let the soil dry out" comes out as "Now... Do not let
-        /// the soil dry out" rather than "Now... Do Do not...".
-        /// </summary>
         private static readonly System.Text.RegularExpressions.Regex EchoedOpening =
             new System.Text.RegularExpressions.Regex(
                 @"^\s*(now\s*(\.{2,}|,|:)?\s*)?do\s+|^\s*now\s*(\.{2,}|,|:)\s*",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-        /// <summary>A peso figure, which is what makes a sentence a candidate reward promise.</summary>
         private static readonly System.Text.RegularExpressions.Regex PesoAmount =
             new System.Text.RegularExpressions.Regex(
                 @"\bP\s?\d", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-        /// <summary>
-        /// The promise half. Required alongside a peso figure so that a genuine
-        /// objective - "sell crops worth P2000" - is never mistaken for one.
-        /// </summary>
         private static readonly System.Text.RegularExpressions.Regex PromiseWording =
             new System.Text.RegularExpressions.Regex(
                 @"\bgive\s+you\b|\bif\s+you\s+(finish|complete)\b|\bas\s+a\s+reward\b|\byou'?ll\s+(get|earn)\b",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-        // Note for anyone tempted to "tidy" names like mangosteen_1 out of this
-        // text: do not. That IS the crop's player-facing name - CropNaming builds
-        // it, and it is what the player sees when they click the crop. Rewriting
-        // it as "Mangosteen 1" would leave the task naming something the player
-        // cannot find on their own farm.
-
-        /// <summary>
-        /// Removes the parts of the adviser's wording that the board prints for
-        /// itself.
-        ///
-        /// The board wraps the task as "Now... Do &lt;task&gt;" and then adds its own
-        /// "I'll give you P&lt;reward&gt; if you finish this task." The prompt asks the
-        /// model to leave both to the game, and it mostly does - but a prompt is
-        /// a request, not a guarantee, and when the model included them anyway
-        /// the player read the opening twice and the reward twice.
-        ///
-        /// Applied when the task is stored rather than when it is drawn, so the
-        /// grading request that quotes the task back later gets the tidied text
-        /// too.
-        /// </summary>
         private static string StripBoardWording(string taskText)
         {
             if (string.IsNullOrWhiteSpace(taskText))
@@ -1520,22 +1460,12 @@ namespace AgriDabao3D
             string text = EchoedOpening.Replace(taskText.Trim(), string.Empty, 1);
             text = StripRewardPromise(text);
 
-            // Lower case, because the board reads "Now... Do " straight into this
-            // and the model writes the task as a sentence of its own. Without
-            // this the board says "Now... Do Apply mulch". Safe because the
-            // prompt requires the task to open with a verb, and a verb is never
-            // a proper noun.
             if (text.Length > 0 && char.IsUpper(text[0]))
                 text = char.ToLowerInvariant(text[0]) + text.Substring(1);
 
             return text;
         }
 
-        /// <summary>
-        /// Drops any sentence that both names a peso amount and promises it to
-        /// the player. Needing both halves is what keeps "Sell crops worth
-        /// P2000" - an actual objective - out of the net.
-        /// </summary>
         private static string StripRewardPromise(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -1556,28 +1486,15 @@ namespace AgriDabao3D
             return string.Join(" ", kept).Trim();
         }
 
-        /// <summary>An "(ID: ...)" aside, which is only ever the machine GUID.</summary>
         private static readonly System.Text.RegularExpressions.Regex IdParenthetical =
             new System.Text.RegularExpressions.Regex(
                 @"\s*[\(\[]\s*(?:crop\s*)?id\s*[:=]?\s*[^)\]]*[\)\]]",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-        /// <summary>A crop GUID, with or without its dashes.</summary>
         private static readonly System.Text.RegularExpressions.Regex CropGuid =
             new System.Text.RegularExpressions.Regex(
                 @"\b[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}\b");
 
-        /// <summary>
-        /// Takes the machine id out of the grader's write-up, leaving the crop
-        /// name the player can actually act on.
-        ///
-        /// The three steps are ordered deliberately. The "(ID: ...)" aside goes
-        /// first, because next to a name it says nothing and turning it into
-        /// "(ID: mangosteen_1)" would only be redundant. CropNaming.Humanize runs
-        /// second, so a GUID standing on its own in a sentence becomes the crop's
-        /// name rather than a hole. Only what is left after that - a GUID for a
-        /// crop that is no longer live, which nothing can name - is deleted.
-        /// </summary>
         private static string PolishVerdictText(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -1587,20 +1504,12 @@ namespace AgriDabao3D
             polished = CropNaming.Humanize(polished);
             polished = CropGuid.Replace(polished, string.Empty);
 
-            // Tidy the gaps the removals leave behind.
             polished = System.Text.RegularExpressions.Regex.Replace(polished, "[ \t]{2,}", " ");
             polished = System.Text.RegularExpressions.Regex.Replace(polished, @"\s+([.,;:!?])", "$1");
 
             return polished.Trim();
         }
 
-        /// <summary>
-        /// Everything the adviser says, tidied for the board.
-        ///
-        /// CropNaming.Humanize stays in the chain: it swaps a raw crop GUID for
-        /// the crop's friendly name, which is exactly the name the player reads
-        /// when they click that crop. Nothing else touches those names.
-        /// </summary>
         private static string PolishDialogue(string dialogue)
         {
             return CropNaming.Humanize(StripRewardPromise(CleanText(dialogue)));

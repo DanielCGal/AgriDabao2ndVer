@@ -6,24 +6,10 @@ using UnityEngine;
 
 namespace AgriDabao3D.EditorTools
 {
-    /// <summary>
-    /// Lists the triangle count of every imported model in one pass.
-    ///
-    /// The importer shows this per file in its preview pane, but the project has
-    /// 54 of them, and the number that matters is how they compare to each other
-    /// and to a mobile budget - which is impossible to judge one file at a time.
-    /// This prints them sorted heaviest first so the worst offenders are obvious.
-    /// </summary>
     public static class MeshStatsReporter
     {
-        /// <summary>
-        /// Rough per-model ceiling for a phone. A mid-range Android device can push
-        /// somewhere around 100k triangles per frame in total, so any single crop
-        /// costing more than this leaves almost nothing for the rest of the farm.
-        /// </summary>
         private const int HeavyModelTriangles = 20000;
 
-        /// <summary>Above this a single model can blow the whole frame budget on its own.</summary>
         private const int SevereModelTriangles = 100000;
 
         private sealed class ModelStats
@@ -57,8 +43,6 @@ namespace AgriDabao3D.EditorTools
                     Name = System.IO.Path.GetFileNameWithoutExtension(path)
                 };
 
-                // A single model file can contain several meshes; the cost of placing
-                // it in the scene is the sum of all of them.
                 foreach (Object sub in AssetDatabase.LoadAllAssetsAtPath(path))
                 {
                     if (sub is not Mesh mesh)
@@ -109,8 +93,6 @@ namespace AgriDabao3D.EditorTools
 
             Debug.Log(report.ToString());
 
-            // The console truncates long messages, so the full table also goes to a
-            // file that can be opened and sorted outside Unity.
             string outPath = System.IO.Path.Combine(
                 System.IO.Path.GetDirectoryName(Application.dataPath) ?? ".",
                 "MeshTriangleReport.csv");

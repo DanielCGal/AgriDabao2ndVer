@@ -2,12 +2,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// The Seedling Tent standing on the farm. It shows each seedling bag on its
-    /// rack - empty, filled, or with its seedling growing out of it - and opens
-    /// the tent panel when tapped. The bags' contents live in
-    /// <see cref="NurserySystem"/>; this only draws them.
-    /// </summary>
     [DisallowMultipleComponent]
     public class SeedlingTentInstance : MonoBehaviour
     {
@@ -37,10 +31,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// Rests the tent on the lowest ground under its floor, so no corner hangs
-        /// in the air on a slope; the uphill side settles into the soil instead.
-        /// </summary>
         public void SeatOnTerrain(Terrain terrain)
         {
             if (terrain == null || terrain.terrainData == null)
@@ -72,7 +62,6 @@ namespace AgriDabao3D
             transform.position = position;
         }
 
-        /// <summary>Redraws every bag from the nursery's state.</summary>
         public void Refresh(NurserySystem nursery)
         {
             if (nursery == null)
@@ -82,7 +71,6 @@ namespace AgriDabao3D
                 RefreshSlot(nursery, slot);
         }
 
-        /// <summary>Only resizes the growing seedlings; cheaper than a full redraw.</summary>
         public void RefreshGrowth(NurserySystem nursery)
         {
             if (nursery == null)
@@ -117,8 +105,6 @@ namespace AgriDabao3D
                 bagShownFilled[slot] = filled;
             }
 
-            // A seed still in the seed tray is not in the bag yet, so nothing
-            // grows out of the bag until it has been pricked into it.
             string showing = null;
             GameObject seedlingPrefab = null;
             if ((status == SeedlingBagStatus.Growing || status == SeedlingBagStatus.Ready) &&
@@ -150,11 +136,6 @@ namespace AgriDabao3D
                 ScaleSeedling(nursery, slot);
         }
 
-        /// <summary>
-        /// Grows the seedling with its progress and keeps its roots inside the bag:
-        /// the models include their roots, so each is sunk by the root share of its
-        /// current height below the soil line.
-        /// </summary>
         private void ScaleSeedling(NurserySystem nursery, int slot)
         {
             float progress = nursery.GetStatus(slot) == SeedlingBagStatus.Ready ? 1f : nursery.GrowthProgress(slot);
@@ -166,7 +147,6 @@ namespace AgriDabao3D
             seedling.localPosition = Vector3.up * Mathf.Max(0.01f, bagTop[slot] - rooted);
         }
 
-        /// <summary>A model's height at its prefab scale, in its anchor's units.</summary>
         private static float MeasureHeight(GameObject model, Transform anchor)
         {
             Renderer[] renderers = model.GetComponentsInChildren<Renderer>();
@@ -181,7 +161,6 @@ namespace AgriDabao3D
             return scale > 0.0001f ? bounds.size.y / scale : bounds.size.y;
         }
 
-        /// <summary>Height of the soil in the bag above its anchor, in the anchor's own units.</summary>
         private float BagTop(int slot, Transform anchor)
         {
             GameObject bag = bagVisuals[slot];
@@ -196,7 +175,6 @@ namespace AgriDabao3D
             for (int i = 1; i < renderers.Length; i++)
                 bounds.Encapsulate(renderers[i].bounds);
 
-            // Just below the rim, where the soil surface sits.
             float worldTop = bounds.max.y - bounds.size.y * 0.12f;
             return anchor.InverseTransformPoint(new Vector3(anchor.position.x, worldTop, anchor.position.z)).y;
         }
@@ -206,8 +184,6 @@ namespace AgriDabao3D
             if (bagAnchors != null && slot < bagAnchors.Length && bagAnchors[slot] != null)
                 return bagAnchors[slot];
 
-            // No anchors set up: lay the bags out in two rows in front of the tent,
-            // so the nursery still shows something rather than nothing.
             string name = "BagAnchor_" + slot;
             Transform existing = transform.Find(name);
             if (existing != null)

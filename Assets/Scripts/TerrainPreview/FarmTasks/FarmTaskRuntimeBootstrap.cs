@@ -54,9 +54,6 @@ namespace AgriDabao3D
             if (Object.FindFirstObjectByType<FarmTaskActionObserver>() == null)
                 root.AddComponent<FarmTaskActionObserver>();
 
-            // The new observer is a superset of the older climate-only
-            // observer. Disable the older observer to avoid duplicate action
-            // records during drought and typhoon events.
             foreach (ClimateActionAutoObserver legacyObserver in
                      Object.FindObjectsByType<ClimateActionAutoObserver>(
                          FindObjectsSortMode.None))

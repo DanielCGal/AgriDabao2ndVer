@@ -7,47 +7,22 @@ namespace AgriDabao3D
 {
     public partial class SocialMarketplaceUIBuilder
     {
-        // Chat polls fast while a conversation is active and backs off when idle.
         private const float ChatPollMinInterval = 2f;
         private const float ChatPollMaxInterval = 8f;
 
-        /// <summary>
-        /// SocialBoard.png is 9-sliced with 130px rolled-log caps, so the flat plank
-        /// only begins this far in from either edge. Controls are inset past it
-        /// instead of being drawn over the log art.
-        /// </summary>
         private const float SocialBoardLogInset = 150f;
 
-        /// <summary>
-        /// SocialLisRow.png paints a rope loop near each end. This keeps a row's
-        /// text and button between them rather than on top of them.
-        /// </summary>
         private const float RowRopeInset = 105f;
 
-        /// <summary>
-        /// ChatBoard.png needs a deeper inset than SocialBoard.png despite both
-        /// declaring a 130px border. On SocialBoard the logs sit clear of the plank,
-        /// so 130 is honest. On ChatBoard the logs overlap the plank and their art
-        /// runs on past the border into the stretchable region - about x179 once the
-        /// board is stretched - so anything placed at 150 landed on the log.
-        /// </summary>
         private const float ChatBoardLogInset = 210f;
 
         private void BuildPlayerSearchPanel()
         {
-            // Widened from 1050: at that width the input plus both buttons did not
-            // fit between the logs, which pushed Request Send onto the right log.
             searchPanel = CreatePanel("PlayerSearchPanel", new Vector2(1400f, 760f));
             HudRegistry.RegisterPiece(HudPiece.SearchPlayersPanel, searchPanel);
-            // searchFriendLabel.png is 1400x300 (4.67:1); preserveAspect keeps it
-            // undistorted, so this width just sets the sign's overall size. Kept
-            // near a third of the board width, matching the shop sign's proportion.
-            // The negative offsetY sinks it into the board: a smaller sign overlaps
-            // the top edge less, so at the default +6 it floated free of the board.
             CreatePanelTitle(searchPanel.transform, "SEARCH PLAYERS / FRIENDS",
                 Theme?.searchFriendsLabel, 470f, 150f, -13f);
 
-            // Inset so the fields clear the board's rolled log edges.
             playerSearchInput = CreateInput(searchPanel.transform, "Enter player display name...",
                 new Vector2(0f, 1f), new Vector2(1f, 1f),
                 new Vector2(SocialBoardLogInset, -190f), new Vector2(-500f, -140f));
@@ -69,9 +44,6 @@ namespace AgriDabao3D
                 new Vector2(SocialBoardLogInset, 40f), new Vector2(-380f, 95f));
             playerSearchStatus.text = "Search by display name or view your friends and incoming requests.";
 
-            // The Trade button that sat here is gone. A PENDING trade now raises the
-            // trade-request popup via OnActiveTradeChanged, which reaches the player
-            // wherever they are rather than only while this panel is open.
             CreateButton(searchPanel.transform, "Close", new Vector2(1f, 0f),
                 new Vector2(170f, 58f), new Vector2(-SocialBoardLogInset, 36f),
                 () => searchPanel.SetActive(false), out _,
@@ -81,15 +53,7 @@ namespace AgriDabao3D
 
         private void BuildProfilePanel()
         {
-            // Widened from 820: the three action buttons are 210 wide each, which at
-            // the old width left them overlapping rather than merely touching.
             profilePanel = CreatePanel("PlayerProfilePanel", new Vector2(1100f, 620f));
-            // PlayerInformationLabel.png is 1400x300 (4.67:1), the same very wide art
-            // as the search sign. At 620 on an 820 board it covered three quarters of
-            // the width, which is what read as stretched.
-            // Sunk further so the sign covers the board's 70px top log cap. The art
-            // is opaque over almost its whole canvas, so at a shallower offset its
-            // lower edge stopped short of the log and the sign read as floating.
             CreatePanelTitle(profilePanel.transform, "PLAYER INFORMATION",
                 Theme?.playerInfoLabel, 420f, 150f, -26f);
 
@@ -97,12 +61,6 @@ namespace AgriDabao3D
                 new Vector2(0f, 0.30f), new Vector2(1f, 0.80f),
                 new Vector2(SocialBoardLogInset, 10f), new Vector2(-SocialBoardLogInset, -45f));
 
-            // Art for this one is swapped at runtime between Add Friend / Request
-            // Sent / Friends, so the sprite is applied in OpenPlayerProfile instead
-            // of being fixed here.
-            // Three 210-wide buttons across the plank, with a 65px gap between each
-            // and 40px clear of the log caps on either side. Raised from y=48, which
-            // had them straddling the board's bottom log.
             profileAddFriendButton = CreateButton(profilePanel.transform, "Add Friend",
                 new Vector2(0f, 0f), new Vector2(210f, 62f), new Vector2(170f, 90f),
                 OnAddFriendPressed, out profileAddFriendText,
@@ -116,8 +74,6 @@ namespace AgriDabao3D
                 new Vector2(1f, 0f), new Vector2(210f, 62f), new Vector2(-170f, 90f),
                 OnChatPlayerPressed, out _, art: Theme?.chatPlayerButton);
 
-            // Tucked into the plank's top-right corner: 20px inside the right log cap
-            // (130) and 20px below the top cap (70), so it sits on wood, not on log.
             CreateButton(profilePanel.transform, "Back", new Vector2(1f, 1f),
                 new Vector2(150f, 52f), new Vector2(-SocialBoardLogInset, -90f),
                 () =>
@@ -130,12 +86,9 @@ namespace AgriDabao3D
 
         private void BuildChatPanel()
         {
-            // Widened again so the deeper ChatBoardLogInset does not cost content
-            // width: 1350 - 2*210 leaves 930, slightly more than the previous 900.
             chatPanel = CreatePanel("PlayerChatPanel", new Vector2(1350f, 720f),
                 boardOverride: Theme?.chatBoard);
 
-            // Name and status only, sitting inside the board's left inset.
             chatTitleText = CreateText(chatPanel.transform, "Title", 28, TextAnchor.MiddleLeft,
                 new Vector2(0f, 1f), new Vector2(1f, 1f),
                 new Vector2(ChatBoardLogInset, -110f), new Vector2(-390f, -55f));
@@ -165,9 +118,6 @@ namespace AgriDabao3D
 
         private void OnSearchPressed()
         {
-            // Other farmers stay hidden until the tour is over. Refused here
-            // rather than after the request so no search for a real display name
-            // ever leaves the device during the tutorial.
             if (TutorialState.IsRunning)
             {
                 playerSearchStatus.text =
@@ -325,10 +275,6 @@ namespace AgriDabao3D
             profilePanel.SetActive(true);
         }
 
-        /// <summary>
-        /// Swaps the friend button between its three painted states. With no art
-        /// set it falls back to changing the plain text label instead.
-        /// </summary>
         private void ApplyFriendButtonState(string relationship)
         {
             string label =
@@ -405,21 +351,16 @@ namespace AgriDabao3D
 
         private void OpenChatPanel(PlayerProfileDto profile)
         {
-            // Hide the other panels first.
-            // HideMainPanels calls CloseChatPanel, which clears chatPlayer.
             HideMainPanels();
 
-            // Assign the player only after HideMainPanels finishes.
             chatPlayer = profile;
 
-            // Name and status only.
             chatTitleText.text =
                 profile.displayName.ToUpperInvariant() +
                 (profile.online ? " (ONLINE)" : " (OFFLINE)");
 
             chatStatusText.text = "";
 
-            // Fresh conversation view: no cursor yet, nothing rendered yet, poll fast.
             chatCursor = null;
             chatPollInterval = ChatPollMinInterval;
             ClearContent(chatContent);
@@ -457,9 +398,6 @@ namespace AgriDabao3D
 
         private IEnumerator LoadConversation()
         {
-            // Only the very first fetch pulls the whole history. After that the
-            // cursor makes the backend return just the messages we do not have,
-            // which is normally an empty list.
             string cursor = chatCursor;
 
             List<ChatMessageDto> messages = null;
@@ -478,12 +416,10 @@ namespace AgriDabao3D
                 if (cursor == null)
                     chatStatusText.text = "No messages yet. Start the conversation.";
 
-                // Idle conversation: gradually slow the poll down to save battery.
                 chatPollInterval = Mathf.Min(chatPollInterval * 2f, ChatPollMaxInterval);
                 yield break;
             }
 
-            // New activity, so go back to the responsive interval.
             chatPollInterval = ChatPollMinInterval;
 
             foreach (ChatMessageDto message in messages)
@@ -492,12 +428,8 @@ namespace AgriDabao3D
                 chatCursor = message.sentAt;
             }
 
-            // The status line only surfaces errors and the empty-conversation hint
-            // now; the offline-storage note was removed from the design.
             chatStatusText.text = "";
 
-            // Reading the conversation clears unread messages server-side, so only
-            // refresh the badge when something actually arrived - not every tick.
             yield return controller.RefreshNotifications();
         }
 
@@ -511,19 +443,13 @@ namespace AgriDabao3D
                 typeof(ContentSizeFitter), typeof(VerticalLayoutGroup));
             row.transform.SetParent(chatContent, false);
 
-            // The bubble grows with its text instead of using a fixed row height,
-            // so a long message wraps to two or three lines and the plank stretches
-            // to match rather than clipping.
             VerticalLayoutGroup layout = row.GetComponent<VerticalLayoutGroup>();
             layout.childControlWidth = true;
             layout.childControlHeight = true;
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
-            // ChatBubble.png is 9-sliced {90,40,90,40}. The rope loops live inside
-            // the 90px left/right caps, so the text has to start past 90 - the old
-            // 46 put it straight over them.
             layout.padding = bubbleArt != null
-                ? new RectOffset(105, 105, 32, 32)   // clear the rope ends
+                ? new RectOffset(105, 105, 32, 32)
                 : new RectOffset(16, 16, 10, 10);
 
             ContentSizeFitter fitter = row.GetComponent<ContentSizeFitter>();
@@ -531,10 +457,6 @@ namespace AgriDabao3D
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             LayoutElement element = row.GetComponent<LayoutElement>();
-            // The sprite is 172 tall with 40px top and bottom caps, leaving a 92px
-            // stretchable band. At the old 86 that band was crushed to 6px, which is
-            // what made the plank look squashed. 132 keeps it at a healthy 52px, and
-            // because this is only a MINIMUM the bubble still grows for long text.
             element.minHeight = bubbleArt != null ? 132f : 60f;
 
             Image background = row.GetComponent<Image>();
@@ -591,8 +513,6 @@ namespace AgriDabao3D
             }
             chatInput.text = "";
 
-            // Let the normal incremental path pick the new message up, so it is
-            // rendered once and the cursor advances with the stored timestamp.
             chatPollInterval = ChatPollMinInterval;
             yield return LoadConversation();
         }

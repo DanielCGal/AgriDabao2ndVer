@@ -6,14 +6,6 @@ using UnityEngine;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Asks the adviser to invent a farm task, and later to grade it.
-    ///
-    /// Both calls used to go to Gemini directly with a key held on this component,
-    /// which shipped inside the APK. They now go through the game's backend, which
-    /// holds the key and pins the JSON response format. The prompts stay here so
-    /// they remain tunable in the Inspector.
-    /// </summary>
     public class AIAdvisorTaskGeminiClient : MonoBehaviour
     {
         [TextArea(10, 24)]
@@ -34,17 +26,9 @@ namespace AgriDabao3D
             "Use the original task, baseline crop states, current farm state, and all recorded actions. " +
             "Do not approve partial or unrelated work. If incomplete, explain the missing requirement and give " +
             "two practical tips. If complete, clearly confirm it. Return only strict JSON. Do not use Markdown. " +
-            // The grader was quoting both, which put a 32-character hex string in
-            // the middle of a sentence on a wooden sign. The name is the half the
-            // player can act on - it is what they see when they click the crop.
             "Refer to a crop only by its cropName, such as mangosteen_1. Never write its cropId " +
             "GUID and never add an \"(ID: ...)\" note after the name.";
 
-        /// <summary>
-        /// How planting works now, added to every task request. Kept in code rather
-        /// than in the Inspector text above, because the Inspector copy in the scene
-        /// would otherwise keep the old wording.
-        /// </summary>
         private const string PlantingRules =
             "\n\nPlanting rules. The planting material decides the route. Seeds of cacao, durian, " +
             "mangosteen, pomelo, tomato and eggplant, banana plantlets and grafted mango seedlings " +
@@ -85,12 +69,6 @@ namespace AgriDabao3D
                 generationGuidance +
                 "\n\nReward rules: choose P800-P2500 based on difficulty and put it in " +
                 "rewardMoney only. " +
-                // The two fields are described by what they must contain rather
-                // than by quoting the sentences the board wraps around them. The
-                // wording used to be quoted, to explain what the game would add -
-                // and quoting it is what taught the model to write it: the task
-                // came back already carrying the opening and the reward line, the
-                // board added its own, and the player read both twice.
                 "\n\nField rules. dialogue: two to four short sentences of the adviser " +
                 "describing what he found on the farm. taskText: the instruction by " +
                 "itself, one sentence, beginning with a verb - no greeting, no " +
@@ -100,10 +78,6 @@ namespace AgriDabao3D
                 "player read it twice. A peso figure belongs in these fields only " +
                 "when it is part of the goal itself, such as selling produce worth " +
                 "a given value. " +
-                // The friendly name is the point, not a leak: mangosteen_1 is what
-                // the player reads when they click that crop, so naming it is how
-                // they know which of several mangosteens the task means. The GUID
-                // is the thing to keep out of the text.
                 "Name a crop by its cropName exactly as given, such as mangosteen_1, " +
                 "so the player can tell which crop is meant. Never write the raw " +
                 "cropId GUID in either field. " +
@@ -196,8 +170,6 @@ namespace AgriDabao3D
                 null,
                 new List<string> { prompt },
                 onSuccess: (text, _) => onRawText?.Invoke(text),
-                // These two features need parseable JSON, so an unavailable adviser
-                // cannot be shown as a task - it has to fail the request instead.
                 onUnavailable: message => onError?.Invoke(message),
                 onError: onError);
         }

@@ -27,7 +27,6 @@ namespace AgriDabao3D
         private Text profileInfoText;
         private Button profileAddFriendButton;
         private Text profileAddFriendText;
-        // This button's art changes with the relationship, so its Image is kept.
         private Image profileAddFriendImage;
         private Button profileTradeButton;
         private Button profileChatButton;
@@ -41,8 +40,6 @@ namespace AgriDabao3D
         private PlayerProfileDto chatPlayer;
         private Coroutine chatPolling;
 
-        // Incremental chat state. chatCursor is the sentAt of the newest message
-        // already on screen, so each poll only asks the backend for what is new.
         private string chatCursor;
         private float chatPollInterval;
 
@@ -79,7 +76,6 @@ namespace AgriDabao3D
 
         private GameObject saleNotifyPanel;
         private Text saleNotifyText;
-        // Two sales in one poll must not overwrite each other's popup.
         private readonly Queue<MarketplaceSaleDto> pendingSaleNotifications =
             new Queue<MarketplaceSaleDto>();
 
@@ -137,7 +133,6 @@ namespace AgriDabao3D
 
         private void BuildTopButtons()
         {
-            // Part of the shared round-icon row along the HUD's top-left edge.
             searchPlayersButton = HudIconButton.Create(
                 canvas.transform, "SearchPlayersButton",
                 UIThemeSprites.Instance?.searchPlayersButton,
@@ -158,11 +153,6 @@ namespace AgriDabao3D
         private GameObject searchBadgeRoot;
         private Text searchBadgeText;
 
-        /// <summary>
-        /// A small red count bubble on the corner of a round icon button. The icon
-        /// has no text label to carry the old "[2 request]" suffix, so unread counts
-        /// would otherwise become invisible.
-        /// </summary>
         private GameObject CreateNotificationBadge(Button host, out Text countText)
         {
             countText = null;
@@ -205,12 +195,10 @@ namespace AgriDabao3D
         private void RefreshTopButtonLabels()
         {
             int pending = controller.PendingFriendRequests;
-            // UnreadMessages is a long, so the running total is kept in long too.
             long unread = controller.UnreadMessages;
             bool trade = controller.ActiveTrade != null && controller.ActiveTrade.status == "PENDING";
             long total = Mathf.Max(0, pending) + System.Math.Max(0L, unread) + (trade ? 1L : 0L);
 
-            // Round icon: show the count as a badge bubble.
             if (searchBadgeRoot != null)
             {
                 searchBadgeRoot.SetActive(total > 0);
@@ -218,7 +206,6 @@ namespace AgriDabao3D
                     searchBadgeText.text = total > 99 ? "99+" : total.ToString();
             }
 
-            // Plain fallback button: keep the original inline suffix.
             if (searchPlayersButtonText != null)
             {
                 string badge = pending > 0 ? " [" + pending + " request]" : "";
@@ -240,9 +227,6 @@ namespace AgriDabao3D
             searchPanel.SetActive(open);
             if (open)
             {
-                // CreatePanel only orders these at build time; the hotbar is built by
-                // a different script and can end up later in the canvas, drawing over
-                // the bottom of the board. Re-parenting on open settles it.
                 searchPanel.transform.SetAsLastSibling();
                 StartCoroutine(LoadFriendsAndRequests());
             }
@@ -260,8 +244,6 @@ namespace AgriDabao3D
             {
                 marketplacePanel.transform.SetAsLastSibling();
 
-                // Selling is off limits until Antonio has finished showing the
-                // player around, the same as Save Farm and Call Antonio.
                 if (sellItemsButton != null)
                     sellItemsButton.interactable = !TutorialState.IsRunning;
 
@@ -311,11 +293,6 @@ namespace AgriDabao3D
             return panel;
         }
 
-        /// <summary>
-        /// A hanging painted sign above a panel. Falls back to the plain centred
-        /// title text when no art is set, so callers can always use this instead of
-        /// building a Text themselves.
-        /// </summary>
         private void CreatePanelTitle(Transform parent, string fallbackText, Sprite art,
             float width = 620f, float height = 130f, float offsetY = 6f)
         {
@@ -383,9 +360,6 @@ namespace AgriDabao3D
             if (onClick != null)
                 button.onClick.AddListener(onClick);
 
-            // A painted button carries its word in the art, so no Text child is
-            // added - but callers still receive a label reference, so one is made
-            // and left blank rather than returning null and breaking their code.
             if (art == null)
                 art = Theme?.socialButton;
 
@@ -440,11 +414,6 @@ namespace AgriDabao3D
             valueText.color = Color.black;
             valueText.text = "";
 
-            // CreateText leaves labels on Truncate so a long player or item name
-            // stays inside its row. That is right for a label and wrong for a box
-            // being typed into: with only 4 units of padding here, a large text
-            // setting can make the line taller than the field, and Truncate drops
-            // it - the player then types and sees nothing. These two opt out.
             placeholderText.verticalOverflow = VerticalWrapMode.Overflow;
             valueText.verticalOverflow = VerticalWrapMode.Overflow;
             input.placeholder = placeholderText;

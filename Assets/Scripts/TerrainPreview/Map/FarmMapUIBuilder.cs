@@ -8,41 +8,11 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// Top-down farm map on a wooden board.
-    ///
-    /// The farm is 700m across, so a player who planted a durian on the far side
-    /// has no way to find it again. This shows where everything is: the player,
-    /// every crop, the shipping bin, and every placed mitigation object. Crops are
-    /// drawn as their fruit and placed items as their kit, so a durian reads
-    /// differently from a coconut and a greenhouse from a canal; the player and the
-    /// shipping bin stay plain dots.
-    ///
-    /// Two forms, one panel. Small, it lives under the money plank, zoomed in on
-    /// the player and turning with them, so the way they face is always up and the
-    /// N, E, S and W balls round its edge show which way that is. Tapped, it grows
-    /// to the middle of the screen, north-up with the four directions on planks
-    /// round the frame, and fits the whole farm. Pinching or scrolling zooms it,
-    /// dragging moves it, and zooming all the way back out returns it to exactly
-    /// that whole-farm view. Closing it returns it to the corner.
-    ///
-    /// NOTHING HERE IS SAVED, and nothing needs to be. Every marker is read live
-    /// from the scene, and the farm save already restores all of it - crops, the
-    /// shipping bin's exact transform, mitigation objects and traps. Load the same
-    /// farm on another phone and the map redraws itself identically, because the
-    /// world it is reading has itself been restored.
-    ///
-    /// Built entirely in code like the rest of the game's UI, and it creates
-    /// itself in TerrainPreview, so there is no scene wiring and no prefab. It uses
-    /// the sprites in UITheme and the item pictures already on the inventory; with
-    /// none assigned it still works, drawn in plain colours.
-    /// </summary>
     public class FarmMapUIBuilder : MonoBehaviour
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
         {
-            // -= then += so we never double-subscribe if the domain isn't reloaded.
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -106,10 +76,8 @@ namespace AgriDabao3D
         private static readonly Color CompassBallRim = new Color(0.36f, 0.20f, 0.07f, 1f);
         private static readonly Color CompassLetterColor = new Color(0.14f, 0.08f, 0.03f, 1f);
 
-        /// <summary>Gap kept between a compass ball and the edge of the green.</summary>
         private const float CompassBallMargin = 4f;
 
-        /// <summary>Width of the direction planks round the opened map.</summary>
         private const float CompassPlankWidth = 200f;
 
         private Canvas canvas;
@@ -133,16 +101,12 @@ namespace AgriDabao3D
         private Transform player;
         private bool expanded;
 
-        /// <summary>Zoom of the opened map. 1 fits the whole farm.</summary>
         private float zoom = 1f;
 
-        /// <summary>How far the opened map's view has been dragged from the middle of the farm, in metres.</summary>
         private Vector2 panMetres;
 
-        /// <summary>True while the map is open full-size. Read by the beginner guide.</summary>
         public bool IsExpanded => expanded;
 
-        /// <summary>Folds the map back to its corner size. Used when another panel opens.</summary>
         public void Collapse()
         {
             if (expanded)
@@ -150,7 +114,6 @@ namespace AgriDabao3D
         }
         private float nextRescanTime;
 
-        /// <summary>Everything drawn on the map, rebuilt on the rescan tick.</summary>
         private readonly List<MapMarker> markers = new List<MapMarker>();
 
         private struct MapMarker
@@ -159,10 +122,8 @@ namespace AgriDabao3D
             public Color color;
             public float size;
 
-            /// <summary>The picture drawn in place of a dot, or null for a plain dot.</summary>
             public Sprite icon;
 
-            /// <summary>Sort key that keeps identical pictures together.</summary>
             public int order;
         }
 
@@ -202,7 +163,6 @@ namespace AgriDabao3D
             root.SetActive(true);
         }
 
-        /// <summary>Mirrors MapBoundarySystem so both agree on which terrain is the farm.</summary>
         private static Terrain ResolveTerrain()
         {
             TemporaryTerrainGenerator generator =
@@ -231,15 +191,6 @@ namespace AgriDabao3D
             LayoutMarkers();
         }
 
-        // ---------------------------------------------------------------- data
-
-        /// <summary>
-        /// Rescans the scene for everything the map draws.
-        ///
-        /// Safe against distance culling: DistanceCullable only toggles renderers,
-        /// leaving the GameObjects active, so crops far from the player are still
-        /// returned here and still appear on the map.
-        /// </summary>
         private void RebuildMarkers()
         {
             markers.Clear();
@@ -254,9 +205,6 @@ namespace AgriDabao3D
                     cropIconSize, CropColor, cropDotSize, (int)type));
             }
 
-            // The six placeable climate prefabs all share this component. Mulch,
-            // trellises, stakes and compost are crop-attached or consumed, carry no
-            // world object of their own, and so correctly never appear here.
             foreach (ClimateMitigationWorldObject item in
                      Object.FindObjectsByType<ClimateMitigationWorldObject>(FindObjectsSortMode.None))
             {
@@ -267,8 +215,6 @@ namespace AgriDabao3D
                     mitigationIconSize, MitigationColor, mitigationDotSize, 100 + (int)item.mitigationType));
             }
 
-            // Termite bait stations and pheromone traps: also standalone prefabs
-            // the player drops and then has to find again.
             foreach (AreaMitigationTrapInstance trap in
                      Object.FindObjectsByType<AreaMitigationTrapInstance>(FindObjectsSortMode.None))
             {
@@ -289,8 +235,6 @@ namespace AgriDabao3D
                     mitigationIconSize, MitigationColor, mitigationDotSize, 300));
             }
 
-            // The Seedling Tent, shown with its own round button art so the player
-            // can find it again after wandering off to plant.
             SeedlingTentInstance tent = Object.FindFirstObjectByType<SeedlingTentInstance>();
             if (tent != null)
             {
@@ -298,10 +242,6 @@ namespace AgriDabao3D
                     mitigationIconSize * 1.25f, MitigationColor, mitigationDotSize, 400));
             }
 
-            // Grouped by kind. Every kind of picture is its own texture, and where
-            // two different pictures overlap the canvas has to split its batch
-            // between them; in scene order the kinds interleave, so a dense planting
-            // could cost a draw call per crop.
             markers.Sort(ByOrder);
 
             ShippingBinSeller bin = Object.FindFirstObjectByType<ShippingBinSeller>();
@@ -323,8 +263,6 @@ namespace AgriDabao3D
                     player = controller.transform;
             }
 
-            // Added last so it is the last sibling, and so draws over any crop or
-            // object the player happens to be standing on.
             if (player != null)
             {
                 markers.Add(new MapMarker
@@ -336,7 +274,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>The picture when there is one, and the old coloured dot when there is not.</summary>
         private static MapMarker IconOrDot(Transform target, Sprite icon, float iconSize,
             Color dotColor, float dotSize, int order)
         {
@@ -350,8 +287,6 @@ namespace AgriDabao3D
             };
         }
 
-        // -------------------------------------------------------------- drawing
-
         private Vector2 FieldSize
         {
             get
@@ -364,12 +299,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// UI pixels per world metre. Uniform on both axes so the farm is never
-        /// stretched: expanded fits the whole terrain inside the shorter side of
-        /// the field and multiplies by the zoom, small works back from how many
-        /// metres it should show.
-        /// </summary>
         private float PixelsPerMetre()
         {
             Vector2 field = FieldSize;
@@ -389,11 +318,6 @@ namespace AgriDabao3D
             return new Vector2(origin.x + size.x * 0.5f, origin.z + size.z * 0.5f);
         }
 
-        /// <summary>
-        /// The world point the middle of the field represents: the player on the
-        /// small map, and on the opened one the middle of the farm, moved by however
-        /// far the player has dragged it.
-        /// </summary>
         private Vector2 ViewCentreWorldXZ()
         {
             if (!expanded && player != null)
@@ -402,11 +326,6 @@ namespace AgriDabao3D
             return FarmCentreXZ() + panMetres;
         }
 
-        /// <summary>
-        /// Which way the player is looking, in degrees clockwise from north. The
-        /// camera only ever pitches underneath the player, so the player's own turn
-        /// is the camera's heading.
-        /// </summary>
         private float PlayerHeadingDegrees()
         {
             return player != null ? player.eulerAngles.y : 0f;
@@ -418,8 +337,6 @@ namespace AgriDabao3D
             Vector2 centre = ViewCentreWorldXZ();
             Vector2 halfField = FieldSize * 0.5f;
 
-            // The small map turns so the way the player faces is up. The opened map
-            // stays north-up, which is what the planks round its frame say.
             float heading = expanded ? 0f : PlayerHeadingDegrees() * Mathf.Deg2Rad;
             float cos = Mathf.Cos(heading);
             float sin = Mathf.Sin(heading);
@@ -436,21 +353,15 @@ namespace AgriDabao3D
 
                 Vector3 world = marker.target.position;
 
-                // Terrain +Z is north and UI +Y is up, so Z maps straight onto Y
-                // and, unturned, the map reads north-up.
                 float east = (world.x - centre.x) * pixelsPerMetre;
                 float north = (world.z - centre.y) * pixelsPerMetre;
 
-                // Turned anticlockwise by the heading, which lands anything lying
-                // straight ahead of the player straight up the map.
                 Vector2 point = new Vector2(
                     east * cos - north * sin,
                     east * sin + north * cos);
 
                 float size = marker.icon != null ? marker.size * growth : marker.size;
 
-                // RectMask2D clips anything straying over the edge, but skipping
-                // markers that are far outside keeps the pool small when zoomed in.
                 if (Mathf.Abs(point.x) > halfField.x + size ||
                     Mathf.Abs(point.y) > halfField.y + size)
                 {
@@ -462,9 +373,6 @@ namespace AgriDabao3D
                 rect.sizeDelta = new Vector2(size, size);
                 rect.anchoredPosition = point;
 
-                // A picture keeps its own shape inside the square; a dot is the
-                // square. Icons are never turned with the small map, so the fruit
-                // always stands upright.
                 image.sprite = marker.icon != null ? marker.icon : dotSprite;
                 image.preserveAspect = marker.icon != null;
                 image.color = marker.color;
@@ -505,14 +413,6 @@ namespace AgriDabao3D
             return marker;
         }
 
-        /// <summary>
-        /// Puts each ball where its direction meets the edge of the green.
-        ///
-        /// North, east, south and west are turned by the same rotation as the
-        /// markers, and each ball travels out from the middle that way until it
-        /// would touch the edge. As the player turns, the balls run round the
-        /// inside of the field and never onto the wood.
-        /// </summary>
         private void LayoutCompassBalls(float cos, float sin, Vector2 halfField)
         {
             if (compassBalls == null)
@@ -536,13 +436,6 @@ namespace AgriDabao3D
             ball.anchoredPosition = direction * Mathf.Min(toSide, toTop);
         }
 
-        // --------------------------------------------------------- zoom and pan
-
-        /// <summary>
-        /// Zooms the opened map by <paramref name="factor"/>, keeping the spot
-        /// under <paramref name="screenPoint"/> - the cursor, or the middle of a
-        /// pinch - where it is.
-        /// </summary>
         public void ZoomAtScreenPoint(Vector2 screenPoint, float factor)
         {
             if (!expanded || terrain == null || factor <= 0f)
@@ -566,7 +459,6 @@ namespace AgriDabao3D
             ClampPan();
         }
 
-        /// <summary>Moves the opened map by a finger or mouse movement given in screen pixels.</summary>
         public void PanByScreenDelta(Vector2 screenPosition, Vector2 screenDelta)
         {
             if (!expanded || terrain == null)
@@ -578,22 +470,10 @@ namespace AgriDabao3D
                 return;
             }
 
-            // The farm moves with the finger, so the middle of the view moves the
-            // other way.
             panMetres -= (now - before) / PixelsPerMetre();
             ClampPan();
         }
 
-        /// <summary>
-        /// Keeps the view on the farm: the edge of what is on screen may travel as
-        /// far as the edge of the terrain and no further.
-        ///
-        /// At a zoom of 1 the whole farm already fits, so there is no room at all
-        /// and the view is pinned to the middle. That is what brings a player who
-        /// zooms back out to exactly the view the map opened on, from wherever they
-        /// had dragged it: the room shrinks as they zoom out and reaches nothing
-        /// just as they arrive.
-        /// </summary>
         private void ClampPan()
         {
             Vector3 size = terrain.terrainData.size;
@@ -607,7 +487,6 @@ namespace AgriDabao3D
             panMetres.y = Mathf.Clamp(panMetres.y, -roomZ, roomZ);
         }
 
-        /// <summary>A screen point as a position relative to the middle of the field, in the units the markers are laid out in.</summary>
         private bool TryFieldPoint(Vector2 screenPoint, out Vector2 local)
         {
             Camera eventCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
@@ -618,13 +497,10 @@ namespace AgriDabao3D
                 fieldRect, screenPoint, eventCamera, out local);
         }
 
-        // ---------------------------------------------------------------- modes
-
         private void SetExpanded(bool value)
         {
             expanded = value;
 
-            // The opened map always starts on the whole farm, however it was left.
             zoom = 1f;
             panMetres = Vector2.zero;
 
@@ -639,7 +515,6 @@ namespace AgriDabao3D
                 frameRect.pivot = new Vector2(0.5f, 0.5f);
                 frameRect.anchoredPosition = Vector2.zero;
 
-                // Above whatever else is on screen while it is open.
                 root.transform.SetAsLastSibling();
             }
             else
@@ -659,31 +534,21 @@ namespace AgriDabao3D
             compassPlanks.SetActive(expanded);
             compassBallsRoot.SetActive(!expanded);
 
-            // Only the opened map takes drags and pinches. Small, the field lets
-            // taps fall through to the frame, which is the button that opens it.
             fieldImage.raycastTarget = expanded;
             fieldInput.enabled = expanded;
 
-            // The zoom changed, so redraw before the next frame renders.
             LayoutMarkers();
         }
 
-        /// <summary>
-        /// Tucked under the money plank, using the plank's own themed height so
-        /// the two never overlap if that art is resized.
-        /// </summary>
         private Vector2 SmallAnchoredPosition()
         {
             float plankHeight = Theme != null ? Theme.moneyPlankSize.y : 150f;
 
-            // The plank sits at (-20, -14) with a top-right pivot.
             const float plankTop = 14f;
             const float gap = 12f;
 
             return new Vector2(-20f, -(plankTop + plankHeight + gap));
         }
-
-        // -------------------------------------------------------------- building
 
         private void Build()
         {
@@ -707,7 +572,6 @@ namespace AgriDabao3D
             BuildCompassPlanks();
         }
 
-        /// <summary>Dims the game and swallows taps meant for the map, not the joystick.</summary>
         private void BuildBlocker()
         {
             GameObject go = new GameObject("Blocker", typeof(RectTransform), typeof(Image));
@@ -749,9 +613,6 @@ namespace AgriDabao3D
             frameButton = go.GetComponent<Button>();
             frameButton.targetGraphic = image;
 
-            // Guarded rather than made non-interactable while open: Button's
-            // disabled state tints its target graphic to a half-transparent grey,
-            // which would wash the whole board out the moment it was opened.
             frameButton.onClick.AddListener(() =>
             {
                 if (!expanded)
@@ -773,13 +634,6 @@ namespace AgriDabao3D
                 ? Theme.mapFieldColor
                 : new Color(0.42f, 0.60f, 0.16f, 1f);
 
-            // RectMask2D rather than Mask: it clips by rectangle and needs no
-            // graphic of its own, so the field colour can be anything - including
-            // fully transparent, if the frame art already paints its own field.
-            // A stencil Mask would clip every marker away at alpha 0.
-            //
-            // Not a raycast target until the map is opened; SetExpanded switches
-            // it on so the field can take drags.
             fieldImage.raycastTarget = false;
 
             fieldInput = go.AddComponent<FarmMapFieldInput>();
@@ -795,11 +649,6 @@ namespace AgriDabao3D
             markersRoot.sizeDelta = Vector2.zero;
         }
 
-        /// <summary>
-        /// The N, E, S and W balls on the small map. Inside the field and after the
-        /// markers, so they draw over a crop at the edge and are clipped to the
-        /// green like everything else in it.
-        /// </summary>
         private void BuildCompassBalls()
         {
             compassBallsRoot = new GameObject("CompassBalls", typeof(RectTransform));
@@ -812,7 +661,6 @@ namespace AgriDabao3D
 
             Sprite ball = CreateCompassBallSprite();
 
-            // In the order LayoutCompassBalls places them.
             string[] letters = { "N", "E", "S", "W" };
             compassBalls = new RectTransform[letters.Length];
 
@@ -846,8 +694,6 @@ namespace AgriDabao3D
                 text.alignment = TextAnchor.MiddleCenter;
                 text.color = CompassLetterColor;
                 text.raycastTarget = false;
-                // Overflow both ways. This font's line box is taller than the ball
-                // at the largest text setting, and Truncate would then draw nothing.
                 text.horizontalOverflow = HorizontalWrapMode.Overflow;
                 text.verticalOverflow = VerticalWrapMode.Overflow;
                 text.text = letters[i];
@@ -856,11 +702,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// North, East, South and West on planks at the middle of each side of the
-        /// opened map's frame. The opened map is always north-up, so they never
-        /// move.
-        /// </summary>
         private void BuildCompassPlanks()
         {
             compassPlanks = new GameObject("CompassPlanks", typeof(RectTransform));
@@ -872,8 +713,6 @@ namespace AgriDabao3D
             rootRect.offsetMin = Vector2.zero;
             rootRect.offsetMax = Vector2.zero;
 
-            // Centred on the wood of the frame, half the border's thickness in from
-            // each edge, which is only ever drawn at the opened size.
             Vector2 inset = InsetFraction;
             Vector2 border = new Vector2(ExpandedSize.x * inset.x, ExpandedSize.y * inset.y);
 
@@ -889,9 +728,6 @@ namespace AgriDabao3D
         {
             Sprite art = Theme?.tradeRequestBoard;
 
-            // The board art's own proportions, so the wood is never squashed.
-            // TradeRequestBoard has no 9-slice border, so "sliced" simply stretches
-            // it to this box.
             Vector2 size = UIPlank.SizeFor(art, CompassPlankWidth, CompassPlankWidth * 0.4f);
 
             GameObject plank = UIPlank.Create(compassPlanks.transform, "Compass_" + word, art, true,
@@ -902,8 +738,6 @@ namespace AgriDabao3D
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = position;
 
-            // The side planks reach over the edge of the field, and a drag that
-            // starts on one should still move the map.
             plank.GetComponent<Image>().raycastTarget = false;
         }
 
@@ -927,7 +761,6 @@ namespace AgriDabao3D
 
             if (art != null)
             {
-                // The word is painted into the art, so no Text child is added.
                 image.sprite = art;
                 image.preserveAspect = true;
                 image.color = Color.white;
@@ -957,10 +790,6 @@ namespace AgriDabao3D
             closeButton.SetActive(false);
         }
 
-        /// <summary>
-        /// One soft-edged white circle, tinted per dot. A single shared sprite lets
-        /// every dot batch into one draw call however many are on screen.
-        /// </summary>
         private static Sprite CreateCircleSprite()
         {
             const int size = 64;
@@ -980,8 +809,6 @@ namespace AgriDabao3D
                     float dy = y + 0.5f - radius;
                     float distance = Mathf.Sqrt(dx * dx + dy * dy);
 
-                    // One pixel of feather, so the dot keeps a clean edge when it
-                    // is drawn far smaller than this texture.
                     float alpha = Mathf.Clamp01(radius - distance);
                     texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
                 }
@@ -995,11 +822,6 @@ namespace AgriDabao3D
                 new Vector2(0.5f, 0.5f));
         }
 
-        /// <summary>
-        /// An orange ball with a dark rim, behind the small map's direction letters.
-        /// Mipmapped, unlike the dot: the rim is a few pixels wide once drawn, and
-        /// without smaller copies to sample from it would break up into specks.
-        /// </summary>
         private static Sprite CreateCompassBallSprite()
         {
             const int size = 128;
@@ -1056,7 +878,7 @@ namespace AgriDabao3D
                 CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 1f; // landscape: scale by height
+                scaler.matchWidthOrHeight = 1f;
             }
 
             if (canvas.GetComponent<GraphicRaycaster>() == null)

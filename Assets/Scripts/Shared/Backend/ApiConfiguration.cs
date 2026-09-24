@@ -42,8 +42,6 @@ namespace AgriDabao3D
                     return publicBaseUrl.TrimEnd('/');
                 return editorBaseUrl.TrimEnd('/');
 #elif UNITY_ANDROID
-                // A deployed public server is always preferred on a real device:
-                // LAN and emulator addresses are unreachable over mobile data.
                 if (hasPublic)
                     return publicBaseUrl.TrimEnd('/');
                 return (usePhysicalAndroidAddress ? physicalAndroidBaseUrl : androidEmulatorBaseUrl).TrimEnd('/');
@@ -55,11 +53,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// True when the resolved address is plain HTTP. Android 9+ blocks cleartext
-        /// traffic by default, so an http:// address silently fails on device unless
-        /// the manifest opts in.
-        /// </summary>
         public bool IsCleartext =>
             BaseUrl.StartsWith("http://", System.StringComparison.OrdinalIgnoreCase);
 

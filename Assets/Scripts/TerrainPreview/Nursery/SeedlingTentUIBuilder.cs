@@ -6,16 +6,6 @@ using UnityEngine.UI;
 
 namespace AgriDabao3D
 {
-    /// <summary>
-    /// The Seedling Tent panel: a round HUD button, a board with the tent's eight
-    /// seedling bags, and the actions for the bag picked - fill it with soil, sow,
-    /// prick out, transplant or empty it.
-    ///
-    /// Built in code like every other farm panel, on the shop's board art, with
-    /// the painted bag sprites for the bags themselves. Transplanting closes the
-    /// panel and shows a banner along the top of the screen until the seedling is
-    /// in the ground or the player cancels.
-    /// </summary>
     public class SeedlingTentUIBuilder : MonoBehaviour
     {
         public static SeedlingTentUIBuilder Instance { get; private set; }
@@ -67,7 +57,6 @@ namespace AgriDabao3D
 
         public bool IsOpen => panel != null && panel.activeSelf;
 
-        /// <summary>Opens the panel, creating it first if the scene has not yet.</summary>
         public static void OpenPanel()
         {
             SeedlingTentUIBuilder builder = Instance != null
@@ -128,15 +117,10 @@ namespace AgriDabao3D
             if (!IsOpen)
                 return;
 
-            // The tutorial's objective plank covers the top centre of the
-            // screen, where this heading sits. It is the same plank art, so
-            // while it is up it stands in for the heading rather than half
-            // hiding it.
             bool showHeading = !TutorialDialogueUI.ObjectiveShowing;
             if (heading != null && heading.activeSelf != showHeading)
                 heading.SetActive(showHeading);
 
-            // Days-left figures tick down while the panel is open.
             if (Time.unscaledTime >= nextLiveRefresh)
             {
                 nextLiveRefresh = Time.unscaledTime + 1f;
@@ -152,8 +136,6 @@ namespace AgriDabao3D
             if (banner != null && banner.activeSelf)
                 RefreshBanner();
         }
-
-        // ---------------------------------------------------------- open/close
 
         public void Open()
         {
@@ -184,8 +166,6 @@ namespace AgriDabao3D
             else
                 Open();
         }
-
-        // ------------------------------------------------------------- building
 
         private void EnsureEventSystem()
         {
@@ -251,8 +231,6 @@ namespace AgriDabao3D
                 background.color = new Color(0f, 0f, 0f, 0.82f);
             }
 
-            // Heading on a blank plank, as the account screens do it: there is no
-            // painted "Seedling Tent" sign, and this keeps it in the same style.
             Sprite plank = theme?.tutorialObjectiveBoard;
             heading = UIPlank.Create(panel.transform, "Heading", plank, false,
                 UIPlank.SizeFor(plank, 420f, 96f), new Vector2(0f, 30f), "SEEDLING TENT", 30, out _);
@@ -370,8 +348,6 @@ namespace AgriDabao3D
             previewName.resizeTextMinSize = 11;
             previewName.resizeTextMaxSize = 18;
 
-            // Below the frame, which runs 10 to 260 down, and above the action
-            // buttons, whose tops reach about 380 down.
             detailText = CreateText(detailArea.transform, "DetailText", 18, TextAnchor.UpperCenter,
                 new Vector2(0.5f, 1f), new Vector2(0f, -326f), new Vector2(420f, 104f));
             detailText.resizeTextForBestFit = true;
@@ -521,8 +497,6 @@ namespace AgriDabao3D
             }
         }
 
-        // ------------------------------------------------------------- drawing
-
         private void Redraw()
         {
             NurserySystem nursery = NurserySystem.Instance;
@@ -579,7 +553,6 @@ namespace AgriDabao3D
             return info != null ? info.Crop.ToString() : string.Empty;
         }
 
-        /// <summary>The seed while it is still in the seed tray, the seedling after that.</summary>
         private static string BagContentName(SeedlingBagStatus status, PlantingMaterialInfo info)
         {
             return status == SeedlingBagStatus.Germinating
@@ -609,9 +582,6 @@ namespace AgriDabao3D
             if (descriptionButton != null)
                 descriptionButton.gameObject.SetActive(sown);
 
-            // The panel redraws every second for the countdowns; the buttons are
-            // only rebuilt when they would change, so a tap is never lost to a
-            // button being replaced under the finger.
             string actionKey = selectedSlot + ":" + status + ":" + sown;
             if (actionKey != shownActionKey)
             {
@@ -694,11 +664,6 @@ namespace AgriDabao3D
             }
         }
 
-        /// <summary>
-        /// A round painted button with its caption under it when the art exists,
-        /// otherwise a written plank - so the painted bag icons get used, and the
-        /// actions without art still read clearly.
-        /// </summary>
         private void CreateActionButton(string label, Sprite art, UnityEngine.Events.UnityAction action,
             Vector2 position, float width)
         {
@@ -749,8 +714,6 @@ namespace AgriDabao3D
                                   " to transplant it.";
             }
         }
-
-        // ------------------------------------------------------------- actions
 
         private void SelectSlot(int slot)
         {
@@ -813,7 +776,6 @@ namespace AgriDabao3D
                 int row = i / pickerColumns;
                 int col = i % pickerColumns;
 
-                // Each row is centred, so one or two choices do not sit off to the left.
                 int inRow = Mathf.Min(pickerColumns, held.Count - row * pickerColumns);
                 Vector2 position = new Vector2(-cellW * inRow * 0.5f + cellW * (col + 0.5f), -cellH * (row + 0.5f));
                 CreateSowChoice(item, position, new Vector2(cellW - 12f, cellH - 10f));
@@ -911,8 +873,6 @@ namespace AgriDabao3D
                 return;
             }
 
-            // Throwing away a seedling cannot be undone, so it is asked first -
-            // on the shared Yes/No board, which closes this panel while it asks.
             if (FarmConfirmPopup.Instance != null)
             {
                 FarmConfirmPopup.Instance.Show(
@@ -945,8 +905,6 @@ namespace AgriDabao3D
 
             descriptionBoard.Show(info.Name, ShopItemDescriptions.For(info.Item));
         }
-
-        // -------------------------------------------------------------- helpers
 
         private void SetStatus(string message)
         {
