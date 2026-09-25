@@ -51,3 +51,12 @@ Thumbs.db
 
 # Output of Handoff/compile_unity.py - regenerable.
 Handoff/out_*/
+
+# Meshy 3D models and their 4K textures (about 4.6 GB) - too large for GitHub,
+# so they stay on the development PC. Copy the folder in after cloning.
+Assets/Models/
+Assets/Models.meta
+
+# Unity's crash-recovery copies of scenes.
+Assets/_Recovery/
+Assets/_Recovery.meta
